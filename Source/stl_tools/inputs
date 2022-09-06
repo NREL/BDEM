@@ -1,0 +1,5 @@
+prob_lo=-30.0 0.0 -30.0
+prob_hi= 30.0 120.0 30.0
+ncells = 32   64    32
+stl_file=bottle.stl
+outside_point=62.1 40.5 75.8

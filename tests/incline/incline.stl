@@ -1,0 +1,72 @@
+solid inclineplane
+ facet normal 0.53 0.847998 7.37005e-07
+  outer loop
+   vertex -0.00075 0.00425001 -0.005
+   vertex 0.00325001 0.00174999 0.005
+   vertex 0.00725 -0.00075 -0.005
+  endloop
+ endfacet
+ facet normal 0.529998 0.847999 -0
+  outer loop
+   vertex 0.00725 -0.00075 -0.005
+   vertex 0.00325001 0.00174999 0.005
+   vertex 0.00725 -0.00075 0.015
+  endloop
+ endfacet
+ facet normal 0.53 0.847998 -7.37005e-07
+  outer loop
+   vertex 0.00725 -0.00075 0.015
+   vertex 0.00325001 0.00174999 0.005
+   vertex -0.00075 0.00425001 0.015
+  endloop
+ endfacet
+ facet normal 0.530001 0.847997 0
+  outer loop
+   vertex -0.00075 0.00425001 0.015
+   vertex 0.00325001 0.00174999 0.005
+   vertex -0.00075 0.00425001 -0.005
+  endloop
+ endfacet
+ facet normal 0 0 1
+  outer loop
+   vertex -0.00075 -0.00075 0.015
+   vertex 0.00725 -0.00075 0.015
+   vertex -0.00075 0.00425001 0.015
+  endloop
+ endfacet
+ facet normal 0 0 -1
+  outer loop
+   vertex -0.00075 -0.00075 -0.005
+   vertex -0.00075 0.00425001 -0.005
+   vertex 0.00725 -0.00075 -0.005
+  endloop
+ endfacet
+ facet normal -1 0 0
+  outer loop
+   vertex -0.00075 -0.00075 0.015
+   vertex -0.00075 0.00425001 0.015
+   vertex -0.00075 -0.00075 -0.005
+  endloop
+ endfacet
+ facet normal -1 0 -0
+  outer loop
+   vertex -0.00075 0.00425001 0.015
+   vertex -0.00075 0.00425001 -0.005
+   vertex -0.00075 -0.00075 -0.005
+  endloop
+ endfacet
+ facet normal 0 -1 0
+  outer loop
+   vertex -0.00075 -0.00075 0.015
+   vertex -0.00075 -0.00075 -0.005
+   vertex 0.00725 -0.00075 0.015
+  endloop
+ endfacet
+ facet normal 0 -1 0
+  outer loop
+   vertex -0.00075 -0.00075 -0.005
+   vertex 0.00725 -0.00075 -0.005
+   vertex 0.00725 -0.00075 0.015
+  endloop
+ endfacet
+endsolid inclineplane
