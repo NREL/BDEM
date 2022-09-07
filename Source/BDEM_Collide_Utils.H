@@ -57,7 +57,7 @@ void get_relative_velocities (const BDEMParticleContainer::ParticleType& p1,
     vslip[2] = vreltrans[2] - vrn*normal[2];    
 }
 
-AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real basisval(int l,int m,int n, int i, int j, int k,
                      amrex::Real xp[AMREX_SPACEDIM], 
                      const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> plo, 
@@ -81,7 +81,7 @@ amrex::Real basisval(int l,int m,int n, int i, int j, int k,
     return(lval*mval*nval);
 }
 
-AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real basisvalder(int dir, int l,int m,int n, int i, int j, int k, 
                         amrex::Real xp[AMREX_SPACEDIM], 
                         const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> plo, 
