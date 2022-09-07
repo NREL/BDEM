@@ -1,21 +1,21 @@
 #include <BDEM_ParticleContainer.H>
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void cross_product (const amrex::Real* a, const amrex::Real* b, amrex::Real* c)
+void crosspdt (const amrex::Real* v1, const amrex::Real* v2, amrex::Real* v3)
 {
-    c[0] = a[1]*b[2] - a[2]*b[1];
-    c[1] = a[2]*b[0] - a[0]*b[2];
-    c[2] = a[0]*b[1] - a[1]*b[0];
+    v3[XDIR] = v1[YDIR]*v2[ZDIR] - v1[ZDIR]*v2[YDIR];
+    v3[YDIR] = v1[ZDIR]*v2[XDIR] - v1[XDIR]*v2[ZDIR];
+    v3[ZDIR] = v1[XDIR]*v2[YDIR] - v1[YDIR]*v2[XDIR];
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-amrex::Real dot_product (const amrex::Real* a, const amrex::Real* b)
+amrex::Real dotpdt (const amrex::Real* v1, const amrex::Real* v2)
 {
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    return(v1[XDIR]*v2[XDIR] + v1[YDIR]*v2[YDIR] + v1[ZDIR]*v2[ZDIR]);
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void cfrelvel (const BDEMParticleContainer::ParticleType& p1, 
+void get_relative_velocities (const BDEMParticleContainer::ParticleType& p1, 
                const BDEMParticleContainer::ParticleType& p2,
                amrex::Real& vrn, amrex::Real* vslip,
                const amrex::Real* normal, 
@@ -28,9 +28,9 @@ void cfrelvel (const BDEMParticleContainer::ParticleType& p1,
     vreltrans[2] =  p1.rdata(realData::zvel) - p2.rdata(realData::zvel);
 
     // distance from the contact point to the particle centers
-    amrex::Real dist_c1 = (dist_mag*dist_mag 
+    amrex::Real dist_c1 = 0.5*(dist_mag*dist_mag 
                     + p1.rdata(realData::radius)*p1.rdata(realData::radius) 
-                    - p2.rdata(realData::radius)*p2.rdata(realData::radius)) / (2.0*dist_mag);
+                    - p2.rdata(realData::radius)*p2.rdata(realData::radius)) / dist_mag;
 
     amrex::Real dist_c2 = dist_mag - dist_c1;
 
@@ -41,7 +41,7 @@ void cfrelvel (const BDEMParticleContainer::ParticleType& p1,
 
     // the rotational relative velocity
     amrex::Real v_rot[3];
-    cross_product(omega_sum, normal, v_rot);
+    crosspdt(omega_sum, normal, v_rot);
     
 
     // total relative velocity
@@ -50,11 +50,156 @@ void cfrelvel (const BDEMParticleContainer::ParticleType& p1,
     vreltrans[2] += v_rot[2];
 
     // normal component of relative velocity
-    vrn = dot_product(vreltrans, normal);
+    vrn = dotpdt(vreltrans, normal);
 
     vslip[0] = vreltrans[0] - vrn*normal[0];
     vslip[1] = vreltrans[1] - vrn*normal[1];
     vslip[2] = vreltrans[2] - vrn*normal[2];    
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+amrex::Real basisval(int l,int m,int n, int i, int j, int k,
+                     amrex::Real xp[AMREX_SPACEDIM], 
+                     const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> plo, 
+                     const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx)
+{
+    amrex::Real lval,mval,nval;
+    amrex::Real rx,ry,rz;
+
+    lval=0.0;
+    mval=0.0;
+    nval=0.0;
+
+    rx 	= (xp[XDIR]-(plo[XDIR]+i*dx[XDIR]))/dx[XDIR];
+    ry  = (xp[YDIR]-(plo[YDIR]+j*dx[YDIR]))/dx[YDIR];
+    rz  = (xp[ZDIR]-(plo[ZDIR]+k*dx[ZDIR]))/dx[ZDIR];
+
+    lval=(l==0)?(one-rx):rx;
+    mval=(m==0)?(one-ry):ry;
+    nval=(n==0)?(one-rz):rz;
+
+    return(lval*mval*nval);
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+amrex::Real basisvalder(int dir, int l,int m,int n, int i, int j, int k, 
+                        amrex::Real xp[AMREX_SPACEDIM], 
+                        const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> plo, 
+                        const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx)
+{
+    amrex::Real lval,mval,nval;
+    amrex::Real rx,ry,rz;
+    amrex::Real dxinv[AMREX_SPACEDIM];
+
+    dxinv[XDIR]=one/dx[XDIR];
+    dxinv[YDIR]=one/dx[YDIR];
+    dxinv[ZDIR]=one/dx[ZDIR];
+
+    rx = (xp[XDIR]-(plo[XDIR]+i*dx[XDIR]))/dx[XDIR];
+    ry = (xp[YDIR]-(plo[YDIR]+j*dx[YDIR]))/dx[YDIR];
+    rz = (xp[ZDIR]-(plo[ZDIR]+k*dx[ZDIR]))/dx[ZDIR];
+
+    lval=(l==0)?(one-rx):rx;
+    mval=(m==0)?(one-ry):ry;
+    nval=(n==0)?(one-rz):rz;
+
+    if(dir==0)
+    {
+        lval=(l==0)?-dxinv[XDIR]:dxinv[XDIR];
+    }
+
+    else if(dir==1)
+    {
+        mval=(m==0)?-dxinv[YDIR]:dxinv[YDIR];
+    }
+    else
+    {
+        nval=(n==0)?-dxinv[ZDIR]:dxinv[ZDIR];
+    }
+
+    return(lval*mval*nval);
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+amrex::Real get_levelset_value (BDEMParticleContainer::ParticleType const& p,
+                                const int lsref,
+                                amrex::Array4<amrex::Real const> const& phi,
+                                amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& problo,
+                                amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> const& dx)
+{
+    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> ls_dx;
+    
+    amrex::Real ptxyz[3] = {p.pos(0),p.pos(1),p.pos(2)};
+
+    ls_dx[XDIR]=dx[XDIR]/amrex::Real(lsref);
+    ls_dx[YDIR]=dx[YDIR]/amrex::Real(lsref);
+    ls_dx[ZDIR]=dx[ZDIR]/amrex::Real(lsref);
+
+    int i=amrex::Math::floor((ptxyz[XDIR]-problo[XDIR]+TINYVAL)/ls_dx[XDIR]);
+    int j=amrex::Math::floor((ptxyz[YDIR]-problo[YDIR]+TINYVAL)/ls_dx[YDIR]);
+    int k=amrex::Math::floor((ptxyz[ZDIR]-problo[ZDIR]+TINYVAL)/ls_dx[ZDIR]);
+
+    amrex::Real lsval=0.0;
+    for(int n=0;n<2;n++)
+    {
+        for(int m=0;m<2;m++)
+        {
+            for(int l=0;l<2;l++)
+            {
+                lsval += phi(i+l,j+m,k+n)*
+                    basisval(l,m,n,i,j,k,ptxyz,problo,ls_dx);
+            }
+        }
+    }
+
+    return(lsval);
+
+}
+
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
+void get_levelset_normal(
+        BDEMParticleContainer::ParticleType const& p,
+        const int lsref,
+        amrex::Array4<amrex::Real> phi,
+        const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+        const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx,
+        amrex::Real lsnormal[AMREX_SPACEDIM])
+{
+    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> ls_dx;
+
+    ls_dx[XDIR]=dx[XDIR]/lsref;
+    ls_dx[YDIR]=dx[YDIR]/lsref;
+    ls_dx[ZDIR]=dx[ZDIR]/lsref;
+    
+    amrex::Real ptxyz[3] = {p.pos(0),p.pos(1),p.pos(2)};
+
+    int i=amrex::Math::floor((ptxyz[XDIR]-problo[XDIR]+TINYVAL)/ls_dx[XDIR]);
+    int j=amrex::Math::floor((ptxyz[YDIR]-problo[YDIR]+TINYVAL)/ls_dx[YDIR]);
+    int k=amrex::Math::floor((ptxyz[ZDIR]-problo[ZDIR]+TINYVAL)/ls_dx[ZDIR]);
+
+    lsnormal[XDIR]=0.0;
+    lsnormal[YDIR]=0.0;
+    lsnormal[ZDIR]=0.0;
+    for(int n=0;n<2;n++)
+    {
+        for(int m=0;m<2;m++)
+        {
+            for(int l=0;l<2;l++)
+            {
+                lsnormal[XDIR] += phi(i+l,j+m,k+n)*
+                    basisvalder(XDIR,l,m,n,i,j,k,ptxyz,problo,ls_dx);
+                lsnormal[YDIR] += phi(i+l,j+m,k+n)*
+                    basisvalder(YDIR,l,m,n,i,j,k,ptxyz,problo,ls_dx);
+                lsnormal[ZDIR] += phi(i+l,j+m,k+n)*
+                    basisvalder(ZDIR,l,m,n,i,j,k,ptxyz,problo,ls_dx);
+            }
+        }
+    }
+    
+    amrex::Real ls_inv_norm = 1.0 / sqrt(dotpdt(lsnormal, lsnormal));
+    lsnormal[0] *= ls_inv_norm;
+    lsnormal[1] *= ls_inv_norm;
+    lsnormal[2] *= ls_inv_norm;
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -68,7 +213,7 @@ amrex::Real interp_level_set (BDEMParticleContainer::ParticleType const& p,
     scaled_dxi[0] = n_refine * dxi[0];
     scaled_dxi[1] = n_refine * dxi[1];
     scaled_dxi[2] = n_refine * dxi[2];
-    
+
     amrex::Real x = (p.pos(0) - plo[0]) * scaled_dxi[0];
     amrex::Real y = (p.pos(1) - plo[1]) * scaled_dxi[1];
     amrex::Real z = (p.pos(2) - plo[2]) * scaled_dxi[2];
@@ -76,11 +221,11 @@ amrex::Real interp_level_set (BDEMParticleContainer::ParticleType const& p,
     int i = static_cast<int>(std::floor(x));
     int j = static_cast<int>(std::floor(y));
     int k = static_cast<int>(std::floor(z));
-    
+
     amrex::Real wx_hi = x - i;
     amrex::Real wy_hi = y - j;
     amrex::Real wz_hi = z - k;
-    
+
     amrex::Real wx_lo = 1.0 - wx_hi;
     amrex::Real wy_lo = 1.0 - wy_hi;
     amrex::Real wz_lo = 1.0 - wz_hi;
@@ -94,7 +239,7 @@ amrex::Real interp_level_set (BDEMParticleContainer::ParticleType const& p,
     ls_value += phi(i+1, j  , k+1) * wx_hi * wy_lo * wz_hi;
     ls_value += phi(i  , j+1, k+1) * wx_lo * wy_hi * wz_hi;
     ls_value += phi(i+1, j+1, k+1) * wx_hi * wy_hi * wz_hi;
-    
+
     return ls_value;
 }
 
@@ -110,7 +255,7 @@ void level_set_normal (BDEMParticleContainer::ParticleType const& p,
     scaled_dxi[0] = n_refine * dxi[0];
     scaled_dxi[1] = n_refine * dxi[1];
     scaled_dxi[2] = n_refine * dxi[2];
-    
+
     amrex::Real x = (p.pos(0) - plo[0]) * scaled_dxi[0];
     amrex::Real y = (p.pos(1) - plo[1]) * scaled_dxi[1];
     amrex::Real z = (p.pos(2) - plo[2]) * scaled_dxi[2];
@@ -158,7 +303,7 @@ void level_set_normal (BDEMParticleContainer::ParticleType const& p,
     normal[2] -= phi(i+1, j+1, k  ) * scaled_dxi[2] * wx_hi * wy_hi;
     normal[2] += phi(i+1, j+1, k+1) * scaled_dxi[2] * wx_hi * wy_hi;
     
-    amrex::Real inv_norm = 1.0 / sqrt(dot_product(normal, normal));
+    amrex::Real inv_norm = 1.0 / sqrt(dotpdt(normal, normal));
     normal[0] *= inv_norm;
     normal[1] *= inv_norm;
     normal[2] *= inv_norm;
@@ -179,12 +324,12 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
     Real rp = p.rdata(realData::radius);
     Real overlap_n = rp - walldist;
 
-    cross_product(v_rot, normal, cprod);
+    crosspdt(v_rot, normal, cprod);
     vreltrans[0] = p.rdata(realData::xvel) + cprod[0];
     vreltrans[1] = p.rdata(realData::yvel) + cprod[1];
     vreltrans[2] = p.rdata(realData::zvel) + cprod[2];
 
-    Real vreltrans_norm = dot_product(vreltrans, normal);
+    Real vreltrans_norm = dotpdt(vreltrans, normal);
 
     Real vrel_t[3];
     vrel_t[0] = vreltrans[0] - vreltrans_norm*normal[0];
@@ -193,38 +338,38 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
 
     int phase = p.idata(intData::phase);
 
-    Real kn_des_w = DEM::k_n_wall;
+    Real kn_dem_w = DEM::k_n_wall;
     Real meff = p.rdata(realData::mass);
-    Real etan_des_w = two*sqrt(DEM::k_n_wall*meff)*fabs(log(DEM::e_n_wall));
-    etan_des_w /= sqrt(PI*PI + log(DEM::e_n_wall)*log(DEM::e_n_wall));
+    Real etan_dem_w = two*sqrt(DEM::k_n_wall*meff)*fabs(log(DEM::e_n_wall));
+    etan_dem_w /= sqrt(PI*PI + log(DEM::e_n_wall)*log(DEM::e_n_wall));
 
-    Real kt_des_w = DEM::k_t_wall;
+    Real kt_dem_w = DEM::k_t_wall;
     Real Reff = rp;
     Real rad1 = rp;
-    Real etat_des_w = two*sqrt(DEM::k_t_wall*meff)*fabs(log(DEM::e_t_wall));
-    etat_des_w /= sqrt(PI*PI + log(DEM::e_t_wall)*log(DEM::e_t_wall));
+    Real etat_dem_w = two*sqrt(DEM::k_t_wall*meff)*fabs(log(DEM::e_t_wall));
+    etat_dem_w /= sqrt(PI*PI + log(DEM::e_t_wall)*log(DEM::e_t_wall));
 
     Real overlap_t[3];
     Real mag_overlap_t;
 
     // calculate the normal contact force
-    fn[0] = -(kn_des_w*overlap_n*normal[0]
-            + etan_des_w*vreltrans_norm*normal[0]);
-    fn[1] = -(kn_des_w*overlap_n*normal[1]
-            + etan_des_w*vreltrans_norm*normal[1]);
-    fn[2] = -(kn_des_w*overlap_n*normal[2]
-            + etan_des_w*vreltrans_norm*normal[2]);
+    fn[0] = -(kn_dem_w*overlap_n*normal[0]
+            + etan_dem_w*vreltrans_norm*normal[0]);
+    fn[1] = -(kn_dem_w*overlap_n*normal[1]
+            + etan_dem_w*vreltrans_norm*normal[1]);
+    fn[2] = -(kn_dem_w*overlap_n*normal[2]
+            + etan_dem_w*vreltrans_norm*normal[2]);
 
     // calculate the tangential displacement
     overlap_t[0] = dt*vrel_t[0];
     overlap_t[1] = dt*vrel_t[1];
     overlap_t[2] = dt*vrel_t[2];
 
-    mag_overlap_t = sqrt(dot_product(overlap_t, overlap_t));
+    mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
 
     if (mag_overlap_t > zero)
     {
-        Real fnmd = DEM::mu_wall * sqrt(dot_product(fn, fn));
+        Real fnmd = DEM::mu_wall * sqrt(dotpdt(fn, fn));
         Real ftsp[THREEDIM];
         Real ftn[THREEDIM];
         Real mag_ftsp;
@@ -234,21 +379,21 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
         tangent[YDIR] = overlap_t[YDIR]/mag_overlap_t;
         tangent[ZDIR] = overlap_t[ZDIR]/mag_overlap_t;
         // calculate the tangential contact force
-        Real overlap_t_tan = dot_product(overlap_t,tangent);
-        Real vrel_t_tan = dot_product(vrel_t,tangent);
+        Real overlap_t_tan = dotpdt(overlap_t,tangent);
+        Real vrel_t_tan = dotpdt(vrel_t,tangent);
         // calculate the tangential contact force
-        ftsp[XDIR] = -(kt_des_w*overlap_t_tan*tangent[XDIR]
-                + etat_des_w*vrel_t_tan*tangent[XDIR]);
-        ftsp[YDIR] = -(kt_des_w*overlap_t_tan*tangent[YDIR]
-                + etat_des_w*vrel_t_tan*tangent[YDIR]);
-        ftsp[ZDIR] = -(kt_des_w*overlap_t_tan*tangent[ZDIR]
-                + etat_des_w*vrel_t_tan*tangent[ZDIR]);
+        ftsp[XDIR] = -(kt_dem_w*overlap_t_tan*tangent[XDIR]
+                + etat_dem_w*vrel_t_tan*tangent[XDIR]);
+        ftsp[YDIR] = -(kt_dem_w*overlap_t_tan*tangent[YDIR]
+                + etat_dem_w*vrel_t_tan*tangent[YDIR]);
+        ftsp[ZDIR] = -(kt_dem_w*overlap_t_tan*tangent[ZDIR]
+                + etat_dem_w*vrel_t_tan*tangent[ZDIR]);
 
         ftn[XDIR] = -fnmd * tangent[XDIR];
         ftn[YDIR] = -fnmd * tangent[YDIR];
         ftn[ZDIR] = -fnmd * tangent[ZDIR];
-        mag_ftsp = sqrt(dot_product(ftsp,ftsp));
-        mag_ftn = sqrt(dot_product(ftn,ftn));
+        mag_ftsp = sqrt(dotpdt(ftsp,ftsp));
+        mag_ftn = sqrt(dotpdt(ftn,ftn));
         if (mag_ftsp < mag_ftn)
         {
             ft[XDIR] = ftsp[XDIR];
@@ -273,8 +418,8 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
     omega_r[XDIR] = p.rdata(realData::xangvel);
     omega_r[YDIR] = p.rdata(realData::yangvel);
     omega_r[ZDIR] = p.rdata(realData::zangvel);
-    Real mag_omegar = sqrt(dot_product(omega_r,omega_r));
-    Real mag_fn = sqrt(dot_product(fn,fn));
+    Real mag_omegar = sqrt(dotpdt(omega_r,omega_r));
+    Real mag_fn = sqrt(dotpdt(fn,fn));
     if (mag_omegar > zero)
     {
         Real nomega[THREEDIM];
@@ -286,7 +431,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
         Froll[XDIR] = -DEM::muR_wall * mag_fn * vRatio[XDIR];
         Froll[YDIR] = -DEM::muR_wall * mag_fn * vRatio[YDIR];
         Froll[ZDIR] = -DEM::muR_wall * mag_fn * vRatio[ZDIR];
-        cross_product(normal, Froll, nFr);
+        crosspdt(normal, Froll, nFr);
     }
     else
     {
@@ -295,5 +440,3 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
         nFr[ZDIR] = zero;
     }
 }
-
-

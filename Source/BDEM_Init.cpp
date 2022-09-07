@@ -1,5 +1,5 @@
 #include <BDEM_ParticleContainer.H>
-#include <BDEM_Kernels.H>
+#include <BDEM_Collide_Utils.H>
 #include <stl_tools/STLtools.H>
 
 void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_heat_transfer)

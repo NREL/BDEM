@@ -85,7 +85,7 @@ amrex::ParallelFor(np,[=]
         p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
         p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
 
-        cross_product(normal, ft, tow);
+        crosspdt(normal, ft, tow);
 
         p.rdata(realData::taux) += walldist*(tow[XDIR] + nFr[XDIR]);
         p.rdata(realData::tauy) += walldist*(tow[YDIR] + nFr[YDIR]);

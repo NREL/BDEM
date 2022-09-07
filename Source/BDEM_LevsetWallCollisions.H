@@ -7,6 +7,12 @@ amrex::ParallelFor(np,[=]
     Real rp = p.rdata(realData::radius);
 
     Real ls_value = interp_level_set(p, ls_refinement, phiarr, plo, dxi);
+    Real ls_value_test = get_levelset_value(p, ls_refinement, phiarr, plo, dx);
+
+    if(amrex::Math::abs(ls_value-ls_value_test)>1e-10)
+    {
+        amrex::AllPrint()<<"error in ls_value\n";
+    }
 
     if (ls_value < rp)
     {
@@ -34,7 +40,7 @@ amrex::ParallelFor(np,[=]
 
         Real tow[3];
 
-        cross_product(normal, ft, tow);
+        crosspdt(normal, ft, tow);
 
         p.rdata(realData::taux) += ls_value*(tow[XDIR] + nFr[XDIR]);
         p.rdata(realData::tauy) += ls_value*(tow[YDIR] + nFr[YDIR]);

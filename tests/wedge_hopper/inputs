@@ -27,17 +27,17 @@ bdem.dens_autogen = 1000.0
 
 #particle intrinsics
 bdem.normal_spring_constant = 10
-bdem.normal_restitution_coefficient = 0.8
+bdem.normal_restitution_coefficient = 0.1
 bdem.friction_coefficient = 0.1
 bdem.tangential_spring_constant = 0.1
-bdem.tangential_restitution_coefficient = 0.8
+bdem.tangential_restitution_coefficient = 0.2
 bdem.rolling_friction_coefficient = 0.0
 
 bdem.wall_normal_spring_constant = 10
-bdem.wall_normal_restitution_coefficient = 0.8
+bdem.wall_normal_restitution_coefficient = 0.1
 bdem.wall_friction_coefficient = 0.1
 bdem.wall_tangential_spring_constant = 10
-bdem.wall_tangential_restitution_coefficient = 0.8
+bdem.wall_tangential_restitution_coefficient = 0.1
 bdem.wall_rolling_friction_coefficient = 0.1
 
 bdem.gravity = 0.0 -9.8 0.0

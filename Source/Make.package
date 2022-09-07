@@ -1,4 +1,4 @@
 CEXE_sources += main.cpp BDEM_ParticleContainer.cpp BDEM_Init.cpp BDEM_EB.cpp 
 
-CEXE_headers += BDEM_ParticleContainer.H BDEM_Specs.H BDEM_CheckPair.H BDEM_Kernels.H Constants.H BDEM_EB.H
+CEXE_headers += BDEM_ParticleContainer.H BDEM_Specs.H BDEM_CheckPair.H BDEM_Collide_Utils.H Constants.H BDEM_EB.H
 CEXE_headers += BDEM_ParticleCollisions.H BDEM_LevsetWallCollisions.H BDEM_CartWallCollisions.H WallTemp.H
