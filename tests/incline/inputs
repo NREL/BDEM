@@ -1,0 +1,43 @@
+#geometry parameters
+bdem.prob_lo        = 0.      0.     0.      # lo corner of physical domain
+bdem.prob_hi        = 0.01   0.01    0.01    # hi corner of physical domain
+bdem.ncells         = 32     32     32 
+bdem.max_grid_size  = 8
+bdem.is_it_periodic = 0      0      0
+
+#0 - outflow
+#1 - wall
+bdem.bc_lower = 1 1 1
+bdem.bc_upper = 1 1 1
+
+#timestepping
+bdem.final_time=0.5
+bdem.max_steps=100000000
+bdem.write_output_time=0.01
+bdem.num_redist = 5
+bdem.cfl = 0.02
+bdem.init_particles_using_file = 0
+
+bdem.mincoords_autogen =  0.0       0.006    0.0
+bdem.maxcoords_autogen =  0.01      0.007    0.01
+bdem.meanvel_autogen   = 0 0 0
+bdem.fluctuation_autogen   = 0.0 0.0 0.0
+bdem.radius_autogen = 10e-5
+bdem.dens_autogen = 1000.0
+
+#particle intrinsics
+bdem.normal_spring_constant = 20
+bdem.normal_restitution_coefficient = 0.9
+bdem.friction_coefficient = 0.1
+bdem.tangential_spring_constant = 0.1
+bdem.tangential_restitution_coefficient = 0.9
+bdem.rolling_friction_coefficient = 0.1
+
+bdem.gravity = 0.0 -9.8 0.0
+bdem.stl_file=incline.stl
+
+#bdem.kind_of_geometry="eb2"
+#bdem.refine_level_set=1
+#eb2.geom_type="plane"
+#eb2.plane_point=0.0025 0.0025 0.005
+#eb2.plane_normal=-0.7071 -0.7071 0.0
