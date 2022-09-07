@@ -241,17 +241,17 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
         {
             const auto phiarr = lsmfab->array(mfi);
             amrex::ParallelFor(np,[=]
-                    AMREX_GPU_DEVICE (int i) noexcept
-                    {
-                    ParticleType& p = pstruct[i];
-                    Real rp = p.rdata(realData::radius);
+                  AMREX_GPU_DEVICE (int i) noexcept
+            {
+                ParticleType& p = pstruct[i];
+                Real rp = p.rdata(realData::radius);
 
-                    Real ls_value = interp_level_set(p, ls_refinement, phiarr, plo, dxi);
-                    if(ls_value < rp)
-                    {
+                Real ls_value = get_levelset_value(p, ls_refinement, phiarr, plo, dx);
+                if(ls_value < rp)
+                {
                     p.id()=-1;   
-                    }
-                    });
+                }
+            });
         }
     }
     Redistribute();
@@ -280,52 +280,52 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
         ParticleType* pstruct = aos().dataPtr();
 
         amrex::ParallelFor(np,[=]
-                AMREX_GPU_DEVICE (int i) noexcept
-                {
-                ParticleType& p = pstruct[i];
-            Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
-            Real ploc_t[3]={0.0};
-            Real t1[3],t2[3],t3[3];
-            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-            int num_intersects=0;
+                           AMREX_GPU_DEVICE (int i) noexcept
+                           {
+                               ParticleType& p = pstruct[i];
+                               Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
+                               Real ploc_t[3]={0.0};
+                               Real t1[3],t2[3],t3[3];
+                               Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+                               int num_intersects=0;
 
-            for(int dim=0;dim<3;dim++)
-            {
-                for(int j=0;j<3;j++)
-                {
-                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
-                }
-            }
+                               for(int dim=0;dim<3;dim++)
+                               {
+                                   for(int j=0;j<3;j++)
+                                   {
+                                       ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                                   }
+                               }
 
-            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-                    (ploc_t[0]<STLtools::bbox_hi[0]) &&
-                    (ploc_t[1]>STLtools::bbox_lo[1]) &&
-                    (ploc_t[1]<STLtools::bbox_hi[1]) &&
-                    (ploc_t[2]>STLtools::bbox_lo[2]) &&
-                    (ploc_t[2]<STLtools::bbox_hi[2]) )
-            {
-                for(int tr=0;tr<STLtools::num_tri;tr++)
-                {
-                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+                               if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+                                  (ploc_t[0]<STLtools::bbox_hi[0]) &&
+                                  (ploc_t[1]>STLtools::bbox_lo[1]) &&
+                                  (ploc_t[1]<STLtools::bbox_hi[1]) &&
+                                  (ploc_t[2]>STLtools::bbox_lo[2]) &&
+                                  (ploc_t[2]<STLtools::bbox_hi[2]) )
+                               {
+                                   for(int tr=0;tr<STLtools::num_tri;tr++)
+                                   {
+                                       t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                                       t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                                       t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                                       t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                                       t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                                       t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                                       t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                                       t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                                       t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                }
-                if(num_intersects%2 == 1)
-                {
-                    p.id()=-1;   
-                }
-            }
-        });
+                                       num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                                   }
+                                   if(num_intersects%2 == 1)
+                                   {
+                                       p.id()=-1;   
+                                   }
+                               }
+                           });
     }
 
     Redistribute();
