@@ -17,15 +17,24 @@ amrex::ParallelFor(np,[=]
     if (ls_value < rp)
     {
         Real normal[3],fn[3],ft[3],nFr[3];
+        Real normal_test[3];
 
         level_set_normal(p, ls_refinement, &normal[0], phiarr, plo, dxi);
-        
-        /*if(amrex::Math::abs(ls_value)>rp)
+        get_levelset_normal(p,ls_refinement,phiarr,plo,dx,normal_test);
+
+        if(amrex::Math::abs(normal[0]-normal_test[0]) +
+           amrex::Math::abs(normal[1]-normal_test[1]) +
+           amrex::Math::abs(normal[2]-normal_test[2]) > 1e-10)
         {
-            amrex::Print()<<"mindist,rad from lsets:"<<ls_value<<"\t"<<rp
-            <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)
-            <<"\t"<<p.pos(2)<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<"\n";
-        }*/
+            amrex::AllPrint()<<"error in ls_normal\n";
+        }
+
+        /*if(amrex::Math::abs(ls_value)>rp)
+          {
+          amrex::Print()<<"mindist,rad from lsets:"<<ls_value<<"\t"<<rp
+          <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)
+          <<"\t"<<p.pos(2)<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<"\n";
+          }*/
 
         normal[0] *= -1;
         normal[1] *= -1;

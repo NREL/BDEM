@@ -160,7 +160,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void get_levelset_normal(
         BDEMParticleContainer::ParticleType const& p,
         const int lsref,
-        amrex::Array4<amrex::Real> phi,
+        amrex::Array4<amrex::Real const> const& phi,
         const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
         const amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx,
         amrex::Real lsnormal[AMREX_SPACEDIM])

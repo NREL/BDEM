@@ -13,9 +13,9 @@ amrex::ParallelFor(np,[=]
         dist_y*dist_y +
         dist_z*dist_z;
 
-        Real r_lm = p1.rdata(realData::radius) + p2.rdata(realData::radius);
+        Real rad_sum = p1.rdata(realData::radius) + p2.rdata(realData::radius);
 
-        if ( dist2 <= (r_lm - TINYVAL)*(r_lm - TINYVAL) and (p1.id() != p2.id()))
+        if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()))
         {
             Real distmag     = sqrt(dist2);
 
@@ -28,7 +28,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR] = dist_y*distmag_inv;
             normal[ZDIR] = dist_z*distmag_inv;
 
-            Real overlap_n = r_lm - distmag;
+            Real overlap_n = rad_sum - distmag;
             Real vrel_trans_norm;
             Real vrel_t[THREEDIM];
             Real vRoll[THREEDIM];
@@ -72,8 +72,6 @@ amrex::ParallelFor(np,[=]
             overlap_t[YDIR] = dt*vrel_t[YDIR];
             overlap_t[ZDIR] = dt*vrel_t[ZDIR];
             mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
-
-
 
             if (mag_overlap_t > zero)
             {
