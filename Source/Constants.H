@@ -5,7 +5,8 @@
 #define XDIR 0
 #define YDIR 1
 #define ZDIR 2
-#define WALL_BC 1
+#define HARDWALL_BC 1
+#define SOFTWALL_BC 2
 #define MAXSPECIES 5
 
 #define NTP_TEMP 293

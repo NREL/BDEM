@@ -11,7 +11,7 @@ amrex::ParallelFor(np,[=]
     Real tow[3];
     int dir=XDIR;
 
-    if (x_lo_bc==WALL_BC and p.pos(XDIR) < (plo[XDIR]+rp))
+    if (x_lo_bc==SOFTWALL_BC and p.pos(XDIR) < (plo[XDIR]+rp))
     {
         dir=XDIR;
         walldist=p.pos(dir)-plo[dir];
@@ -21,7 +21,7 @@ amrex::ParallelFor(np,[=]
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
     }
-    else if (x_hi_bc==WALL_BC and p.pos(XDIR) > (phi[XDIR]-rp))
+    else if (x_hi_bc==SOFTWALL_BC and p.pos(XDIR) > (phi[XDIR]-rp))
     {
         dir=XDIR;
         walldist=phi[dir]-p.pos(dir);
@@ -31,7 +31,7 @@ amrex::ParallelFor(np,[=]
         normal[ZDIR]=0.0;
         normal[dir]=1.0;
     }
-    else if (y_lo_bc==WALL_BC and p.pos(YDIR) < (plo[YDIR]+rp))
+    else if (y_lo_bc==SOFTWALL_BC and p.pos(YDIR) < (plo[YDIR]+rp))
     {
         dir=YDIR;
         walldist=p.pos(dir)-plo[dir];
@@ -41,7 +41,7 @@ amrex::ParallelFor(np,[=]
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
     }
-    else if (y_hi_bc==WALL_BC and p.pos(YDIR) > (phi[YDIR]-rp))
+    else if (y_hi_bc==SOFTWALL_BC and p.pos(YDIR) > (phi[YDIR]-rp))
     {
         dir=YDIR;
         walldist=phi[dir]-p.pos(dir);
@@ -51,7 +51,7 @@ amrex::ParallelFor(np,[=]
         normal[ZDIR]=0.0;
         normal[dir]=1.0;
     }
-    else if (z_lo_bc==WALL_BC and p.pos(ZDIR) < (plo[ZDIR]+rp))
+    else if (z_lo_bc==SOFTWALL_BC and p.pos(ZDIR) < (plo[ZDIR]+rp))
     {
         dir=ZDIR;
         walldist=p.pos(dir)-plo[dir];
@@ -61,7 +61,7 @@ amrex::ParallelFor(np,[=]
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
     }
-    else if (z_hi_bc==WALL_BC and p.pos(ZDIR) > (phi[ZDIR]-rp))
+    else if (z_hi_bc==SOFTWALL_BC and p.pos(ZDIR) > (phi[ZDIR]-rp))
     {
         dir=ZDIR;
         walldist=phi[dir]-p.pos(dir);

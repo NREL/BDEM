@@ -206,6 +206,13 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
 
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
     {
+        int x_lo_bc = domain_bc[0];
+        int x_hi_bc = domain_bc[1];
+        int y_lo_bc = domain_bc[2];
+        int y_hi_bc = domain_bc[3];
+        int z_lo_bc = domain_bc[4];
+        int z_hi_bc = domain_bc[5];
+        
         int gid = mfi.index();
         int tid = mfi.LocalTileIndex();
         auto index = std::make_pair(gid, tid);
@@ -217,7 +224,7 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
 
         // now we move the particles
         amrex::ParallelFor(np,[=]
-               AMREX_GPU_DEVICE (int i) noexcept
+        AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
             Real pos_old[3];
@@ -252,8 +259,8 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
                 }
 
                 getProductionRate(nspecies,nsolidspecs,nreac,spec,molwts,p.rdata(realData::density), 
-                        p.rdata(realData::radius), p.rdata(realData::radinit), p.rdata(realData::temperature),
-                        solidspec_ids, reactmatrix, arrh_A, arrh_Ea, wdot);
+                                  p.rdata(realData::radius), p.rdata(realData::radinit), p.rdata(realData::temperature),
+                                  solidspec_ids, reactmatrix, arrh_A, arrh_Ea, wdot);
 
                 for(int sp=0;sp<nspecies;sp++)
                 {
@@ -267,6 +274,38 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
                     p.rdata(realData::radius)=minrad;
                 }
             }
+
+            if (x_lo_bc==HARDWALL_BC and p.pos(0) < plo[0])
+            {
+                p.pos(0) = two*plo[0] - p.pos(0);
+                p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+            }
+            if (x_hi_bc==HARDWALL_BC and p.pos(0) > phi[0])
+            {
+                p.pos(0) = two*phi[0] - p.pos(0);
+                p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+            }
+            if (y_lo_bc==HARDWALL_BC and p.pos(1) < plo[1])
+            {
+                p.pos(1) = two*plo[1] - p.pos(1);
+                p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+            }
+            if (y_hi_bc==HARDWALL_BC and p.pos(1) > phi[1])
+            {
+                p.pos(1) = two*phi[1] - p.pos(1);
+                p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+            }
+            if (z_lo_bc==HARDWALL_BC and p.pos(2) < plo[2])
+            {
+                p.pos(2) = two*plo[2] - p.pos(2);
+                p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+            }
+            if (z_hi_bc==HARDWALL_BC and p.pos(2) > phi[2])
+            {
+                p.pos(2) = two*phi[2] - p.pos(2);
+                p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+            }
+
         });
 
     }
