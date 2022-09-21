@@ -411,6 +411,7 @@ void BDEMParticleContainer::reassignParticles_softwall()
                 p.pos(0)=p.rdata(realData::posx_prvs);
                 p.pos(1)=p.rdata(realData::posy_prvs);
                 p.pos(2)=p.rdata(realData::posz_prvs);
+                p.idata(intData::near_softwall)=0;
             }
         });
     }

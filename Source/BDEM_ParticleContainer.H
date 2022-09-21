@@ -66,13 +66,9 @@ public:
         const int nGrow = 0;
         if(using_softwalls)
         {
-            bpc.saveParticles_softwall(); 
+            saveParticles_softwall(); 
         }
         Redistribute (lev_min,lev_max,nGrow,local);
-        if(specs.using_softwalls)
-        {
-            bpc.reassignParticles_softwall(); 
-        }
     }
 
     void set_domain_bcs(Vector<int> bclo,Vector<int> bchi)
