@@ -146,7 +146,9 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens, specs.particle_sourcing_temp,
                                    specs.particle_sourcing_species_massfracs.data(),
                                    specs.particle_sourcing_multi_part_per_cell);
-                bpc.RedistributeLocal();
+
+                bpc.redist_particles(1,specs.using_softwalls);
+                
                 bpc.fillNeighbors();
                 bpc.buildNeighborList(CheckPair());
                 amrex::Print()<<"adding particles\n";
@@ -156,7 +158,7 @@ int main (int argc, char* argv[])
 
             if (steps % specs.num_redist == 0)
             {
-                bpc.RedistributeLocal();
+                bpc.redist_particles(1,specs.using_softwalls);
                 bpc.fillNeighbors();
                 bpc.buildNeighborList(CheckPair());
             } 
@@ -217,7 +219,7 @@ int main (int argc, char* argv[])
             {
                 if (output_timeMass > specs.massflow_output_time)
                 {
-                    bpc.Redistribute();
+                    bpc.redist_particles(0,specs.using_softwalls);
                     bpc.fillNeighbors();
                     bpc.buildNeighborList(CheckPair());
                     PrintToFile("Total_Mass") << time << "\t" << bpc.TotalNumberOfParticles() <<"\n";
@@ -229,7 +231,7 @@ int main (int argc, char* argv[])
             {
                 BL_PROFILE_VAR("OUTPUT_TIME",outputs);
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
-                bpc.Redistribute();
+                bpc.redist_particles(0,specs.using_softwalls);
                 bpc.fillNeighbors();
                 bpc.buildNeighborList(CheckPair());
                 output_it++;
@@ -249,7 +251,7 @@ int main (int argc, char* argv[])
             steps++;
         }
 
-        bpc.Redistribute();
+        bpc.redist_particles(0,specs.using_softwalls);
         bpc.writeParticles(output_it+1+specs.stepoffset);
         const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");

@@ -311,6 +311,111 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
     }
 }
 
+void BDEMParticleContainer::saveParticles_softwall()
+{
+    BL_PROFILE("BDEMParticleContainer::saveParticles_softwall");
+
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    const auto plo = Geom(lev).ProbLoArray();
+    const auto phi = Geom(lev).ProbHiArray();
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int x_lo_bc = domain_bc[0];
+        int x_hi_bc = domain_bc[1];
+        int y_lo_bc = domain_bc[2];
+        int y_hi_bc = domain_bc[3];
+        int z_lo_bc = domain_bc[4];
+        int z_hi_bc = domain_bc[5];
+        
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        ParticleType* pstruct = aos().dataPtr();
+
+        // now we move the particles
+        amrex::ParallelFor(np,[=]
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            p.rdata(realData::posx_prvs)=p.pos(0);
+            p.rdata(realData::posy_prvs)=p.pos(1);
+            p.rdata(realData::posz_prvs)=p.pos(2);
+            p.idata(intData::near_softwall)=0;
+            
+            if (x_lo_bc==SOFTWALL_BC and p.pos(0) < plo[0])
+            {
+                p.pos(0) = two*plo[0] - p.pos(0);
+                p.idata(intData::near_softwall)=1;
+            }
+            if (x_hi_bc==SOFTWALL_BC and p.pos(0) > phi[0])
+            {
+                p.pos(0) = two*phi[0] - p.pos(0);
+                p.idata(intData::near_softwall)=1;
+            }
+            if (y_lo_bc==SOFTWALL_BC and p.pos(1) < plo[1])
+            {
+                p.pos(1) = two*plo[1] - p.pos(1);
+                p.idata(intData::near_softwall)=1;
+            }
+            if (y_hi_bc==SOFTWALL_BC and p.pos(1) > phi[1])
+            {
+                p.pos(1) = two*phi[1] - p.pos(1);
+                p.idata(intData::near_softwall)=1;
+            }
+            if (z_lo_bc==SOFTWALL_BC and p.pos(2) < plo[2])
+            {
+                p.pos(2) = two*plo[2] - p.pos(2);
+                p.idata(intData::near_softwall)=1;
+            }
+            if (z_hi_bc==SOFTWALL_BC and p.pos(2) > phi[2])
+            {
+                p.pos(2) = two*phi[2] - p.pos(2);
+                p.idata(intData::near_softwall)=1;
+            }
+        });
+    }
+}
+
+void BDEMParticleContainer::reassignParticles_softwall()
+{
+    BL_PROFILE("BDEMParticleContainer::reassignParticles_softwall");
+
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        ParticleType* pstruct = aos().dataPtr();
+
+        // now we move the particles
+        amrex::ParallelFor(np,[=]
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            if(p.idata(intData::near_softwall)==1)
+            {
+                p.pos(0)=p.rdata(realData::posx_prvs);
+                p.pos(1)=p.rdata(realData::posy_prvs);
+                p.pos(2)=p.rdata(realData::posz_prvs);
+            }
+        });
+    }
+}
+
 void BDEMParticleContainer::writeParticles(const int n)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");
@@ -341,6 +446,9 @@ void BDEMParticleContainer::writeParticles(const int n)
     real_data_names.push_back("mass");
     real_data_names.push_back("density");
     real_data_names.push_back("temperature");
+    real_data_names.push_back("posx_prvs");
+    real_data_names.push_back("posy_prvs");
+    real_data_names.push_back("posz_prvs");
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -354,6 +462,7 @@ void BDEMParticleContainer::writeParticles(const int n)
     }
 
     int_data_names.push_back("phase");
+    int_data_names.push_back("near_softwall");
 
     writeflags_real[realData::radius]=1;
     writeflags_real[realData::xvel]=1;
