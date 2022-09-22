@@ -1,7 +1,6 @@
 #include <AMReX.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_MultiFab.H>
-#include <BDEM_CheckPair.H>
 #include <BDEM_ParticleContainer.H>
 #include <BDEM_EB.H>
 #include <STLtools.H>
@@ -148,8 +147,6 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_multi_part_per_cell);
 
                 bpc.redist_particles(1,specs.using_softwalls);
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
                 amrex::Print()<<"adding particles\n";
                 if(specs.using_softwalls)
                 {
@@ -162,8 +159,6 @@ int main (int argc, char* argv[])
             if (steps % specs.num_redist == 0)
             {
                 bpc.redist_particles(1,specs.using_softwalls);
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
                 if(specs.using_softwalls)
                 {
                     bpc.reassignParticles_softwall(); 
@@ -227,8 +222,6 @@ int main (int argc, char* argv[])
                 if (output_timeMass > specs.massflow_output_time)
                 {
                     bpc.redist_particles(0,specs.using_softwalls);
-                    bpc.fillNeighbors();
-                    bpc.buildNeighborList(CheckPair());
                     if(specs.using_softwalls)
                     {
                         bpc.reassignParticles_softwall(); 
@@ -243,8 +236,6 @@ int main (int argc, char* argv[])
                 BL_PROFILE_VAR("OUTPUT_TIME",outputs);
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
                 bpc.redist_particles(0,specs.using_softwalls);
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
                 output_it++;
                 bpc.writeParticles(output_it+specs.stepoffset);
                 const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);

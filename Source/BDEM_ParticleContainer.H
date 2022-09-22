@@ -6,6 +6,7 @@
 #include <BDEM_Specs.H>
 #include <Constants.H>
 #include <Mechanism.H>
+#include <BDEM_CheckPair.H>
 
 
 class BDEMParticleContainer
@@ -69,6 +70,9 @@ public:
             saveParticles_softwall(); 
         }
         Redistribute (lev_min,lev_max,nGrow,local);
+
+        fillNeighbors();
+        buildNeighborList(CheckPair());
     }
 
     void set_domain_bcs(Vector<int> bclo,Vector<int> bchi)
