@@ -23,6 +23,6 @@ void move_this_point(amrex::Real coord[3],amrex::Real newcoord[3],amrex::Real ti
         amrex::Real cos_theta=(coord[t1]-center[t1])/rad;
         newcoord[t1] += -movevel*rad*sin_theta*timestep;
         newcoord[t2] +=  movevel*rad*cos_theta*timestep;
-        newcoord[movedir] = 0.0;
+        newcoord[movedir] += 0.0;
    }
 }
