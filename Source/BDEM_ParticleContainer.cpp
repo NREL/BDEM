@@ -55,9 +55,9 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
     bool resolve_levset_wall_collisions=(eb_factory != NULL);
     
-    //std::map<PairIndex, bool> tile_has_walls;
+    std::map<PairIndex, bool> particle_tile_has_walls;
 
-    /*if(resolve_wall_collisions)
+    if(resolve_levset_wall_collisions)
     {
         const FabArray<EBCellFlagFab>* flags = &(eb_factory->getMultiEBCellFlagFab());
 
@@ -73,47 +73,12 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             phibx.surroundingNodes();
 
             bool has_wall = false;
-            if ((eb_factory != NULL)
-                    and ((*flags)[mfi].getType(amrex::grow(bx,1)) == FabType::singlevalued))
+            if ((*flags)[mfi].getType(amrex::grow(bx,1)) == FabType::singlevalued)
             {
-                has_wall = true;
+                particle_tile_has_walls[index] = true;
             }
-            else
-            {
-                int int_has_wall = 0;
-                Real tol = std::min(dx[0], std::min(dx[1], dx[2])) / 2;
-                Array4<const Real> const& phi = lsmfab->array(mfi);
-
-#ifdef AMREX_USE_GPU
-                Gpu::DeviceScalar<int> has_wall_gpu(int_has_wall);
-                int* p_has_wall = has_wall_gpu.dataPtr();
-#endif
-                amrex::ParallelFor(phibx, [phi,tol,
-#ifdef AMREX_USE_GPU
-                        p_has_wall]
-#else
-                        &int_has_wall]
-#endif
-                        AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                        if(phi(i,j,k) <= tol)
-#ifdef AMREX_USE_GPU
-                        *p_has_wall = 1;
-#else
-                        int_has_wall = 1;
-#endif
-                        });
-
-#ifdef AMREX_USE_GPU
-                Gpu::synchronize();
-                has_wall = has_wall_gpu.dataValue();
-#endif
-                has_wall = (int_has_wall > 0);
-            }
-
-            tile_has_walls[index] = has_wall;
         }
-    }*/
+    }
 
     //zero forces
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
@@ -165,7 +130,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
         if(resolve_levset_wall_collisions)
         {
-            //if (tile_has_walls[index])
+            if (particle_tile_has_walls[index])
             {
 #include"BDEM_LevsetWallCollisions.H"
             }
