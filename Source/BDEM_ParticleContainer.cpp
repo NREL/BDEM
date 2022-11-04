@@ -304,7 +304,6 @@ void BDEMParticleContainer::saveParticles_softwall()
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
 
-        // now we move the particles
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
