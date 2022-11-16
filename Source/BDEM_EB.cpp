@@ -6,6 +6,92 @@ namespace EBtools
     MultiFab* lsphi=NULL;
     int ls_refinement=1;
     bool using_levelset_geometry=false;
+    
+    void make_conecup_levelset(const Geometry &geom, const BoxArray &ba, const DistributionMapping &dm)
+    {
+        int ls_ref = ls_refinement;
+        // Define nGrow of level-set and EB
+        int nghost = 1;
+
+        amrex::Real radius1     = 0.0002;
+        amrex::Real radius2     = 0.0002;
+        amrex::Real radius3     = 0.0002;
+        
+        amrex::Real height1     = 0.0002;
+        amrex::Real height2     = 0.0002;
+        amrex::Real height3     = 0.0002;
+        amrex::Real height4     = 0.0002;
+
+        amrex::ParmParse pp("conecup");
+        pp.get("radius1",     radius1);
+        pp.get("radius2",     radius2);
+        pp.get("radius3",     radius3);
+        
+        pp.get("height1",     height1);
+        pp.get("height2",     height2);
+        pp.get("height3",     height3);
+        pp.get("height4",     height4);
+    
+        const auto plo = geom.ProbLoArray();
+        const auto phi = geom.ProbHiArray();
+
+        Array<amrex::Real,3> frustum_point1 ={radius1,0.0,0.0};
+        Array<amrex::Real,3> frustum_normal1={height1,(radius1-radius2),0.0};
+        EB2::PlaneIF frustum1(frustum_point1, frustum_normal1);
+        
+        Array<amrex::Real,3> frustum_point2  = {radius2,height1+height2,0.0};
+        Array<amrex::Real,3> frustum_normal2 = {height3,(radius2-radius3),0.0};
+        EB2::PlaneIF frustum2(frustum_point2, frustum_normal2);
+        
+        Array<amrex::Real,3> cyl_point1={radius2,height1,0.0};
+        Array<amrex::Real,3> cyl_normal1={1.0,0.0,0.0};
+        EB2::PlaneIF cyl1(cyl_point1, cyl_normal1);
+        
+        Array<amrex::Real,3> cyl_point2={radius3,height1+height2+height3,0.0};
+        Array<amrex::Real,3> cyl_normal2={1.0,0.0,0.0};
+        EB2::PlaneIF cyl2(cyl_point2, cyl_normal2);
+
+        Array<Real,3> center={0.5*(plo[0]+phi[0]),0.5*(plo[1]+phi[1]),0.0};
+        auto conecup = EB2::translate(EB2::lathe(EB2::makeUnion(cyl1,frustum1,frustum2)),center);
+
+        //Define EB
+        auto conecup_gshop = EB2::makeShop(conecup);
+        
+        //make domain finer for levelset
+        Box dom_ls = geom.Domain();
+        dom_ls.refine(ls_ref);
+        Geometry geom_ls(dom_ls);
+
+        int required_coarsening_level = 0;
+        int max_coarsening_level=10;
+        if (ls_refinement > 1) 
+        {
+            int tmp = ls_refinement;
+            while (tmp >>= 1) ++required_coarsening_level;
+        }
+        
+        // Build EB
+        EB2::Build(conecup_gshop, geom_ls, 
+                required_coarsening_level, max_coarsening_level);
+        
+        const EB2::IndexSpace & ebis   = EB2::IndexSpace::top();
+        const EB2::Level &      eblev  = ebis.getLevel(geom);
+        //create lslev
+        const EB2::Level & lslev = ebis.getLevel(geom_ls);
+
+        //build factory
+        ebfactory = new EBFArrayBoxFactory(eblev, geom, ba, dm,
+                {nghost, nghost,
+                nghost}, EBSupport::full);
+
+        //create nodal multifab with level-set refinement
+	BoxArray ls_ba = amrex::convert(ba, IntVect::TheNodeVector());
+        ls_ba.refine(ls_ref);
+	lsphi = new MultiFab;
+        lsphi->define(ls_ba, dm, 1, nghost);
+        
+	amrex::FillSignedDistance (*lsphi,lslev,*ebfactory,ls_ref);
+    }
 
     void make_cylinder_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm)
     {
@@ -366,6 +452,11 @@ namespace EBtools
             {
                 using_levelset_geometry=true;
                 make_wedge_hopper_levelset(geom,ba,dm);
+            }
+            else if(geom_kind=="conecup")
+            {
+                using_levelset_geometry=true;
+                make_conecup_levelset(geom, ba, dm);
             }
             else if(geom_kind=="eb2")
             {

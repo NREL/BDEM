@@ -30,6 +30,9 @@ struct realData
     mass,
     density,
     temperature,
+    posx_prvs,
+    posy_prvs,
+    posz_prvs,
     firstspec,
     count
   };
@@ -40,6 +43,7 @@ struct intData
   enum 
   {
     phase = 0,
+    near_softwall,
     count
   };
 };
@@ -86,6 +90,7 @@ class DEMspecs
         bool restartedcase=false;
         bool stl_geom_present=false;
         bool do_heat_transfer=false;
+        bool using_softwalls=false;
 
         Vector<Real> walltemp_polynomial;
         int walltemp_vardir=0;
@@ -196,6 +201,12 @@ class DEMspecs
             
             pp.queryarr("bc_lower",bclo);
             pp.queryarr("bc_upper",bchi);
+
+            if(bclo[0]==SOFTWALL_BC || bclo[1]==SOFTWALL_BC || bclo[2]==SOFTWALL_BC ||
+               bchi[0]==SOFTWALL_BC || bchi[1]==SOFTWALL_BC || bchi[2]==SOFTWALL_BC)
+            {
+                using_softwalls=true;
+            }
         
             pp.query("stepoffset",stepoffset);
 

@@ -231,11 +231,11 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
         if ((*flags)[mfi].getType(bx) == FabType::covered)
         {
             amrex::ParallelFor(np,[=]
-                    AMREX_GPU_DEVICE (int i) noexcept
-                    {
-                    ParticleType& p = pstruct[i];
-                    p.id()=-1;   
-                    });
+            AMREX_GPU_DEVICE (int i) noexcept
+            {
+                ParticleType& p = pstruct[i];
+                p.id()=-1;   
+            });
         }
         else
         {
@@ -247,7 +247,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                 Real rp = p.rdata(realData::radius);
 
                 Real ls_value = get_levelset_value(p, ls_refinement, phiarr, plo, dx);
-                if(ls_value < rp)
+                if(ls_value < 0.0)
                 {
                     p.id()=-1;   
                 }
@@ -280,52 +280,52 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
         ParticleType* pstruct = aos().dataPtr();
 
         amrex::ParallelFor(np,[=]
-                           AMREX_GPU_DEVICE (int i) noexcept
-                           {
-                               ParticleType& p = pstruct[i];
-                               Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
-                               Real ploc_t[3]={0.0};
-                               Real t1[3],t2[3],t3[3];
-                               Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-                               int num_intersects=0;
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
+            Real ploc_t[3]={0.0};
+            Real t1[3],t2[3],t3[3];
+            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+            int num_intersects=0;
 
-                               for(int dim=0;dim<3;dim++)
-                               {
-                                   for(int j=0;j<3;j++)
-                                   {
-                                       ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
-                                   }
-                               }
+            for(int dim=0;dim<3;dim++)
+            {
+                for(int j=0;j<3;j++)
+                {
+                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                }
+            }
 
-                               if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-                                  (ploc_t[0]<STLtools::bbox_hi[0]) &&
-                                  (ploc_t[1]>STLtools::bbox_lo[1]) &&
-                                  (ploc_t[1]<STLtools::bbox_hi[1]) &&
-                                  (ploc_t[2]>STLtools::bbox_lo[2]) &&
-                                  (ploc_t[2]<STLtools::bbox_hi[2]) )
-                               {
-                                   for(int tr=0;tr<STLtools::num_tri;tr++)
-                                   {
-                                       t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                                       t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                                       t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+               (ploc_t[0]<STLtools::bbox_hi[0]) &&
+               (ploc_t[1]>STLtools::bbox_lo[1]) &&
+               (ploc_t[1]<STLtools::bbox_hi[1]) &&
+               (ploc_t[2]>STLtools::bbox_lo[2]) &&
+               (ploc_t[2]<STLtools::bbox_hi[2]) )
+            {
+                for(int tr=0;tr<STLtools::num_tri;tr++)
+                {
+                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                                       t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                                       t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                                       t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                                       t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                                       t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                                       t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                                       num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                                   }
-                                   if(num_intersects%2 == 1)
-                                   {
-                                       p.id()=-1;   
-                                   }
-                               }
-                           });
+                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                }
+                if(num_intersects%2 == 1)
+                {
+                    p.id()=-1;   
+                }
+            }
+        });
     }
 
     Redistribute();
@@ -478,15 +478,15 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             z = z0 + (k+half)*half*dz;
 
                             if(x>=mincoords[XDIR] and x<=maxcoords[XDIR] and 
-                                    y>=mincoords[YDIR] and y<=maxcoords[YDIR] and
-                                    z>=mincoords[ZDIR] and z<=maxcoords[ZDIR])
+                               y>=mincoords[YDIR] and y<=maxcoords[YDIR] and
+                               z>=mincoords[ZDIR] and z<=maxcoords[ZDIR])
                             {
                                 ParticleType p = generate_particle(x,y,z,
-                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                        dens,
-                                        rad,temp,spec);
+                                                                   meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                                   meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                                   meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                                   dens,
+                                                                   rad,temp,spec);
                                 host_particles.push_back(p);
                             }
                         }
@@ -494,7 +494,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                 }
             }
         }
-        
+
         auto old_size = particle_tile.GetArrayOfStructs().size();
         auto new_size = old_size + host_particles.size();
         particle_tile.resize(new_size);
@@ -512,8 +512,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 }
 
 BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Real x,Real y,Real z,
-        Real velx, Real vely, Real velz,
-        Real dens, Real rad, Real temp,Real spec[MAXSPECIES])
+                                                                             Real velx, Real vely, Real velz,
+                                                                             Real dens, Real rad, Real temp,Real spec[MAXSPECIES])
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -547,7 +547,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::taux) = zero;
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
-            
+
     for(int i=0;i<MAXSPECIES;i++)
     {
         p.rdata(realData::firstspec+i)=spec[i];
