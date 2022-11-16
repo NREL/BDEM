@@ -1,7 +1,6 @@
 #include <AMReX.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_MultiFab.H>
-#include <BDEM_CheckPair.H>
 #include <BDEM_ParticleContainer.H>
 #include <BDEM_EB.H>
 #include <STLtools.H>
@@ -146,29 +145,34 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens, specs.particle_sourcing_temp,
                                    specs.particle_sourcing_species_massfracs.data(),
                                    specs.particle_sourcing_multi_part_per_cell);
-                bpc.RedistributeLocal();
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
+
+                bpc.redist_particles(1,specs.using_softwalls);
                 amrex::Print()<<"adding particles\n";
+                if(specs.using_softwalls)
+                {
+                    bpc.reassignParticles_softwall(); 
+                }
                 amrex::Print() << "Num particles after sourcing " << bpc.TotalNumberOfParticles() << "\n";
                 particle_sourcing_time=zero;
             }
 
             if (steps % specs.num_redist == 0)
             {
-                bpc.RedistributeLocal();
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
+                bpc.redist_particles(1,specs.using_softwalls);
+                if(specs.using_softwalls)
+                {
+                    bpc.reassignParticles_softwall(); 
+                }
             } 
             else
             {
                 bpc.updateNeighbors();
             }
-            
+
             /*if(specs.stl_geom_present)
-            {
-                bpc.checkParticlesInsideSTL(specs.outside_point);
-            }*/
+              {
+              bpc.checkParticlesInsideSTL(specs.outside_point);
+              }*/
 
             BL_PROFILE_VAR("FORCE_CALC",forceCalc);
             {
@@ -217,9 +221,11 @@ int main (int argc, char* argv[])
             {
                 if (output_timeMass > specs.massflow_output_time)
                 {
-                    bpc.Redistribute();
-                    bpc.fillNeighbors();
-                    bpc.buildNeighborList(CheckPair());
+                    bpc.redist_particles(0,specs.using_softwalls);
+                    if(specs.using_softwalls)
+                    {
+                        bpc.reassignParticles_softwall(); 
+                    }
                     PrintToFile("Total_Mass") << time << "\t" << bpc.TotalNumberOfParticles() <<"\n";
                     output_timeMass=zero;
                 }
@@ -229,9 +235,7 @@ int main (int argc, char* argv[])
             {
                 BL_PROFILE_VAR("OUTPUT_TIME",outputs);
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
-                bpc.Redistribute();
-                bpc.fillNeighbors();
-                bpc.buildNeighborList(CheckPair());
+                bpc.redist_particles(0,specs.using_softwalls);
                 output_it++;
                 bpc.writeParticles(output_it+specs.stepoffset);
                 const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
@@ -243,16 +247,24 @@ int main (int argc, char* argv[])
                     STLtools::write_stl_file(stlpltfile);
                     STLtools::update_bounding_box();
                 }
+                if(specs.using_softwalls)
+                {
+                    bpc.reassignParticles_softwall(); 
+                }
 
                 BL_PROFILE_VAR_STOP(outputs);
             }
             steps++;
         }
 
-        bpc.Redistribute();
+        bpc.redist_particles(0,specs.using_softwalls);
         bpc.writeParticles(output_it+1+specs.stepoffset);
         const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");
+        if(specs.using_softwalls)
+        {
+            bpc.reassignParticles_softwall(); 
+        }
         specs.clear();
     }
 

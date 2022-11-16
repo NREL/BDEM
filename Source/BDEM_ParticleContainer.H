@@ -6,6 +6,7 @@
 #include <BDEM_Specs.H>
 #include <Constants.H>
 #include <Mechanism.H>
+#include <BDEM_CheckPair.H>
 
 
 class BDEMParticleContainer
@@ -59,14 +60,29 @@ public:
                 Real velx, Real vely, Real velz,
                 Real dens, Real rad, Real temp,Real spec[MAXSPECIES]);
 
+    void redist_particles(const int local,bool using_softwalls)
+    {
+        const int lev_min = 0;
+        const int lev_max = 0;
+        const int nGrow = 0;
+        if(using_softwalls)
+        {
+            saveParticles_softwall(); 
+        }
+        Redistribute (lev_min,lev_max,nGrow,local);
+
+        fillNeighbors();
+        buildNeighborList(CheckPair());
+    }
+
     void set_domain_bcs(Vector<int> bclo,Vector<int> bchi)
     {
         domain_bc[0]=bclo[0];
         domain_bc[1]=bchi[0];
-        
+
         domain_bc[2]=bclo[1];
         domain_bc[3]=bchi[1];
-        
+
         domain_bc[4]=bclo[2];
         domain_bc[5]=bchi[2];
     }
@@ -75,9 +91,12 @@ public:
     void update_reflectscore();
     void reflect_off_moving_stl();
 
+    void saveParticles_softwall();
+    void reassignParticles_softwall(); 
+
 private:
 
-  int domain_bc[6]={0};
-  mechanism *m_chemptr;
+    int domain_bc[6]={0};
+    mechanism *m_chemptr;
 };
 #endif
