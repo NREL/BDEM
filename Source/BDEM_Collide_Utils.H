@@ -203,9 +203,10 @@ void get_levelset_normal(
 }
 
     AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
+void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
-        amrex::Real fn[3],amrex::Real ft[3], amrex::Real nFr[3])
+        amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
+        amrex::Real rollfric_torq_by_d[THREEDIM])
 {
     Real v_rot[3];
     v_rot[0] = walldist * p.rdata(realData::xangvel);
@@ -307,29 +308,20 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[3],
         ft[ZDIR] = zero;
     }
 
-    Real omega_r[THREEDIM];
-    omega_r[XDIR] = p.rdata(realData::xangvel);
-    omega_r[YDIR] = p.rdata(realData::yangvel);
-    omega_r[ZDIR] = p.rdata(realData::zangvel);
-    Real mag_omegar = sqrt(dotpdt(omega_r,omega_r));
-    Real mag_fn = sqrt(dotpdt(fn,fn));
-    if (mag_omegar > zero)
+    Real omega_p1[THREEDIM];
+    omega_p1[XDIR] = p.rdata(realData::xangvel);
+    omega_p1[YDIR] = p.rdata(realData::yangvel);
+    omega_p1[ZDIR] = p.rdata(realData::zangvel);
+    Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
+    rollfric_torq_by_d[XDIR]=zero;
+    rollfric_torq_by_d[YDIR]=zero;
+    rollfric_torq_by_d[ZDIR]=zero;
+    if (mag_omegap1 > zero)
     {
-        Real nomega[THREEDIM];
-        Real vRatio[THREEDIM];
-        Real Froll[THREEDIM];
-        vRatio[XDIR] = omega_r[XDIR]/mag_omegar;
-        vRatio[YDIR] = omega_r[YDIR]/mag_omegar;
-        vRatio[ZDIR] = omega_r[ZDIR]/mag_omegar;
-        Froll[XDIR] = -DEM::muR_wall * mag_fn * vRatio[XDIR];
-        Froll[YDIR] = -DEM::muR_wall * mag_fn * vRatio[YDIR];
-        Froll[ZDIR] = -DEM::muR_wall * mag_fn * vRatio[ZDIR];
-        crosspdt(normal, Froll, nFr);
-    }
-    else
-    {
-        nFr[XDIR] = zero;
-        nFr[YDIR] = zero;
-        nFr[ZDIR] = zero;
+        Real mag_fn = sqrt(dotpdt(fn,fn));
+        Real fric_force   = -DEM::muR * mag_fn;
+        rollfric_torq_by_d[XDIR]=fric_force*omega_p1[XDIR]/mag_omegap1;
+        rollfric_torq_by_d[YDIR]=fric_force*omega_p1[YDIR]/mag_omegap1;
+        rollfric_torq_by_d[ZDIR]=fric_force*omega_p1[ZDIR]/mag_omegap1;
     }
 }

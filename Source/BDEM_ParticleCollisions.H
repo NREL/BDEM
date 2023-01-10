@@ -118,50 +118,47 @@ amrex::ParallelFor(np,[=]
                 ft[ZDIR] = zero;
             }
 
+
+            p1.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
+            p1.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
+            p1.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+
+            //Torque calculation
+            //=================
+            
+           /*           /\
+                     r1/   \r2
+                      /-x----\
+                      d1   d2
+
+            d1+d2=d
+            d1=r1*cos(theta)=r1*(d^2+r1^2-r^2)/(2*d*r1) */
+
+            Real dist_c_p1 = 0.5 * (distmag + (p1.rdata(realData::radius)*p1.rdata(realData::radius) 
+                            - p2.rdata(realData::radius)*p2.rdata(realData::radius))*distmag_inv);
+            
             Real omega_p1[THREEDIM];
             omega_p1[XDIR] = p1.rdata(realData::xangvel);
             omega_p1[YDIR] = p1.rdata(realData::yangvel);
             omega_p1[ZDIR] = p1.rdata(realData::zangvel);
             Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
-            Real nFr[THREEDIM];
-            Real mag_fn = sqrt(dotpdt(fn,fn));
+            Real rollfric_torq[THREEDIM]={0.0};
             if (mag_omegap1 > zero)
             {
-                Real vRatio[THREEDIM];
-                Real Froll[THREEDIM];
-                vRatio[XDIR] = omega_p1[XDIR]/mag_omegap1;
-                vRatio[YDIR] = omega_p1[YDIR]/mag_omegap1;
-                vRatio[ZDIR] = omega_p1[ZDIR]/mag_omegap1;
-                Froll[XDIR] = -DEM::muR * mag_fn * vRatio[XDIR];
-                Froll[YDIR] = -DEM::muR * mag_fn * vRatio[YDIR];
-                Froll[ZDIR] = -DEM::muR * mag_fn * vRatio[ZDIR];
-                crosspdt(normal, Froll, nFr);
+                Real mag_fn = sqrt(dotpdt(fn,fn));
+                Real torq   = -DEM::muR * mag_fn * dist_c_p1;
+                rollfric_torq[XDIR]=torq*omega_p1[XDIR]/mag_omegap1;
+                rollfric_torq[YDIR]=torq*omega_p1[YDIR]/mag_omegap1;
+                rollfric_torq[ZDIR]=torq*omega_p1[ZDIR]/mag_omegap1;
             }
-            else
-            {
-                nFr[XDIR] = zero;
-                nFr[YDIR] = zero;
-                nFr[ZDIR] = zero;
-            }
-
-            // each particle updates its force (no need for atomics)
-            p1.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-            p1.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-            p1.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
-
-            Real part1_r = p1.rdata(realData::radius);
-            Real part2_r = p2.rdata(realData::radius);
-
-            Real dist_cl = 0.5 * (distmag + (part1_r*part1_r - part2_r*part2_r)*distmag_inv);
-            dist_cl = distmag - dist_cl;
 
             Real tow[THREEDIM];
-
             crosspdt(normal, ft, tow);
+            //note: tow here needs a distance, so done in final calc
 
-            p1.rdata(realData::taux) += dist_cl*(tow[XDIR]+nFr[XDIR]);
-            p1.rdata(realData::tauy) += dist_cl*(tow[YDIR]+nFr[YDIR]);
-            p1.rdata(realData::tauz) += dist_cl*(tow[ZDIR]+nFr[ZDIR]);
+            p1.rdata(realData::taux) += dist_c_p1*tow[XDIR]+rollfric_torq[XDIR];
+            p1.rdata(realData::tauy) += dist_c_p1*tow[YDIR]+rollfric_torq[YDIR];
+            p1.rdata(realData::tauz) += dist_c_p1*tow[ZDIR]+rollfric_torq[ZDIR];
 
             Real avgtemp=0.5*(p1.rdata(realData::temperature) + p2.rdata(realData::temperature));
             p1.rdata(realData::temperature)=avgtemp;

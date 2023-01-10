@@ -10,7 +10,7 @@ amrex::ParallelFor(np,[=]
 
     if (ls_value < rp)
     {
-        Real normal[3],fn[3],ft[3],nFr[3];
+        Real normal[3],fn[3],ft[3],rollfriqtorq_by_d[3];
 
         get_levelset_normal(p,ls_refinement,phiarr,plo,dx,normal);
 
@@ -25,7 +25,7 @@ amrex::ParallelFor(np,[=]
         normal[1] *= -1;
         normal[2] *= -1;
 
-        get_wall_forces(ls_value,normal,p,dt,fn,ft,nFr);
+        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d);
 
         // each particle updates its force (no need for atomics)
         p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
@@ -36,9 +36,9 @@ amrex::ParallelFor(np,[=]
 
         crosspdt(normal, ft, tow);
 
-        p.rdata(realData::taux) += ls_value*(tow[XDIR] + nFr[XDIR]);
-        p.rdata(realData::tauy) += ls_value*(tow[YDIR] + nFr[YDIR]);
-        p.rdata(realData::tauz) += ls_value*(tow[ZDIR] + nFr[ZDIR]);
+        p.rdata(realData::taux) += ls_value*(tow[XDIR] + rollfriqtorq_by_d[XDIR]);
+        p.rdata(realData::tauy) += ls_value*(tow[YDIR] + rollfriqtorq_by_d[YDIR]);
+        p.rdata(realData::tauz) += ls_value*(tow[ZDIR] + rollfriqtorq_by_d[ZDIR]);
 
         if(do_heat_transfer)
         {

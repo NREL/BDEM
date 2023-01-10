@@ -7,7 +7,7 @@ amrex::ParallelFor(np,[=]
     bool collided=false;
     Real walldist=1e20;
     Real normal[AMREX_SPACEDIM]={1.0,0.0,0.0};
-    Real fn[3],ft[3],nFr[3];
+    Real fn[3],ft[3],rollfriqtorq_by_d[3];
     Real tow[3];
     int dir=XDIR;
 
@@ -78,7 +78,7 @@ amrex::ParallelFor(np,[=]
     
     if(collided)
     {
-        get_wall_forces(walldist,normal,p,dt,fn,ft,nFr);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d);
 
         // each particle updates its force (no need for atomics)
         p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
@@ -87,9 +87,9 @@ amrex::ParallelFor(np,[=]
 
         crosspdt(normal, ft, tow);
 
-        p.rdata(realData::taux) += walldist*(tow[XDIR] + nFr[XDIR]);
-        p.rdata(realData::tauy) += walldist*(tow[YDIR] + nFr[YDIR]);
-        p.rdata(realData::tauz) += walldist*(tow[ZDIR] + nFr[ZDIR]);
+        p.rdata(realData::taux) += walldist*(tow[XDIR] + rollfriqtorq_by_d[XDIR]);
+        p.rdata(realData::tauy) += walldist*(tow[YDIR] + rollfriqtorq_by_d[YDIR]);
+        p.rdata(realData::tauz) += walldist*(tow[ZDIR] + rollfriqtorq_by_d[ZDIR]);
 
         //doing adiabatic wall for now at Cartesian walls
         //if(do_heat_transfer)
