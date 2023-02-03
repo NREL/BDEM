@@ -2,7 +2,7 @@
 #include <BDEM_Collide_Utils.H>
 #include <stl_tools/STLtools.H>
 
-void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_heat_transfer)
+void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_heat_transfer,int glued_sphere_particles)
 {
 
     // only read the file on the IO proc
@@ -44,6 +44,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             p.cpu() = ParallelDescriptor::MyProc();
 
             // Read from input file
+            // NOTE: Assumed that all glued sphere particle radii are equal for time being
             ifs >> p.idata(intData::phase);
             ifs >> p.pos(0);
             ifs >> p.pos(1);
@@ -63,16 +64,77 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
                p.rdata(realData::temperature)=NTP_TEMP;
             }
 
+            if(glued_sphere_particles)
+            {
+                // Extracting number of component spheres and Euler angles for glued-sphere cylinders
+                // TODO: How do we make sure cylinders don't intersect upon initialization?
+                // TODO: What do we do if cylinders extend into domain or embedded boundary?
+                ifs >> p.idata(intData::num_comp_sphere);
+                ifs >> p.rdata(realData::euler_angle_x);
+                ifs >> p.rdata(realData::euler_angle_y);
+                ifs >> p.rdata(realData::euler_angle_z);
+
+                // Use Euler angles to calculate initial quaternion components
+                // FIXME: It seems that eax and eay may be swapped, double check equations from Goldstain
+                Real eax = p.rdata(realData::euler_angle_x);
+                Real eay = p.rdata(realData::euler_angle_y);
+                Real eaz = p.rdata(realData::euler_angle_z);
+                p.rdata(realData::q0) = cos(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
+                p.rdata(realData::q1) = sin(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) - cos(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
+                p.rdata(realData::q2) = cos(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0);
+                p.rdata(realData::q3) = cos(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0) - sin(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0);
+
+                // Calculate principal axis components in inertial frame (for visualization)
+                Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
+                Real pa_inert[THREEDIM];
+                rotate_vector_to_inertial(p, pa_body, pa_inert);
+                p.rdata(realData::pax) = pa_inert[XDIR];
+                p.rdata(realData::pay) = pa_inert[YDIR];
+                p.rdata(realData::paz) = pa_inert[ZDIR];
+            } else{
+                p.idata(intData::num_comp_sphere) = 1;
+                p.rdata(realData::euler_angle_x) = zero;
+                p.rdata(realData::euler_angle_y) = zero;
+                p.rdata(realData::euler_angle_z) = zero;
+                p.rdata(realData::q0) = zero;
+                p.rdata(realData::q1) = zero;
+                p.rdata(realData::q2) = zero;
+                p.rdata(realData::q3) = zero;
+                p.rdata(realData::pax) = zero;
+                p.rdata(realData::pay) = zero;
+                p.rdata(realData::paz) = zero;
+            }
+
             //set initial radius
             p.rdata(realData::radinit)=p.rdata(realData::radius);
 
             // Set other particle properties
-            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
+            // NOTE: Calculation of particle mass for glued sphere particles assumes no component sphere overlap
+            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);
             p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
             p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-            p.rdata(realData::xangvel)     = amrex::Random();
-            p.rdata(realData::yangvel)     = amrex::Random();
-            p.rdata(realData::zangvel)     = amrex::Random();
+            
+            // User input for angular velocity when using glued sphere particles (at least for testing purposes)
+            if(glued_sphere_particles){
+                ifs >> p.rdata(realData::xangvel);
+                ifs >> p.rdata(realData::yangvel);
+                ifs >> p.rdata(realData::zangvel);
+            } else {
+                p.rdata(realData::xangvel)     = amrex::Random();
+                p.rdata(realData::yangvel)     = amrex::Random();
+                p.rdata(realData::zangvel)     = amrex::Random();
+            }
+
+            if(glued_sphere_particles){
+                // FIXME: Approximating moments of inertia for glued sphere particle using ellipse formula
+                p.rdata(realData::Ixinv) = 5.0/(p.rdata(realData::mass)*(2.0 * pow(p.rdata(realData::radius),two)) );
+                p.rdata(realData::Iyinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+                p.rdata(realData::Izinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+            } else {
+                p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+                p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+                p.rdata(realData::Izinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+            }
 
             p.rdata(realData::fx) = zero;
             p.rdata(realData::fy) = zero;
@@ -81,6 +143,12 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             p.rdata(realData::tauy) = zero;
             p.rdata(realData::tauz) = zero;
 
+            // Set bridge indices to -1 to indicate no existing bridges
+            for(int br=0; br<MAXBRIDGES; br++){
+                p.idata(intData::first_bridge+3*br) = -1;
+                p.idata(intData::first_bridge+3*br+1) = -1;
+                p.idata(intData::first_bridge+3*br+2) = -1;
+            }
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
@@ -143,10 +211,10 @@ void BDEMParticleContainer::InitChemSpecies(amrex::Real Yis[MAXSPECIES])
         {
                 ParticleType& p = pstruct[i];
 
-                for(int i=0;i<MAXSPECIES;i++)
+                for(int sp=0;sp<MAXSPECIES;sp++)
                 {
                     //p.rdata(realData::firstspec+i)=Yis[i];
-                    p.rdata(realData::firstspec+i)=Yi_captured[i];
+                    p.rdata(realData::firstspec+sp)=Yi_captured[sp];
                 }
         });
     }
@@ -189,9 +257,9 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
                         y>mincoords[d*AMREX_SPACEDIM+1] && y<=maxcoords[d*AMREX_SPACEDIM+1] &&
                         z>mincoords[d*AMREX_SPACEDIM+2] && z<=maxcoords[d*AMREX_SPACEDIM+2])
                 {
-                    for(int i=0;i<MAXSPECIES;i++)
+                    for(int sp=0;sp<MAXSPECIES;sp++)
                     {
-                        p.rdata(realData::firstspec+i)=spec_massfracs[d*MAXSPECIES+i];
+                        p.rdata(realData::firstspec+sp)=spec_massfracs[d*MAXSPECIES+sp];
                     }
 
                 }
@@ -245,11 +313,15 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
             {
                 ParticleType& p = pstruct[i];
                 Real rp = p.rdata(realData::radius);
-
-                Real ls_value = get_levelset_value(p, ls_refinement, phiarr, plo, dx);
-                if(ls_value < 0.0)
-                {
-                    p.id()=-1;   
+                for(int pc; pc<p.idata(intData::num_comp_sphere); pc++){
+                    Real ppos_inert[THREEDIM];
+                    Real ppos_body[THREEDIM];
+                    get_inertial_body_fixed_pos(p, pc, ppos_inert, ppos_body); 
+                    Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+                    if(ls_value < 0.0)
+                    {
+                        p.id()=-1;   
+                    }
                 }
             });
         }
@@ -283,46 +355,51 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
-            Real ploc_t[3]={0.0};
-            Real t1[3],t2[3],t3[3];
-            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-            int num_intersects=0;
+            for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
+  
+                Real ploc[THREEDIM];
+                Real ploc_body[THREEDIM];
+                get_inertial_body_fixed_pos(p, pc, ploc, ploc_body); 
+                Real ploc_t[3]={0.0};
+                Real t1[3],t2[3],t3[3];
+                Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+                int num_intersects=0;
 
-            for(int dim=0;dim<3;dim++)
-            {
-                for(int j=0;j<3;j++)
+                for(int dim=0;dim<3;dim++)
                 {
-                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                    for(int j=0;j<3;j++)
+                    {
+                        ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                    }
                 }
-            }
 
-            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-               (ploc_t[0]<STLtools::bbox_hi[0]) &&
-               (ploc_t[1]>STLtools::bbox_lo[1]) &&
-               (ploc_t[1]<STLtools::bbox_hi[1]) &&
-               (ploc_t[2]>STLtools::bbox_lo[2]) &&
-               (ploc_t[2]<STLtools::bbox_hi[2]) )
-            {
-                for(int tr=0;tr<STLtools::num_tri;tr++)
+                if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+                   (ploc_t[0]<STLtools::bbox_hi[0]) &&
+                   (ploc_t[1]>STLtools::bbox_lo[1]) &&
+                   (ploc_t[1]<STLtools::bbox_hi[1]) &&
+                   (ploc_t[2]>STLtools::bbox_lo[2]) &&
+                   (ploc_t[2]<STLtools::bbox_hi[2]) )
                 {
-                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+                    for(int tr=0;tr<STLtools::num_tri;tr++)
+                    {
+                        t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                        t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                        t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                        t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                        t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                        t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                        t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                        t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                        t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                }
-                if(num_intersects%2 == 1)
-                {
-                    p.id()=-1;   
+                        num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                    }
+                    if(num_intersects%2 == 1)
+                    {
+                        p.id()=-1;   
+                    }
                 }
             }
         });
@@ -357,51 +434,55 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            Real ploc[3]={p.pos(0),p.pos(1),p.pos(2)};
-            Real ploc_t[3]={0.0};
-            Real t1[3],t2[3],t3[3];
-            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-            int num_intersects=0;
+            for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
+                Real ploc[THREEDIM];
+                Real ploc_body[THREEDIM];
+                get_inertial_body_fixed_pos(p, pc, ploc, ploc_body); 
+                Real ploc_t[3]={0.0};
+                Real t1[3],t2[3],t3[3];
+                Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+                int num_intersects=0;
 
-            for(int dim=0;dim<3;dim++)
-            {
-                for(int j=0;j<3;j++)
+                for(int dim=0;dim<3;dim++)
                 {
-                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                    for(int j=0;j<3;j++)
+                    {
+                        ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
+                    }
                 }
-            }
 
-            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-               (ploc_t[0]<STLtools::bbox_hi[0]) &&
-               (ploc_t[1]>STLtools::bbox_lo[1]) &&
-               (ploc_t[1]<STLtools::bbox_hi[1]) &&
-               (ploc_t[2]>STLtools::bbox_lo[2]) &&
-               (ploc_t[2]<STLtools::bbox_hi[2]) )
-            {
-                for(int tr=0;tr<STLtools::num_tri;tr++)
+                if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+                   (ploc_t[0]<STLtools::bbox_hi[0]) &&
+                   (ploc_t[1]>STLtools::bbox_lo[1]) &&
+                   (ploc_t[1]<STLtools::bbox_hi[1]) &&
+                   (ploc_t[2]>STLtools::bbox_lo[2]) &&
+                   (ploc_t[2]<STLtools::bbox_hi[2]) )
                 {
-                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+                    for(int tr=0;tr<STLtools::num_tri;tr++)
+                    {
+                        t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                        t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                        t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                        t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                        t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                        t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                        t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                        t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                        t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                }
-                if(num_intersects%2 == 1)
-                {
+                        num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                    }
+                    if(num_intersects%2 == 1)
+                    {
 #ifndef AMREX_USE_GPU
-                    amrex::Print()<<"particle inside stl:"<<ploc[0]<<"\t"<<ploc[1]<<"\t"<<ploc[2]<<"\n";
+                        amrex::Print()<<"particle inside stl:"<<ploc[0]<<"\t"<<ploc[1]<<"\t"<<ploc[2]<<"\n";
 #else
-                    amrex::Abort("particle inside stl");
+                        amrex::Abort("particle inside stl");
 #endif
 
+                    }
                 }
             }
         });

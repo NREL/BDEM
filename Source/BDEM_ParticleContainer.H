@@ -10,7 +10,7 @@
 
 
 class BDEMParticleContainer
-    : public amrex::NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count>
+    : public amrex::NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count+MAXBRIDGES*3-1>
 {
 
 public:
@@ -21,12 +21,12 @@ public:
                          int                                numcells,
                          mechanism *chemptr)
 
-    : NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count>(geom, dmap, ba, numcells)
+    : NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count+MAXBRIDGES*3-1>(geom, dmap, ba, numcells)
     {
         m_chemptr=chemptr;
     }
 
-    void InitParticles (const std::string & filename,bool &do_heat_transfer);
+    void InitParticles (const std::string & filename,bool &do_heat_transfer, int glued_sphere_particles);
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
@@ -42,7 +42,9 @@ public:
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_resent);
+            const int ls_refinement,bool stl_geom_resent,
+            RealVect &gravity,const int glued_sphere_particles=0,
+            const int liquid_bridging=0);
 
     Real compute_coll_timescale();
 
@@ -52,13 +54,15 @@ public:
     void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
     void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
 
-    void moveParticles (const amrex::Real& dt,RealVect &gravity, int do_chemistry=0,amrex::Real minradfrac=0.1);
+    void moveParticles (const amrex::Real& dt, int do_chemistry=0,amrex::Real minradfrac=0.1, const int glued_sphere_particles=0);
 
-    void writeParticles (const int n);   
+    void writeParticles (const int n, const int glued_sphere_particles);   
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
                 Real dens, Real rad, Real temp,Real spec[MAXSPECIES]);
+
+    void createGluedSpheres(BDEMParticleContainer& pin);
 
     void redist_particles(const int local,bool using_softwalls)
     {
@@ -93,6 +97,8 @@ public:
 
     void saveParticles_softwall();
     void reassignParticles_softwall(); 
+
+    void computeMoistureContent(Real moisture_content, Real contact_angle, Real total_liquid_volume);
 
 private:
 

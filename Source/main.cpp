@@ -19,6 +19,9 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_t_wall = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::e_t_wall = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::muR_wall  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::tcoll    = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_liq   = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
 
 using namespace amrex;
 
@@ -57,7 +60,7 @@ int main (int argc, char* argv[])
         {
             if(specs.init_particles_using_file == 1)
             {
-                bpc.InitParticles("particle_input.dat",specs.do_heat_transfer);
+                bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, specs.glued_sphere_particles);
                 bpc.InitChemSpecies(specs.species_massfracs.data());
             }
             else
@@ -118,13 +121,24 @@ int main (int argc, char* argv[])
         amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
-        bpc.writeParticles(steps+specs.stepoffset);
+        if(specs.visualize_component_spheres){
+            // If using glued sphere model, create new particle container to create particles for each 
+            // component sphere (for visualization purposes)
+            BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
+            bpc_vis.createGluedSpheres(bpc);
+            bpc_vis.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles);
+        } else {
+            bpc.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles);
+        }
         if(specs.dynamicstl!=0)
         {
             std::string stlpltfile = amrex::Concatenate("triplt", steps+specs.stepoffset, 5)+".stl";
             STLtools::write_stl_file(stlpltfile);
         }
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
+
+        // Calculate the moisture content for each particle
+        if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.total_liquid_volume);
 
 
         while((steps < specs.maxsteps) and (time < specs.final_time))
@@ -179,12 +193,14 @@ int main (int argc, char* argv[])
                 bpc.computeForces(dt,EBtools::ebfactory,EBtools::lsphi,
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
-                                  EBtools::ls_refinement,specs.stl_geom_present);
+                                  EBtools::ls_refinement,specs.stl_geom_present,
+                                  specs.gravity,specs.glued_sphere_particles,
+                                  specs.liquid_bridging);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 
             BL_PROFILE_VAR("MOVE_PART",movepart);
-            bpc.moveParticles(dt,specs.gravity,specs.do_chemistry,specs.minradius_frac);
+            bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.glued_sphere_particles);
             BL_PROFILE_VAR_STOP(movepart);
 
             if(specs.dynamicstl!=0)
@@ -237,7 +253,13 @@ int main (int argc, char* argv[])
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
                 bpc.redist_particles(0,specs.using_softwalls);
                 output_it++;
-                bpc.writeParticles(output_it+specs.stepoffset);
+                if(specs.visualize_component_spheres){
+                    BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
+                    bpc_vis.createGluedSpheres(bpc);
+                    bpc_vis.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles);
+                } else {
+                    bpc.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles);
+                }
                 const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
                 bpc.Checkpoint(rstfile, "particles");
                 output_time=zero;
@@ -258,7 +280,13 @@ int main (int argc, char* argv[])
         }
 
         bpc.redist_particles(0,specs.using_softwalls);
-        bpc.writeParticles(output_it+1+specs.stepoffset);
+        if(specs.visualize_component_spheres){
+            BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
+            bpc_vis.createGluedSpheres(bpc);
+            bpc_vis.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles);
+        } else {
+            bpc.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles);
+        }
         const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");
         if(specs.using_softwalls)

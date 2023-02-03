@@ -4,48 +4,51 @@ amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
 {
     ParticleType& p = pstruct[i];
-    Real rp = p.rdata(realData::radius);
+    for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
+        Real rp = p.rdata(realData::radius);
 
-    Real ls_value = get_levelset_value(p, ls_refinement, phiarr, plo, dx);
+        Real ppos_inert[THREEDIM];
+        Real ppos_body[THREEDIM];
+        get_inertial_body_fixed_pos(p, pc, ppos_inert, ppos_body);
+        Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
 
-    if (ls_value < rp)
-    {
-        Real normal[3],fn[3],ft[3],rollfriqtorq_by_d[3];
-
-        get_levelset_normal(p,ls_refinement,phiarr,plo,dx,normal);
-
-        /*if(amrex::Math::abs(ls_value)>rp)
-          {
-          amrex::Print()<<"mindist,rad from lsets:"<<ls_value<<"\t"<<rp
-          <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)
-          <<"\t"<<p.pos(2)<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<"\n";
-          }*/
-
-        normal[0] *= -1;
-        normal[1] *= -1;
-        normal[2] *= -1;
-
-        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d);
-
-        // each particle updates its force (no need for atomics)
-        p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-        p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-        p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
-
-        Real tow[3];
-
-        crosspdt(normal, ft, tow);
-
-        p.rdata(realData::taux) += ls_value*(tow[XDIR] + rollfriqtorq_by_d[XDIR]);
-        p.rdata(realData::tauy) += ls_value*(tow[YDIR] + rollfriqtorq_by_d[YDIR]);
-        p.rdata(realData::tauz) += ls_value*(tow[ZDIR] + rollfriqtorq_by_d[ZDIR]);
-
-        if(do_heat_transfer)
+        if (ls_value < rp)
         {
-            Real walltemp=get_wall_temperature(p.pos(0),p.pos(1),p.pos(2),walltemp_vardir,walltemp_polynomial);
-            p.rdata(realData::temperature)=0.5*(walltemp+p.rdata(realData::temperature));
+            Real normal[3],fn[3],ft[3],rollfriqtorq_by_d[3],contact_vect[3];
+
+            get_levelset_normal(ppos_inert,ls_refinement,phiarr,plo,dx,normal);
+
+            /*if(amrex::Math::abs(ls_value)>rp)
+              {
+              amrex::Print()<<"mindist,rad from lsets:"<<ls_value<<"\t"<<rp
+              <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)
+              <<"\t"<<p.pos(2)<<"\t"<<normal[0]<<"\t"<<normal[1]<<"\t"<<normal[2]<<"\n";
+              }*/
+
+            normal[0] *= -1;
+            normal[1] *= -1;
+            normal[2] *= -1;
+
+            get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_vect);
+
+            // each particle updates its force (no need for atomics)
+            p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
+            p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
+            p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+
+            Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
+            Real torq[THREEDIM];
+            crosspdt(contact_vect, ftot, torq);
+            p.rdata(realData::taux) += torq[XDIR] + ls_value*rollfriqtorq_by_d[XDIR];
+            p.rdata(realData::tauy) += torq[YDIR] + ls_value*rollfriqtorq_by_d[YDIR];
+            p.rdata(realData::tauz) += torq[ZDIR] + ls_value*rollfriqtorq_by_d[ZDIR];
+
+            if(do_heat_transfer)
+            {
+                Real walltemp=get_wall_temperature(p.pos(0),p.pos(1),p.pos(2),walltemp_vardir,walltemp_polynomial);
+                p.rdata(realData::temperature)=0.5*(walltemp+p.rdata(realData::temperature));
+            }
+
         }
-
     }
-
 });

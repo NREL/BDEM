@@ -26,6 +26,9 @@ struct realData
     tauy,
     tauz,
     Iinv,
+    Ixinv,
+    Iyinv,
+    Izinv,
     volume,
     mass,
     density,
@@ -33,6 +36,17 @@ struct realData
     posx_prvs,
     posy_prvs,
     posz_prvs,
+    euler_angle_x,
+    euler_angle_y,
+    euler_angle_z,
+    q0,
+    q1,
+    q2,
+    q3,
+    pax,
+    pay,
+    paz,
+    liquid_volume,   
     firstspec,
     count
   };
@@ -44,6 +58,8 @@ struct intData
   {
     phase = 0,
     near_softwall,
+    num_comp_sphere,
+    first_bridge,
     count
   };
 };
@@ -63,6 +79,9 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real gamma;
 }
 
 class DEMspecs
@@ -146,6 +165,18 @@ class DEMspecs
         Vector<Real> strat_mincoords; 
         Vector<Real> strat_maxcoords;
         Vector<Real> strat_spec_massfracs; 
+
+        // input options for glued sphere particles
+        int glued_sphere_particles = 0;
+        bool visualize_component_spheres = false;
+
+        // Options for modeling liquid bridging
+        int liquid_bridging = 0;
+        Real moisture_content = 0.0;
+        Real contact_angle = 0.0;
+        Real total_liquid_volume = 0.0;
+        Real liquid_viscosity = 0.0;
+        Real surface_tension = 0.0;
 
         void read_dem_specs()
         {
@@ -415,6 +446,24 @@ class DEMspecs
                 }
             }
 
+            pp.query("glued_sphere_particles", glued_sphere_particles);
+            if(glued_sphere_particles){
+                // Read in other glued sphere variables
+                pp.query("visualize_component_spheres", visualize_component_spheres);
+            }
+
+            pp.query("liquid_bridging", liquid_bridging);
+            if(liquid_bridging){
+                // Read in liquid bridging variables
+                pp.query("moisture_content", moisture_content); // Percentage of the voidage of that contains liquid
+                pp.query("contact_angle", DEM::contact_angle);
+                pp.query("total_liquid_volume", total_liquid_volume);
+                pp.query("liquid_viscosity", DEM::mu_liq);
+                pp.query("surface_tension", DEM::gamma);
+
+                // TODO: add more input checks
+                if(moisture_content < 0.0 || moisture_content > 100.0) Abort("\nMoisture content should be a percentage between 0 and 100.\n");
+            }
 
 
         }

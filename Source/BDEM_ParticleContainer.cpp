@@ -23,7 +23,9 @@ Real BDEMParticleContainer::compute_coll_timescale()
         //technically the mass should be effective mass 
         //among collision partners
         //but this may be ok for now
-        return( std::pow(DEM::k_n/p.rdata(realData::mass)
+        // FIXME: should this change when using glued sphere model?
+        // return( std::pow(DEM::k_n/p.rdata(realData::mass)
+        return( std::pow(DEM::k_n/(p.rdata(realData::mass)/p.idata(intData::num_comp_sphere))
                 *PI*PI/(PI*PI + log(DEM::e_n)*log(DEM::e_n))
                 ,-half)
          ); 
@@ -40,7 +42,9 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_present)
+            const int ls_refinement,bool stl_geom_present,
+            RealVect &gravity,const int glued_sphere_particles,
+            const int liquid_bridging)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -141,14 +145,14 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
         }
         //at Cartesian walls
 #include"BDEM_CartWallCollisions.H"
-
+  
 #include"BDEM_ParticleCollisions.H"
     }
 }
 
 
-void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravity,
-        int do_chemistry,Real minradfrac)
+void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
+        int do_chemistry,Real minradfrac, const int glued_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::moveParticles");
 
@@ -199,17 +203,83 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,RealVect &gravit
             pos_old[1]=p.pos(1);
             pos_old[2]=p.pos(2);
 
-            p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass) + gravity[XDIR]) * dt;
-            p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass) + gravity[YDIR]) * dt;
-            p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass) + gravity[ZDIR]) * dt;
+            p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt;
+            p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt;
+            p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt;
 
             p.pos(0) += p.rdata(realData::xvel) * dt;
             p.pos(1) += p.rdata(realData::yvel) * dt;
             p.pos(2) += p.rdata(realData::zvel) * dt;
 
-            p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
-            p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
-            p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+            if(glued_sphere_particles){
+                // Angular velocity is updated in body-fixed frame of reference so that diagonal inertia tensor can be used
+                // I d (w_body)/dt = -w_body x (w_body I) + R tau
+  
+                // Calculate the body-fixed angular velocity
+                Real angvel_inert[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
+                Real angvel_body[THREEDIM];
+                rotate_vector_to_body(p, angvel_inert, angvel_body);
+
+                // Calculate the cross product term
+                Real wI[THREEDIM];
+                Real cpdt[THREEDIM];
+                wI[XDIR] = angvel_body[XDIR] / p.rdata(realData::Ixinv);
+                wI[YDIR] = angvel_body[YDIR] / p.rdata(realData::Iyinv);
+                wI[ZDIR] = angvel_body[ZDIR] / p.rdata(realData::Izinv);
+                crosspdt(angvel_body, wI, cpdt);
+
+                // Rotate the torque vector to body-fixed frame
+                Real tau_inert[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
+                Real tau_body[THREEDIM];
+                rotate_vector_to_body(p, tau_inert, tau_body);
+
+                // Update the angular velocity in the body-fixed reference frame
+                angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt;
+                angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt;
+                angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
+
+                // Rotate updated body-fixed angular velocity back to inertial frame
+                rotate_vector_to_inertial(p, angvel_body, angvel_inert);
+                p.rdata(realData::xangvel) = angvel_inert[XDIR];
+                p.rdata(realData::yangvel) = angvel_inert[YDIR];
+                p.rdata(realData::zangvel) = angvel_inert[ZDIR];
+
+                // Update the quaternion components with the updated angular velocity
+                // FIXME: should this be done using angval at t=n or t=n+1?
+                Real q0 = p.rdata(realData::q0);
+                Real q1 = p.rdata(realData::q1);
+                Real q2 = p.rdata(realData::q2);
+                Real q3 = p.rdata(realData::q3);
+        
+                Real dq0 = (dt/2.0) * (-q2*angvel_inert[XDIR] + q1*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
+                Real dq1 = (dt/2.0) * (-q3*angvel_inert[XDIR] - q0*angvel_inert[YDIR] + q2*angvel_inert[ZDIR]);
+                Real dq2 = (dt/2.0) * ( q0*angvel_inert[XDIR] - q3*angvel_inert[YDIR] - q1*angvel_inert[ZDIR]);
+                Real dq3 = (dt/2.0) * ( q1*angvel_inert[XDIR] + q2*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
+
+                q0 += dq0;
+                q1 += dq1;
+                q2 += dq2;
+                q3 += dq3;
+
+                // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
+                Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
+                p.rdata(realData::q0) = q0/qmag;
+                p.rdata(realData::q1) = q1/qmag;
+                p.rdata(realData::q2) = q2/qmag;
+                p.rdata(realData::q3) = q3/qmag;
+
+                // Calculate principal axis components in inertial reference frame
+                Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
+                Real pa_inert[THREEDIM];
+                rotate_vector_to_inertial(p, pa_body, pa_inert);
+                p.rdata(realData::pax) = pa_inert[XDIR];
+                p.rdata(realData::pay) = pa_inert[YDIR];
+                p.rdata(realData::paz) = pa_inert[ZDIR];
+            } else{
+                p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
+                p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
+                p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+            }
 
             if(do_chemistry)
             {
@@ -381,13 +451,86 @@ void BDEMParticleContainer::reassignParticles_softwall()
     }
 }
 
-void BDEMParticleContainer::writeParticles(const int n)
+void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real contact_angle, Real total_liquid_volume)
 {
+    BL_PROFILE("BDEMParticleContainer::computeMoistureContent");
+
+    const int lev = 0;
+    auto& plev = GetParticles(lev);
+    const Geometry& geom = Geom(lev);
+    const auto plo = geom.ProbLoArray();
+    const auto phi = Geom(lev).ProbHiArray();
+
+    // Calculate the total domain volume 
+    // FIXME: Need to figure out how to calculate correct volume when EB or stl present
+    // FIXME: May want to find smart way to filter out portion of volume where particles aren't present (i.e. top portiof of hopper)
+    Real Vtot = (phi[XDIR] - plo[XDIR])*(phi[YDIR] - plo[YDIR])*(phi[ZDIR] - plo[ZDIR]);
+
+    // Calculate the total particle volume and sum of particle diameters^2
+    Real Vpart = 0.0;
+    Real d2sum = 0.0;
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        ParticleType* pstruct = aos().dataPtr();
+
+        // now we move the particles
+        amrex::ParallelFor(np,[pstruct, &Vpart, &d2sum]
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            Vpart += p.rdata(realData::volume);
+            d2sum += pow(p.rdata(realData::radius)*2.0, two);
+        });
+    }
+    amrex::ParallelDescriptor::ReduceRealSum(Vpart);
+    amrex::ParallelDescriptor::ReduceRealSum(d2sum);
+
+    // Calculate the total liquid volume
+    Real Vvoid = Vtot - Vpart;
+    Real Vliq = (total_liquid_volume == 0.0) ? Vvoid * moisture_content/100.0:total_liquid_volume;
+
+    // If user specifies the total liquid volume, make sure it doesnt exceed the voidage
+    if(Vliq > Vvoid) Abort("\nTotal liquid volume specified exceeds the total voidage!\n");
+
+    // Calculate the liquid volume per particle (assumed proportional to diameter^2) 
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        ParticleType* pstruct = aos().dataPtr();
+
+        // now we move the particles
+        amrex::ParallelFor(np,[=]
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            p.rdata(realData::liquid_volume) = Vliq * pow(p.rdata(realData::radius)*2.0, two) / d2sum;
+        });
+    }
+}
+
+void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles)
+{
+
+    // TODO add new variables for glued sphere model
+
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = amrex::Concatenate("plt", n, 5);
 
     Vector<int> writeflags_real(realData::count+MAXSPECIES-1,0);
-    Vector<int> writeflags_int(intData::count,0);
+    Vector<int> writeflags_int(intData::count+MAXBRIDGES*3-1,0);
 
     Vector<std::string> real_data_names;
     Vector<std::string>  int_data_names;
@@ -407,6 +550,9 @@ void BDEMParticleContainer::writeParticles(const int n)
     real_data_names.push_back("tauy");
     real_data_names.push_back("tauz");
     real_data_names.push_back("Iinv");
+    real_data_names.push_back("Ixinv");
+    real_data_names.push_back("Iyinv");
+    real_data_names.push_back("Izinv");
     real_data_names.push_back("volume");
     real_data_names.push_back("mass");
     real_data_names.push_back("density");
@@ -414,6 +560,17 @@ void BDEMParticleContainer::writeParticles(const int n)
     real_data_names.push_back("posx_prvs");
     real_data_names.push_back("posy_prvs");
     real_data_names.push_back("posz_prvs");
+    real_data_names.push_back("euler_angle_x");
+    real_data_names.push_back("euler_angle_y");
+    real_data_names.push_back("euler_angle_z");
+    real_data_names.push_back("q0");
+    real_data_names.push_back("q1");
+    real_data_names.push_back("q2");
+    real_data_names.push_back("q3");
+    real_data_names.push_back("pax");
+    real_data_names.push_back("pay");
+    real_data_names.push_back("paz");
+    real_data_names.push_back("liquid_volume");
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -428,6 +585,17 @@ void BDEMParticleContainer::writeParticles(const int n)
 
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
+    int_data_names.push_back("num_comp_sphere");
+
+    for(int i=0;i<MAXBRIDGES;i++)
+    {
+        std::string bridgeidx = amrex::Concatenate("p2idx",i,2);
+        int_data_names.push_back(bridgeidx);
+        bridgeidx = amrex::Concatenate("p1cs",i,2);
+        int_data_names.push_back(bridgeidx);
+        bridgeidx = amrex::Concatenate("p2cs",i,2);
+        int_data_names.push_back(bridgeidx);
+    }
 
     writeflags_real[realData::radius]=1;
     writeflags_real[realData::xvel]=1;
@@ -447,8 +615,121 @@ void BDEMParticleContainer::writeParticles(const int n)
     {
         writeflags_real[realData::firstspec+i]=1;
     }
+    if(glued_sphere_particles){
+        writeflags_real[realData::pax] = 1;
+        writeflags_real[realData::pay] = 1;
+        writeflags_real[realData::paz] = 1;
+        writeflags_int[intData::num_comp_sphere] = 1;
+    }
 
     WritePlotFile(pltfile, "particles",writeflags_real, 
             writeflags_int, real_data_names, int_data_names);
 
 }
+
+void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
+{
+    // Extract particle tile from input BPC
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    auto& plev_in = pin.GetParticles(lev);
+    auto& plev_out = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile_in = plev_in[index];
+        auto& ptile_out = plev_out[index];
+        auto& aos_in   = ptile_in.GetArrayOfStructs();
+        const size_t np = aos_in.numParticles();
+
+        ParticleType* pstruct_in = aos_in().dataPtr();
+        Gpu::HostVector<ParticleType> host_particles;
+
+        for(int i = 0; i<np; i++){
+            ParticleType& p_in = pstruct_in[i];
+            for(int pc = 0; pc < p_in.idata(intData::num_comp_sphere); pc++){
+                ParticleType pcomp;
+
+                // Calculate inertial frame position of each component sphere
+                Real ppos_inert[THREEDIM];
+                Real ppos_body[THREEDIM] = {p_in.rdata(realData::radius)*((p_in.idata(intData::num_comp_sphere) - 1) - 2.0*pc), 0.0, 0.0};
+                rotate_vector_to_inertial(p_in, ppos_body, ppos_inert);
+                Real pposx = p_in.pos(0) + ppos_inert[XDIR];
+                Real pposy = p_in.pos(1) + ppos_inert[YDIR];
+                Real pposz = p_in.pos(2) + ppos_inert[ZDIR];
+
+                pcomp.id()   = ParticleType::NextID();
+                pcomp.cpu()  = ParallelDescriptor::MyProc();
+                
+                pcomp.pos(0) = pposx;
+                pcomp.pos(1) = pposy;
+                pcomp.pos(2) = pposz;
+
+                pcomp.rdata(realData::radius) = p_in.rdata(realData::radius);
+                pcomp.rdata(realData::radinit) = p_in.rdata(realData::radinit);
+                pcomp.rdata(realData::density) = p_in.rdata(realData::density);
+                pcomp.rdata(realData::temperature) = p_in.rdata(realData::temperature);
+                pcomp.rdata(realData::mass) = p_in.rdata(realData::mass) / p_in.idata(intData::num_comp_sphere);
+                pcomp.rdata(realData::volume) = p_in.rdata(realData::volume) / p_in.idata(intData::num_comp_sphere);
+
+                // FIXME: Should be calculating the velocity of the component sphere
+                pcomp.rdata(realData::xvel) = p_in.rdata(realData::xvel);
+                pcomp.rdata(realData::yvel) = p_in.rdata(realData::yvel);
+                pcomp.rdata(realData::zvel) = p_in.rdata(realData::zvel);
+
+                pcomp.idata(intData::num_comp_sphere) = 1;
+                pcomp.rdata(realData::euler_angle_x) = p_in.rdata(realData::euler_angle_x);
+                pcomp.rdata(realData::euler_angle_y) = p_in.rdata(realData::euler_angle_y);
+                pcomp.rdata(realData::euler_angle_z) = p_in.rdata(realData::euler_angle_z);
+                pcomp.rdata(realData::q0) = p_in.rdata(realData::q0);
+                pcomp.rdata(realData::q1) = p_in.rdata(realData::q1);
+                pcomp.rdata(realData::q2) = p_in.rdata(realData::q2);
+                pcomp.rdata(realData::q3) = p_in.rdata(realData::q3);
+                pcomp.rdata(realData::pax) = p_in.rdata(realData::pax);
+                pcomp.rdata(realData::pay) = p_in.rdata(realData::pay);
+                pcomp.rdata(realData::paz) = p_in.rdata(realData::paz);
+                pcomp.rdata(realData::Iinv) = p_in.rdata(realData::Iinv);
+                pcomp.rdata(realData::Ixinv) = p_in.rdata(realData::Ixinv);
+                pcomp.rdata(realData::Iyinv) = p_in.rdata(realData::Iyinv);
+                pcomp.rdata(realData::Izinv) = p_in.rdata(realData::Izinv);
+                pcomp.rdata(realData::xangvel) = p_in.rdata(realData::xangvel);
+                pcomp.rdata(realData::yangvel) = p_in.rdata(realData::yangvel);
+                pcomp.rdata(realData::zangvel) = p_in.rdata(realData::zangvel);
+                pcomp.rdata(realData::fx) = p_in.rdata(realData::fx);
+                pcomp.rdata(realData::fy) = p_in.rdata(realData::fy);
+                pcomp.rdata(realData::fz) = p_in.rdata(realData::fz);
+                pcomp.rdata(realData::taux) = p_in.rdata(realData::taux);
+                pcomp.rdata(realData::tauy) = p_in.rdata(realData::tauy);
+                pcomp.rdata(realData::tauz) = p_in.rdata(realData::tauz);
+
+                for(int br=0; br<MAXBRIDGES; br++){
+                    pcomp.idata(intData::first_bridge+3*br) = -1;
+                    pcomp.idata(intData::first_bridge+3*br+1) = -1;
+                    pcomp.idata(intData::first_bridge+3*br+2) = -1;
+                }
+                for(int sp=0;sp<MAXSPECIES;sp++)
+                {
+                    pcomp.rdata(realData::firstspec+sp)=p_in.rdata(realData::firstspec+sp);
+                }
+   
+                host_particles.push_back(pcomp);
+            }
+        }
+
+        auto old_size = ptile_out.GetArrayOfStructs().size();
+        auto new_size = old_size + host_particles.size();
+        ptile_out.resize(new_size);
+
+        Gpu::copy(Gpu::hostToDevice,
+                  host_particles.begin(),
+                  host_particles.end(),
+                  ptile_out.GetArrayOfStructs().begin() + old_size);
+    }
+}
+
+
+
