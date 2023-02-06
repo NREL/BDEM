@@ -461,6 +461,9 @@ class DEMspecs
                 pp.query("liquid_viscosity", DEM::mu_liq);
                 pp.query("surface_tension", DEM::gamma);
 
+                // Convert contact angle to rad
+                DEM::contact_angle *= PI/180.0;
+
                 // TODO: add more input checks
                 if(moisture_content < 0.0 || moisture_content > 100.0) Abort("\nMoisture content should be a percentage between 0 and 100.\n");
             }

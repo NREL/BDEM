@@ -464,6 +464,7 @@ void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real c
     // Calculate the total domain volume 
     // FIXME: Need to figure out how to calculate correct volume when EB or stl present
     // FIXME: May want to find smart way to filter out portion of volume where particles aren't present (i.e. top portiof of hopper)
+    // FIXME: Calculation for liquid volume per particle needs to be fixed for glued sphere case
     Real Vtot = (phi[XDIR] - plo[XDIR])*(phi[YDIR] - plo[YDIR])*(phi[ZDIR] - plo[ZDIR]);
 
     // Calculate the total particle volume and sum of particle diameters^2
@@ -480,7 +481,6 @@ void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real c
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
 
-        // now we move the particles
         amrex::ParallelFor(np,[pstruct, &Vpart, &d2sum]
         AMREX_GPU_DEVICE (int i) noexcept
         {

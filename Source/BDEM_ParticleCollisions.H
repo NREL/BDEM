@@ -74,16 +74,16 @@ amrex::ParallelFor(np,[=]
                         }
                     }
                 }
-
+  
                 // Initialize variables used for both contact and liquid bridge force calculations
                 // Calculate effective quantities
                 Real meff = m1*m2/(m1+m2);
                 Real Reff = rad1*rad2/(rad1+rad2);
                 Real normal[THREEDIM];
-                Real tangent[THREEDIM];
+                Real tangent[THREEDIM] = {0.0};
                 Real overlap_n = rad_sum - distmag;
                 Real vrel_trans_norm;
-                Real vrel_trans_tan;
+                Real vrel_trans_tan = 0.0;
                 Real vrel_n[THREEDIM];
                 Real vrel_t[THREEDIM];
                 Real contact_loc[THREEDIM];
@@ -153,11 +153,14 @@ amrex::ParallelFor(np,[=]
                     vrel_t[YDIR] = vrel[YDIR] - vrel_n[YDIR];
                     vrel_t[ZDIR] = vrel[ZDIR] - vrel_n[ZDIR];
 
+                    // Calculate tangential vector here as well for use in liquid bridge model
                     Real mag_vrel_t = sqrt(dotpdt(vrel_t, vrel_t));
-                    tangent[XDIR] = vrel_t[XDIR] / mag_vrel_t;
-                    tangent[YDIR] = vrel_t[YDIR] / mag_vrel_t;
-                    tangent[ZDIR] = vrel_t[ZDIR] / mag_vrel_t;
-                    vrel_trans_tan = dotpdt(vrel, tangent);
+                    if(mag_vrel_t > 0.0){
+                        tangent[XDIR] = vrel_t[XDIR] / mag_vrel_t;
+                        tangent[YDIR] = vrel_t[YDIR] / mag_vrel_t;
+                        tangent[ZDIR] = vrel_t[ZDIR] / mag_vrel_t;
+                        vrel_trans_tan = dotpdt(vrel, tangent);
+                    }
                 }
                 if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) )
                 {
@@ -274,6 +277,7 @@ amrex::ParallelFor(np,[=]
 
                 // Calculate the capillary force from the liquid bridge
                 if(bridge_exists){
+                    // FIXME: Should we be using the same radius value for a given bridge? Otherwise capillary force may not be equal for a particle pair
                     // Recalculate bridge volume (not necessary if there's an easy way to store this) 
                     Real Vtot = (p1.rdata(realData::liquid_volume)/2.0)*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))))
                               + (p2.rdata(realData::liquid_volume)/2.0)*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
@@ -291,13 +295,14 @@ amrex::ParallelFor(np,[=]
 
                     // Calculate the fitting coefficients from Soulie et al. (2006)
                     Real acoef = -1.1*pow( Vtot/pow(rad2,3.0) ,-0.53);
-                    Real bcoef = -0.148*log(Vtot/pow(rad2,3.0) - 0.96)*pow(DEM::contact_angle,two) - 0.0082*log(Vtot/pow(rad2,3.0)) + 0.48;
+                    Real bcoef = (-0.148*log(Vtot/pow(rad2,3.0)) - 0.96)*pow(DEM::contact_angle,two) - 0.0082*log(Vtot/pow(rad2,3.0)) + 0.48;
                     Real ccoef = 0.0018*log(Vtot/pow(rad2,3.0)) + 0.078;
 
                     // Calculate the normal capillary force and normal/tangential viscous forces 
                     Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
-                    Real Fvisc_n = 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist);
-                    Real Fvisc_t = 6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588);
+                    
+                    Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
+                    Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
 
                     Real bridge_force[THREEDIM];
                     Real torq[THREEDIM];
