@@ -149,6 +149,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
                 p.idata(intData::first_bridge+3*br+1) = -1;
                 p.idata(intData::first_bridge+3*br+2) = -1;
             }
+            p.rdata(realData::liquid_volume) = zero;
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
@@ -628,6 +629,29 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::taux) = zero;
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
+
+    p.idata(intData::num_comp_sphere) = 1;
+    p.rdata(realData::euler_angle_x) = zero;
+    p.rdata(realData::euler_angle_y) = zero;
+    p.rdata(realData::euler_angle_z) = zero;
+    p.rdata(realData::q0) = zero;
+    p.rdata(realData::q1) = zero;
+    p.rdata(realData::q2) = zero;
+    p.rdata(realData::q3) = zero;
+    p.rdata(realData::pax) = zero;
+    p.rdata(realData::pay) = zero;
+    p.rdata(realData::paz) = zero;
+
+    p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+    p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+    p.rdata(realData::Izinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+
+    for(int br=0; br<MAXBRIDGES; br++){
+        p.idata(intData::first_bridge+3*br) = -1;
+        p.idata(intData::first_bridge+3*br+1) = -1;
+        p.idata(intData::first_bridge+3*br+2) = -1;
+    }
+    p.rdata(realData::liquid_volume) = zero;
 
     for(int i=0;i<MAXSPECIES;i++)
     {

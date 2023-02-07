@@ -170,6 +170,7 @@ namespace STLtools
    
    void boundingbox(int startindex,int endindex,int *indexarray,Real bx[6])
    {
+        // NOTE: Returns in min/max xyz coordinates across all stl elements?
        bx[0]=1e50;
        bx[1]=1e50;
        bx[2]=1e50;
@@ -232,6 +233,8 @@ namespace STLtools
 
     void sort_triangle_ids(int start,int end,int dir,int *indexarray)
     {
+        // NOTE, as coded sorts triangle IDs based on min/max xyz extents?
+        
         //selection sort
         for(int it=0;it<(end-start);it++)
         {
@@ -389,6 +392,9 @@ namespace STLtools
    }
     void set_tri_mat_and_domndir(Real p[9],Real mat[9],Real rot_pts[9],int &dndir)
     {
+        // Seems that mat is (essentially) a 3x3 matrix comprised of the normal vector components,
+        // and two orthogonal matrix components
+        // TODO: What is rot_pts?
         amrex::Real v1[3],v2[3],n[3];
         amrex::Real nhat[3],v1hat[3],v2hat[3];
         amrex::Real pr[3][3];
@@ -474,6 +480,7 @@ namespace STLtools
                                        + tri_pts[ndata_per_tri*i+dim+6]);
             }
 
+            // NOTE: why do we need inertia?
             inertia_mat[0] += (centr[0]-c_of_mass[0])*(centr[0]-c_of_mass[0]);
             inertia_mat[1] += (centr[0]-c_of_mass[0])*(centr[1]-c_of_mass[1]);
             inertia_mat[2] += (centr[0]-c_of_mass[0])*(centr[2]-c_of_mass[2]);
