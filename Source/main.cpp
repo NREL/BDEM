@@ -70,7 +70,7 @@ int main (int argc, char* argv[])
                         specs.autogen_meanvel.data(),  specs.autogen_fluctuation.data(), 
                         specs.autogen_radius, specs.autogen_dens, specs.autogen_temp,
                         specs.autogen_species_massfracs.data(),
-                        specs.autogen_multi_part_per_cell);
+                        specs.autogen_multi_part_per_cell, specs.autogen_max_sphere);
             }
         }
         else
@@ -121,7 +121,7 @@ int main (int argc, char* argv[])
         amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
-        if(specs.visualize_component_spheres){
+        if(specs.visualize_component_spheres && specs.glued_sphere_particles){
             // If using glued sphere model, create new particle container to create particles for each 
             // component sphere (for visualization purposes)
             BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
@@ -140,7 +140,6 @@ int main (int argc, char* argv[])
         // Calculate the moisture content for each particle
         if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.total_liquid_volume);
 
-
         while((steps < specs.maxsteps) and (time < specs.final_time))
         {
             time += dt;
@@ -149,7 +148,6 @@ int main (int argc, char* argv[])
             output_timePrint += dt;
             particle_sourcing_time += dt;
         
-
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
                && time < specs.stop_sourcing_time)
@@ -182,6 +180,7 @@ int main (int argc, char* argv[])
             {
                 bpc.updateNeighbors();
             }
+    
 
             /*if(specs.stl_geom_present)
               {
@@ -253,7 +252,7 @@ int main (int argc, char* argv[])
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
                 bpc.redist_particles(0,specs.using_softwalls);
                 output_it++;
-                if(specs.visualize_component_spheres){
+                if(specs.visualize_component_spheres && specs.glued_sphere_particles){
                     BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
                     bpc_vis.createGluedSpheres(bpc);
                     bpc_vis.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles);
@@ -280,7 +279,7 @@ int main (int argc, char* argv[])
         }
 
         bpc.redist_particles(0,specs.using_softwalls);
-        if(specs.visualize_component_spheres){
+        if(specs.visualize_component_spheres && specs.glued_sphere_particles){
             BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
             bpc_vis.createGluedSpheres(bpc);
             bpc_vis.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles);

@@ -30,7 +30,7 @@ public:
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
-        Real dens, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0);
+        Real dens, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
 
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
@@ -60,7 +60,7 @@ public:
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
-                Real dens, Real rad, Real temp,Real spec[MAXSPECIES]);
+                Real dens, Real rad, Real temp,Real spec[MAXSPECIES], int num_sphere);
 
     void createGluedSpheres(BDEMParticleContainer& pin);
 

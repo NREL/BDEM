@@ -146,6 +146,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
         //at Cartesian walls
 #include"BDEM_CartWallCollisions.H"
   
+
 #include"BDEM_ParticleCollisions.H"
     }
 }
@@ -238,12 +239,6 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                 angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt;
                 angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
 
-                // Rotate updated body-fixed angular velocity back to inertial frame
-                rotate_vector_to_inertial(p, angvel_body, angvel_inert);
-                p.rdata(realData::xangvel) = angvel_inert[XDIR];
-                p.rdata(realData::yangvel) = angvel_inert[YDIR];
-                p.rdata(realData::zangvel) = angvel_inert[ZDIR];
-
                 // Update the quaternion components with the updated angular velocity
                 // FIXME: should this be done using angval at t=n or t=n+1?
                 Real q0 = p.rdata(realData::q0);
@@ -256,17 +251,28 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                 Real dq2 = (dt/2.0) * ( q0*angvel_inert[XDIR] - q3*angvel_inert[YDIR] - q1*angvel_inert[ZDIR]);
                 Real dq3 = (dt/2.0) * ( q1*angvel_inert[XDIR] + q2*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
 
-                q0 += dq0;
-                q1 += dq1;
-                q2 += dq2;
-                q3 += dq3;
+                q0 += dq0 / 1.0;
+                q1 += dq1 / 1.0;
+                q2 += dq2 / 1.0;
+                q3 += dq3 / 1.0;
 
                 // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
                 Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
-                p.rdata(realData::q0) = q0/qmag;
-                p.rdata(realData::q1) = q1/qmag;
-                p.rdata(realData::q2) = q2/qmag;
-                p.rdata(realData::q3) = q3/qmag;
+                if(qmag < 0.5) printf("WARNING: SMALL QUATERNION VALUES ENCOUNTERED (%.6e) FOR PARTICLE %i!\n", qmag, p.id());
+                if(qmag > 1.5) printf("WARNING: LARGE QUATERNION VALUES ENCOUNTERED (%.6e) FOR PARTICLE %i!\n", qmag, p.id());
+                
+                if(qmag > TINYVAL){
+                    p.rdata(realData::q0) = (q0 - amrex::Math::copysign(1.0,q0)*TINYVAL)/qmag;
+                    p.rdata(realData::q1) = (q1 - amrex::Math::copysign(1.0,q1)*TINYVAL)/qmag;
+                    p.rdata(realData::q2) = (q2 - amrex::Math::copysign(1.0,q2)*TINYVAL)/qmag;
+                    p.rdata(realData::q3) = (q3 - amrex::Math::copysign(1.0,q3)*TINYVAL)/qmag;
+                }
+
+                // Rotate updated body-fixed angular velocity back to inertial frame
+                rotate_vector_to_inertial(p, angvel_body, angvel_inert);
+                p.rdata(realData::xangvel) = angvel_inert[XDIR];
+                p.rdata(realData::yangvel) = angvel_inert[YDIR];
+                p.rdata(realData::zangvel) = angvel_inert[ZDIR];
 
                 // Calculate principal axis components in inertial reference frame
                 Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
@@ -681,7 +687,7 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::yvel) = p_in.rdata(realData::yvel);
                 pcomp.rdata(realData::zvel) = p_in.rdata(realData::zvel);
 
-                pcomp.idata(intData::num_comp_sphere) = 1;
+                pcomp.idata(intData::num_comp_sphere) = p_in.idata(intData::num_comp_sphere);
                 pcomp.rdata(realData::euler_angle_x) = p_in.rdata(realData::euler_angle_x);
                 pcomp.rdata(realData::euler_angle_y) = p_in.rdata(realData::euler_angle_y);
                 pcomp.rdata(realData::euler_angle_z) = p_in.rdata(realData::euler_angle_z);

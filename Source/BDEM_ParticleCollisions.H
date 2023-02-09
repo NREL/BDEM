@@ -23,14 +23,6 @@ amrex::ParallelFor(np,[=]
         posvect[YDIR] = p1pos_inert[YDIR] - p1.pos(1);
         posvect[ZDIR] = p1pos_inert[ZDIR] - p1.pos(2);
 
-        Real gravtorq[THREEDIM];    
-        Real gravvect[THREEDIM] = {gravity[XDIR], gravity[YDIR], gravity[ZDIR]};
-        crosspdt(posvect, gravvect, gravtorq);
-        
-        p1.rdata(realData::taux) += gravtorq[XDIR];
-        p1.rdata(realData::tauy) += gravtorq[YDIR];
-        p1.rdata(realData::tauz) += gravtorq[ZDIR];
-
         for (const auto& p2 : nbor_data.getNeighbors(i))
         {                
             for(int pc2 = 0; pc2 < p2.idata(intData::num_comp_sphere); pc2++){

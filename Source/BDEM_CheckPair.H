@@ -7,6 +7,7 @@ struct CheckPair
 {
     // FIXME: Make sure check pair accounts for liquid bridges
     // FIXME: Neighbor detection seems to fail when there is a large particle radius ratio, or small particle radii used
+    // TODO: Find more efficient check for neighbors, updated code is more robust but also substantially slower
     template <class P>
     AMREX_GPU_DEVICE AMREX_FORCE_INLINE
     bool operator()(const P& p1, const P& p2) const
@@ -53,7 +54,7 @@ struct CheckPair
                 amrex::Real d2 = (p1posz - p2posz);    
                 amrex::Real dsquared = d0*d0 + d1*d1 + d2*d2;   
                 // if(dsquared <= 9.0*p1.rdata(realData::radius)*p1.rdata(realData::radius)){
-                if(dsquared <= 2.0*(p1.rdata(realData::radius) + p2.rdata(realData::radius))){
+                if(dsquared <= 1.5*(p1.rdata(realData::radius) + p2.rdata(realData::radius))){
                     return true;
                 }
             }

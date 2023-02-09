@@ -314,7 +314,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
             {
                 ParticleType& p = pstruct[i];
                 Real rp = p.rdata(realData::radius);
-                for(int pc; pc<p.idata(intData::num_comp_sphere); pc++){
+                for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
                     Real ppos_inert[THREEDIM];
                     Real ppos_body[THREEDIM];
                     get_inertial_body_fixed_pos(p, pc, ppos_inert, ppos_body); 
@@ -495,7 +495,7 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
 void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
                                            Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens, Real temp,
                                            Real spec[MAXSPECIES],
-                                           int do_multi_part_per_cell)
+                                           int do_multi_part_per_cell, int max_sphere)
 {
     int lev = 0;
     Real x,y,z,x0,y0,z0;
@@ -536,7 +536,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                        dens,
-                                                       rad,temp,spec);
+                                                       rad,temp,spec,ceil(amrex::Random()*max_sphere));
                     host_particles.push_back(p);
                 }
             }
@@ -568,7 +568,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                    meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                    meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                    dens,
-                                                                   rad,temp,spec);
+                                                                   rad,temp,spec,max_sphere);
                                 host_particles.push_back(p);
                             }
                         }
@@ -595,7 +595,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
 BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Real x,Real y,Real z,
                                                                              Real velx, Real vely, Real velz,
-                                                                             Real dens, Real rad, Real temp,Real spec[MAXSPECIES])
+                                                                             Real dens, Real rad, Real temp,Real spec[MAXSPECIES], int num_sphere)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -615,14 +615,6 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::zvel) = velz;
     p.rdata(realData::temperature)=temp;
 
-    // Set other particle properties
-    p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
-    p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
-    p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-    p.rdata(realData::xangvel)     = zero;
-    p.rdata(realData::yangvel)     = zero;
-    p.rdata(realData::zangvel)     = zero;
-
     p.rdata(realData::fx) = zero;
     p.rdata(realData::fy) = zero;
     p.rdata(realData::fz) = zero;
@@ -630,21 +622,36 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
 
-    p.idata(intData::num_comp_sphere) = 1;
-    p.rdata(realData::euler_angle_x) = zero;
-    p.rdata(realData::euler_angle_y) = zero;
-    p.rdata(realData::euler_angle_z) = zero;
-    p.rdata(realData::q0) = zero;
-    p.rdata(realData::q1) = zero;
-    p.rdata(realData::q2) = zero;
-    p.rdata(realData::q3) = zero;
-    p.rdata(realData::pax) = zero;
-    p.rdata(realData::pay) = zero;
-    p.rdata(realData::paz) = zero;
+    p.idata(intData::num_comp_sphere) = num_sphere;
+    p.rdata(realData::euler_angle_x) = amrex::Random()*PI/2.0;
+    p.rdata(realData::euler_angle_y) = amrex::Random()*PI/2.0;
+    p.rdata(realData::euler_angle_z) = amrex::Random()*PI/2.0;
 
-    p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-    p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-    p.rdata(realData::Izinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+    Real eax = p.rdata(realData::euler_angle_x);
+    Real eay = p.rdata(realData::euler_angle_y);
+    Real eaz = p.rdata(realData::euler_angle_z);
+    p.rdata(realData::q0) = cos(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
+    p.rdata(realData::q1) = sin(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) - cos(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
+    p.rdata(realData::q2) = cos(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0);
+    p.rdata(realData::q3) = cos(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0) - sin(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0);
+
+    Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
+    Real pa_inert[THREEDIM];
+    rotate_vector_to_inertial(p, pa_body, pa_inert);
+    p.rdata(realData::pax) = pa_inert[XDIR];
+    p.rdata(realData::pay) = pa_inert[YDIR];
+    p.rdata(realData::paz) = pa_inert[ZDIR];
+
+    // Set other particle properties
+    p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);
+    p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
+    p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+    p.rdata(realData::xangvel)     = zero;
+    p.rdata(realData::yangvel)     = zero;
+    p.rdata(realData::zangvel)     = zero;
+    p.rdata(realData::Ixinv) = 5.0/(p.rdata(realData::mass)*(2.0 * pow(p.rdata(realData::radius),two)) );
+    p.rdata(realData::Iyinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+    p.rdata(realData::Izinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
 
     for(int br=0; br<MAXBRIDGES; br++){
         p.idata(intData::first_bridge+3*br) = -1;

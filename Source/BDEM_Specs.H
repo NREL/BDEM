@@ -104,6 +104,7 @@ class DEMspecs
         Real autogen_radius; 
         Real autogen_dens;
         Real autogen_temp;
+        int autogen_max_sphere = 1;
         Vector<Real> autogen_species_massfracs;
 
         bool restartedcase=false;
@@ -313,6 +314,7 @@ class DEMspecs
                 autogen_species_massfracs[0]=1.0;
                 pp.queryarr("autogen_species_massfracs",species_massfracs,0,chemptr->nspecies);
                 pp.query("autogen_multiple_particles_per_cell",autogen_multi_part_per_cell);
+                pp.query("autogen_max_sphere", autogen_max_sphere);
             }
 
             pp.query("particle_sourcing",particle_sourcing);
