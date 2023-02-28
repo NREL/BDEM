@@ -138,7 +138,7 @@ int main (int argc, char* argv[])
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
 
         // Calculate the moisture content for each particle
-        if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.total_liquid_volume);
+        if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
 
         while((steps < specs.maxsteps) and (time < specs.final_time))
         {
@@ -148,6 +148,8 @@ int main (int argc, char* argv[])
             output_timePrint += dt;
             particle_sourcing_time += dt;
         
+            if(steps>0) specs.init_force = 0.0;
+
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
                && time < specs.stop_sourcing_time)
@@ -156,7 +158,21 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens, specs.particle_sourcing_temp,
                                    specs.particle_sourcing_species_massfracs.data(),
-                                   specs.particle_sourcing_multi_part_per_cell);
+                                   specs.particle_sourcing_multi_part_per_cell, specs.particle_sourcing_max_sphere);
+
+                amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
+                //if(EBtools::using_levelset_geometry and !specs.restartedcase)
+                if(EBtools::using_levelset_geometry)
+                {
+                    bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
+                                                       EBtools::ebfactory,EBtools::ls_refinement);
+                }
+                amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
+                if(specs.stl_geom_present)
+                {
+                    bpc.removeParticlesInsideSTL(specs.outside_point);
+                }
+                amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
                 bpc.redist_particles(1,specs.using_softwalls);
                 amrex::Print()<<"adding particles\n";
@@ -194,7 +210,8 @@ int main (int argc, char* argv[])
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present,
                                   specs.gravity,specs.glued_sphere_particles,
-                                  specs.liquid_bridging);
+                                  specs.liquid_bridging, specs.init_force,
+                                  specs.init_force_dir, specs.init_force_comp);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 

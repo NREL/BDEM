@@ -44,7 +44,8 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present,
             RealVect &gravity,const int glued_sphere_particles,
-            const int liquid_bridging)
+            const int liquid_bridging, const Real init_force,
+            const int init_force_dir, const int init_force_comp)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -240,21 +241,20 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                 angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
 
                 // Update the quaternion components with the updated angular velocity
-                // FIXME: should this be done using angval at t=n or t=n+1?
                 Real q0 = p.rdata(realData::q0);
                 Real q1 = p.rdata(realData::q1);
                 Real q2 = p.rdata(realData::q2);
                 Real q3 = p.rdata(realData::q3);
-        
-                Real dq0 = (dt/2.0) * (-q2*angvel_inert[XDIR] + q1*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
-                Real dq1 = (dt/2.0) * (-q3*angvel_inert[XDIR] - q0*angvel_inert[YDIR] + q2*angvel_inert[ZDIR]);
-                Real dq2 = (dt/2.0) * ( q0*angvel_inert[XDIR] - q3*angvel_inert[YDIR] - q1*angvel_inert[ZDIR]);
-                Real dq3 = (dt/2.0) * ( q1*angvel_inert[XDIR] + q2*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
 
-                q0 += dq0 / 1.0;
-                q1 += dq1 / 1.0;
-                q2 += dq2 / 1.0;
-                q3 += dq3 / 1.0;
+                Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
+                Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]);
+                Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]);
+                Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
+
+                q0 += dq0;
+                q1 += dq1;
+                q2 += dq2;
+                q3 += dq3;
 
                 // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
                 Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
@@ -316,6 +316,7 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                 }
             }
 
+            // FIXME: Update for glued sphere code
             if (x_lo_bc==HARDWALL_BC and p.pos(0) < plo[0])
             {
                 p.pos(0) = two*plo[0] - p.pos(0);
@@ -457,53 +458,15 @@ void BDEMParticleContainer::reassignParticles_softwall()
     }
 }
 
-void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real contact_angle, Real total_liquid_volume)
+void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real contact_angle, Real liquid_density, Real fiber_sat_pt)
 {
     BL_PROFILE("BDEMParticleContainer::computeMoistureContent");
 
+    Real MC = moisture_content/100.0;
+    Real FSP = fiber_sat_pt/100.0;
+
     const int lev = 0;
     auto& plev = GetParticles(lev);
-    const Geometry& geom = Geom(lev);
-    const auto plo = geom.ProbLoArray();
-    const auto phi = Geom(lev).ProbHiArray();
-
-    // Calculate the total domain volume 
-    // FIXME: Need to figure out how to calculate correct volume when EB or stl present
-    // FIXME: May want to find smart way to filter out portion of volume where particles aren't present (i.e. top portiof of hopper)
-    // FIXME: Calculation for liquid volume per particle needs to be fixed for glued sphere case
-    Real Vtot = (phi[XDIR] - plo[XDIR])*(phi[YDIR] - plo[YDIR])*(phi[ZDIR] - plo[ZDIR]);
-
-    // Calculate the total particle volume and sum of particle diameters^2
-    Real Vpart = 0.0;
-    Real d2sum = 0.0;
-    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
-    {
-        int gid = mfi.index();
-        int tid = mfi.LocalTileIndex();
-        auto index = std::make_pair(gid, tid);
-
-        auto& ptile = plev[index];
-        auto& aos   = ptile.GetArrayOfStructs();
-        const size_t np = aos.numParticles();
-        ParticleType* pstruct = aos().dataPtr();
-
-        amrex::ParallelFor(np,[pstruct, &Vpart, &d2sum]
-        AMREX_GPU_DEVICE (int i) noexcept
-        {
-            ParticleType& p = pstruct[i];
-            Vpart += p.rdata(realData::volume);
-            d2sum += pow(p.rdata(realData::radius)*2.0, two);
-        });
-    }
-    amrex::ParallelDescriptor::ReduceRealSum(Vpart);
-    amrex::ParallelDescriptor::ReduceRealSum(d2sum);
-
-    // Calculate the total liquid volume
-    Real Vvoid = Vtot - Vpart;
-    Real Vliq = (total_liquid_volume == 0.0) ? Vvoid * moisture_content/100.0:total_liquid_volume;
-
-    // If user specifies the total liquid volume, make sure it doesnt exceed the voidage
-    if(Vliq > Vvoid) Abort("\nTotal liquid volume specified exceeds the total voidage!\n");
 
     // Calculate the liquid volume per particle (assumed proportional to diameter^2) 
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
@@ -522,16 +485,14 @@ void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real c
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            p.rdata(realData::liquid_volume) = Vliq * pow(p.rdata(realData::radius)*2.0, two) / d2sum;
+            p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
+            p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
         });
     }
 }
 
 void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles)
 {
-
-    // TODO add new variables for glued sphere model
-
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = amrex::Concatenate("plt", n, 5);
 
@@ -682,10 +643,12 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::mass) = p_in.rdata(realData::mass) / p_in.idata(intData::num_comp_sphere);
                 pcomp.rdata(realData::volume) = p_in.rdata(realData::volume) / p_in.idata(intData::num_comp_sphere);
 
-                // FIXME: Should be calculating the velocity of the component sphere
-                pcomp.rdata(realData::xvel) = p_in.rdata(realData::xvel);
-                pcomp.rdata(realData::yvel) = p_in.rdata(realData::yvel);
-                pcomp.rdata(realData::zvel) = p_in.rdata(realData::zvel);
+                Real rvel[THREEDIM];
+                Real avel[THREEDIM] = {p_in.rdata(realData::xangvel), p_in.rdata(realData::yangvel), p_in.rdata(realData::zangvel)};
+                crosspdt(avel, ppos_inert, rvel);
+                pcomp.rdata(realData::xvel) = p_in.rdata(realData::xvel) + rvel[XDIR];
+                pcomp.rdata(realData::yvel) = p_in.rdata(realData::yvel) + rvel[YDIR];
+                pcomp.rdata(realData::zvel) = p_in.rdata(realData::zvel) + rvel[ZDIR];
 
                 pcomp.idata(intData::num_comp_sphere) = p_in.idata(intData::num_comp_sphere);
                 pcomp.rdata(realData::euler_angle_x) = p_in.rdata(realData::euler_angle_x);

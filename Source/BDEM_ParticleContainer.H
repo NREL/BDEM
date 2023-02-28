@@ -44,7 +44,8 @@ public:
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent,
             RealVect &gravity,const int glued_sphere_particles=0,
-            const int liquid_bridging=0);
+            const int liquid_bridging=0, const Real init_force = 0.0,
+            const int init_force_dir = 0, const int init_force_comp = 0);
 
     Real compute_coll_timescale();
 
@@ -98,7 +99,7 @@ public:
     void saveParticles_softwall();
     void reassignParticles_softwall(); 
 
-    void computeMoistureContent(Real moisture_content, Real contact_angle, Real total_liquid_volume);
+    void computeMoistureContent(Real moisture_content, Real contact_angle, Real liquid_density, Real fiber_sat_pt);
 
 private:
 

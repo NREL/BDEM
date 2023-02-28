@@ -25,8 +25,9 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
-        else if (x_hi_bc==SOFTWALL_BC and pos[XDIR] > (phi[XDIR]-rp))
+        if (x_hi_bc==SOFTWALL_BC and pos[XDIR] > (phi[XDIR]-rp))
         {
             dir=XDIR;
             walldist=phi[dir]-pos[dir];
@@ -35,8 +36,9 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
-        else if (y_lo_bc==SOFTWALL_BC and pos[YDIR] < (plo[YDIR]+rp))
+        if (y_lo_bc==SOFTWALL_BC and pos[YDIR] < (plo[YDIR]+rp))
         {
             dir=YDIR;
             walldist=pos[dir]-plo[dir];
@@ -45,8 +47,9 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
-        else if (y_hi_bc==SOFTWALL_BC and pos[YDIR] > (phi[YDIR]-rp))
+        if (y_hi_bc==SOFTWALL_BC and pos[YDIR] > (phi[YDIR]-rp))
         {
             dir=YDIR;
             walldist=phi[dir]-pos[dir];
@@ -55,8 +58,9 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
-        else if (z_lo_bc==SOFTWALL_BC and pos[ZDIR] < (plo[ZDIR]+rp))
+        if (z_lo_bc==SOFTWALL_BC and pos[ZDIR] < (plo[ZDIR]+rp))
         {
             dir=ZDIR;
             walldist=pos[dir]-plo[dir];
@@ -65,8 +69,9 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
-        else if (z_hi_bc==SOFTWALL_BC and pos[ZDIR] > (phi[ZDIR]-rp))
+        if (z_hi_bc==SOFTWALL_BC and pos[ZDIR] > (phi[ZDIR]-rp))
         {
             dir=ZDIR;
             walldist=phi[dir]-pos[dir];
@@ -75,27 +80,13 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
-        }
-        else
-        {
-            collided=false;
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
         }
         
         if(collided)
         {
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_vect);
 
             // each particle updates its force (no need for atomics)
-            p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-            p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-            p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
-
-            Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
-            Real torq[THREEDIM];
-            crosspdt(contact_vect, ftot, torq);
-            p.rdata(realData::taux) += torq[XDIR] + walldist*rollfriqtorq_by_d[XDIR];
-            p.rdata(realData::tauy) += torq[YDIR] + walldist*rollfriqtorq_by_d[YDIR];
-            p.rdata(realData::tauz) += torq[ZDIR] + walldist*rollfriqtorq_by_d[ZDIR];
 
             //doing adiabatic wall for now at Cartesian walls
             //if(do_heat_transfer)

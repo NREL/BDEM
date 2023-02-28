@@ -12,9 +12,9 @@ void rotate_vector_to_inertial (const BDEMParticleContainer::ParticleType& p,
     amrex::Real q2 = p.rdata(realData::q2);
     amrex::Real q3 = p.rdata(realData::q3);
      
-    v_inert[XDIR] = (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_body[XDIR] - 2.0*(q1*q2 + q0*q3)*v_body[YDIR] + 2.0*(q2*q3 - q0*q1)*v_body[ZDIR];
-    v_inert[YDIR] = -2.0*(q1*q2 - q0*q3)*v_body[XDIR] + (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_body[YDIR] - 2.0*(q1*q3 + q0*q2)*v_body[ZDIR];
-    v_inert[ZDIR] = 2.0*(q2*q3 + q0*q1)*v_body[XDIR] - 2.0*(q1*q3 - q0*q2)*v_body[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_body[ZDIR];
+    v_inert[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_body[XDIR] + 2.0*(q1*q2  - q0*q3)*v_body[YDIR] + 2.0*(q1*q3 + q0*q2)*v_body[ZDIR];
+    v_inert[YDIR] = 2.0*(q1*q2 + q0*q3)*v_body[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_body[YDIR] + 2.0*(q2*q3 - q0*q1)*v_body[ZDIR];
+    v_inert[ZDIR] = 2.0*(q1*q3 - q0*q2)*v_body[XDIR] + 2.0*(q2*q3 + q0*q1)*v_body[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_body[ZDIR];
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -28,9 +28,9 @@ void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p,
     amrex::Real q2 = p.rdata(realData::q2);
     amrex::Real q3 = p.rdata(realData::q3);
      
-    v_body[XDIR] = (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_inert[XDIR] - 2.0*(q1*q2 - q0*q3)*v_inert[YDIR] + 2.0*(q2*q3 + q0*q1)*v_inert[ZDIR];
-    v_body[YDIR] = -2.0*(q1*q2 + q0*q3)*v_inert[XDIR] + (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_inert[YDIR] - 2.0*(q1*q3 - q0*q2)*v_inert[ZDIR];
-    v_body[ZDIR] = 2.0*(q2*q3 - q0*q1)*v_inert[XDIR] - 2.0*(q1*q3 + q0*q2)*v_inert[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_inert[ZDIR];
+    v_body[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_inert[XDIR] + 2.0*(q1*q2 + q0*q3)*v_inert[YDIR] + 2.0*(q1*q3 - q0*q2)*v_inert[ZDIR];
+    v_body[YDIR] = 2.0*(q1*q2  - q0*q3)*v_inert[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_inert[YDIR] + 2.0*(q2*q3 + q0*q1)*v_inert[ZDIR];
+    v_body[ZDIR] = 2.0*(q1*q3 + q0*q2)*v_inert[XDIR] + 2.0*(q2*q3 - q0*q1)*v_inert[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_inert[ZDIR];
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -251,8 +251,7 @@ void get_levelset_normal(
 void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
         amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
-        amrex::Real rollfric_torq_by_d[THREEDIM], amrex::Real pos[THREEDIM],
-        amrex::Real contact_vect[THREEDIM])
+        amrex::Real rollfric_torq_by_d[THREEDIM], amrex::Real pos[THREEDIM])
 {
     Real rp = p.rdata(realData::radius);
     Real overlap_n = rp - walldist;
@@ -264,6 +263,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     contact_loc[ZDIR] = pos[ZDIR] + walldist*normal[ZDIR];
 
     // Vector point from the particle center of mass to the point of contact
+    Real contact_vect[THREEDIM];
     contact_vect[XDIR] = contact_loc[XDIR] - p.pos(0);
     contact_vect[YDIR] = contact_loc[YDIR] - p.pos(1);
     contact_vect[ZDIR] = contact_loc[ZDIR] - p.pos(2);
@@ -381,4 +381,15 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
             rollfric_torq_by_d[ZDIR]=fric_force*omega_p1[ZDIR]/mag_omegap1;
         }
     }
+
+    p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
+    p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
+    p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+
+    Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
+    Real torq[THREEDIM];
+    crosspdt(contact_vect, ftot, torq);
+    p.rdata(realData::taux) += torq[XDIR] + walldist*rollfric_torq_by_d[XDIR];
+    p.rdata(realData::tauy) += torq[YDIR] + walldist*rollfric_torq_by_d[YDIR];
+    p.rdata(realData::tauz) += torq[ZDIR] + walldist*rollfric_torq_by_d[ZDIR];
 }

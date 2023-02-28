@@ -134,6 +134,7 @@ class DEMspecs
         Real particle_sourcing_interval; 
         Vector<Real> particle_sourcing_species_massfracs;
         Real stop_sourcing_time; 
+        int particle_sourcing_max_sphere = 1;
 
         RealVect gravity;
         int init_particles_using_file=1;
@@ -174,10 +175,15 @@ class DEMspecs
         // Options for modeling liquid bridging
         int liquid_bridging = 0;
         Real moisture_content = 0.0;
+        Real FSP = 23.0;     // Fiber saturation point of pine chips by default
         Real contact_angle = 0.0;
-        Real total_liquid_volume = 0.0;
         Real liquid_viscosity = 0.0;
         Real surface_tension = 0.0;
+        Real liquid_density = 1000.0;   // Assume water density by default
+
+        Real init_force = 0.0;
+        int init_force_dir = 0;
+        int init_force_comp = 0;
 
         void read_dem_specs()
         {
@@ -332,6 +338,7 @@ class DEMspecs
                 pp.query("particle_sourcing_multiple_particles_per_cell",particle_sourcing_multi_part_per_cell);
                 particle_sourcing_species_massfracs[0]=1.0;
                 pp.queryarr("particle_sourcing_species_massfracs",species_massfracs,0,chemptr->nspecies);
+                pp.query("particle_sourcing_max_sphere", particle_sourcing_max_sphere);
             }
 
             pp.get("normal_spring_constant",DEM::k_n);
@@ -457,9 +464,10 @@ class DEMspecs
             pp.query("liquid_bridging", liquid_bridging);
             if(liquid_bridging){
                 // Read in liquid bridging variables
-                pp.query("moisture_content", moisture_content); // Percentage of the voidage of that contains liquid
+                pp.query("moisture_content", moisture_content); // Moisture content using Green (or wet) basis
                 pp.query("contact_angle", DEM::contact_angle);
-                pp.query("total_liquid_volume", total_liquid_volume);
+                pp.query("FSP", FSP);
+                pp.query("liquid_density", liquid_density);
                 pp.query("liquid_viscosity", DEM::mu_liq);
                 pp.query("surface_tension", DEM::gamma);
 
@@ -470,7 +478,10 @@ class DEMspecs
                 if(moisture_content < 0.0 || moisture_content > 100.0) Abort("\nMoisture content should be a percentage between 0 and 100.\n");
             }
 
-
+            // Spin test variables
+            pp.query("init_force", init_force);
+            pp.query("init_force_dir", init_force_dir);
+            pp.query("init_force_comp", init_force_comp);
         }
         void clear()
         {

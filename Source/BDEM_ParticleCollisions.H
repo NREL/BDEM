@@ -17,11 +17,26 @@ amrex::ParallelFor(np,[=]
         p1.rdata(realData::fx) += gravity[XDIR]*p1.rdata(realData::mass)/p1.idata(intData::num_comp_sphere);
         p1.rdata(realData::fy) += gravity[YDIR]*p1.rdata(realData::mass)/p1.idata(intData::num_comp_sphere);
         p1.rdata(realData::fz) += gravity[ZDIR]*p1.rdata(realData::mass)/p1.idata(intData::num_comp_sphere);
-
+  
         Real posvect[THREEDIM];     // Vector from CoM of particle to CoM of component sphere
         posvect[XDIR] = p1pos_inert[XDIR] - p1.pos(0);
         posvect[YDIR] = p1pos_inert[YDIR] - p1.pos(1);
         posvect[ZDIR] = p1pos_inert[ZDIR] - p1.pos(2);
+
+        // Code for glued sphere spin test
+        Real f_init[THREEDIM] = {0.0, 0.0, 0.0};
+        f_init[init_force_dir] = init_force;
+        if(pc1 == init_force_comp){
+            p1.rdata(realData::fx) += f_init[XDIR];
+            p1.rdata(realData::fy) += f_init[YDIR];
+            p1.rdata(realData::fz) += f_init[ZDIR];
+
+            Real torq_init[THREEDIM];
+            crosspdt(posvect, f_init, torq_init);
+            p1.rdata(realData::taux) += torq_init[XDIR];
+            p1.rdata(realData::tauy) += torq_init[YDIR];
+            p1.rdata(realData::tauz) += torq_init[ZDIR];
+        }
 
         for (const auto& p2 : nbor_data.getNeighbors(i))
         {                
@@ -269,10 +284,9 @@ amrex::ParallelFor(np,[=]
 
                 // Calculate the capillary force from the liquid bridge
                 if(bridge_exists){
-                    // FIXME: Should we be using the same radius value for a given bridge? Otherwise capillary force may not be equal for a particle pair
-                    // Recalculate bridge volume (not necessary if there's an easy way to store this) 
-                    Real Vtot = (p1.rdata(realData::liquid_volume)/2.0)*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))))
-                              + (p2.rdata(realData::liquid_volume)/2.0)*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
+                    // Recalculate bridge volume (not necessary if there's an easy/efficient way to store this) 
+                    Real Vtot = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))))
+                              + (p2.rdata(realData::liquid_volume)/(p2.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
 
                     // Calculate the separation distance
                     Real Sdist = (distmag - (rad1+rad2) > 0.0) ? distmag - (rad1+rad2):0.0;

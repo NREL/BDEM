@@ -68,21 +68,19 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             {
                 // Extracting number of component spheres and Euler angles for glued-sphere cylinders
                 // TODO: How do we make sure cylinders don't intersect upon initialization?
-                // TODO: What do we do if cylinders extend into domain or embedded boundary?
                 ifs >> p.idata(intData::num_comp_sphere);
                 ifs >> p.rdata(realData::euler_angle_x);
                 ifs >> p.rdata(realData::euler_angle_y);
                 ifs >> p.rdata(realData::euler_angle_z);
 
                 // Use Euler angles to calculate initial quaternion components
-                // FIXME: It seems that eax and eay may be swapped, double check equations from Goldstain
                 Real eax = p.rdata(realData::euler_angle_x);
                 Real eay = p.rdata(realData::euler_angle_y);
                 Real eaz = p.rdata(realData::euler_angle_z);
-                p.rdata(realData::q0) = cos(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
-                p.rdata(realData::q1) = sin(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) - cos(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
-                p.rdata(realData::q2) = cos(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0);
-                p.rdata(realData::q3) = cos(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0) - sin(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0);
+                p.rdata(realData::q0) =  cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
+                p.rdata(realData::q1) = -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
+                p.rdata(realData::q2) =  cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
+                p.rdata(realData::q3) =  sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
 
                 // Calculate principal axis components in inertial frame (for visualization)
                 Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
@@ -120,16 +118,17 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
                 ifs >> p.rdata(realData::yangvel);
                 ifs >> p.rdata(realData::zangvel);
             } else {
-                p.rdata(realData::xangvel)     = amrex::Random();
-                p.rdata(realData::yangvel)     = amrex::Random();
-                p.rdata(realData::zangvel)     = amrex::Random();
+                p.rdata(realData::xangvel)     = zero;
+                p.rdata(realData::yangvel)     = zero;
+                p.rdata(realData::zangvel)     = zero;
             }
 
             if(glued_sphere_particles){
-                // FIXME: Approximating moments of inertia for glued sphere particle using ellipse formula
-                p.rdata(realData::Ixinv) = 5.0/(p.rdata(realData::mass)*(2.0 * pow(p.rdata(realData::radius),two)) );
-                p.rdata(realData::Iyinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
-                p.rdata(realData::Izinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+                // NOTE: Approximating moments of inertia for glued sphere particle using cylinder formula
+                p.rdata(realData::Ixinv) = 2.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)) );
+                p.rdata(realData::Iyinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+                p.rdata(realData::Izinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+
             } else {
                 p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
                 p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
@@ -568,7 +567,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                    meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                    meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                    dens,
-                                                                   rad,temp,spec,max_sphere);
+                                                                   rad,temp,spec,ceil(amrex::Random()*max_sphere));
                                 host_particles.push_back(p);
                             }
                         }
@@ -630,10 +629,10 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     Real eax = p.rdata(realData::euler_angle_x);
     Real eay = p.rdata(realData::euler_angle_y);
     Real eaz = p.rdata(realData::euler_angle_z);
-    p.rdata(realData::q0) = cos(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
-    p.rdata(realData::q1) = sin(eax/2.0)*cos(eay/2.0)*cos(eaz/2.0) - cos(eax/2.0)*sin(eay/2.0)*sin(eaz/2.0);
-    p.rdata(realData::q2) = cos(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0) + sin(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0);
-    p.rdata(realData::q3) = cos(eax/2.0)*cos(eay/2.0)*sin(eaz/2.0) - sin(eax/2.0)*sin(eay/2.0)*cos(eaz/2.0);
+    p.rdata(realData::q0) =  cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
+    p.rdata(realData::q1) = -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
+    p.rdata(realData::q2) =  cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
+    p.rdata(realData::q3) =  sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
 
     Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
     Real pa_inert[THREEDIM];
@@ -649,9 +648,9 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::xangvel)     = zero;
     p.rdata(realData::yangvel)     = zero;
     p.rdata(realData::zangvel)     = zero;
-    p.rdata(realData::Ixinv) = 5.0/(p.rdata(realData::mass)*(2.0 * pow(p.rdata(realData::radius),two)) );
-    p.rdata(realData::Iyinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
-    p.rdata(realData::Izinv) = 5.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)+pow(p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+    p.rdata(realData::Ixinv) = 2.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)) );
+    p.rdata(realData::Iyinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+    p.rdata(realData::Izinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
 
     for(int br=0; br<MAXBRIDGES; br++){
         p.idata(intData::first_bridge+3*br) = -1;

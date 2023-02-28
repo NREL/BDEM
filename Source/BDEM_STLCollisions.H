@@ -82,19 +82,7 @@ amrex::ParallelFor(np,[=]
                 norm[1]*=-1;
                 norm[2]*=-1;
 
-                get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_vect);
-
-                // each particle updates its force (no need for atomics)
-                p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-                p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-                p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
-
-                Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
-                Real torq[THREEDIM];
-                crosspdt(contact_vect, ftot, torq);
-                p.rdata(realData::taux) += torq[XDIR] + mindist*rollfriqtorq_by_d[XDIR];
-                p.rdata(realData::tauy) += torq[YDIR] + mindist*rollfriqtorq_by_d[YDIR];
-                p.rdata(realData::tauz) += torq[ZDIR] + mindist*rollfriqtorq_by_d[ZDIR];
+                get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos);
             }
         }
     }
