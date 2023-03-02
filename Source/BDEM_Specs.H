@@ -63,6 +63,9 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
+
+    //For test case
+    // extern AMREX_GPU_DEVICE_MANAGED amrex::Real fy_test;
 }
 
 class DEMspecs
@@ -146,6 +149,9 @@ class DEMspecs
         Vector<Real> strat_mincoords; 
         Vector<Real> strat_maxcoords;
         Vector<Real> strat_spec_massfracs; 
+
+        // For 2-particle test case
+        Real fy_test = 0.0;
 
         void read_dem_specs()
         {
@@ -416,6 +422,10 @@ class DEMspecs
             }
 
 
+            //For 2-particle test case only
+            pp.query("force_per_dt", fy_test);
+            //2-particle test case related up here
+            
 
         }
         void clear()

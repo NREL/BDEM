@@ -102,6 +102,7 @@ int main (int argc, char* argv[])
         Real output_timeMass=zero;
         Real output_timePrint=zero;
         int output_it=0;
+        amrex::Print() << "Time step dt = " << dt << "\n";
 
         amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
         //if(EBtools::using_levelset_geometry and !specs.restartedcase)
@@ -179,8 +180,9 @@ int main (int argc, char* argv[])
                 bpc.computeForces(dt,EBtools::ebfactory,EBtools::lsphi,
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
-                                  EBtools::ls_refinement,specs.stl_geom_present);
-            }
+                                  EBtools::ls_refinement,specs.stl_geom_present, 
+                                  specs.fy_test, steps);
+            }  // Add "steps" for test case
             BL_PROFILE_VAR_STOP(forceCalc);
 
             BL_PROFILE_VAR("MOVE_PART",movepart);

@@ -42,7 +42,8 @@ public:
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_resent);
+            const int ls_refinement,bool stl_geom_resent,
+            Real fy_test, int steps);  // For test case
 
     Real compute_coll_timescale();
 

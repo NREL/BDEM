@@ -40,7 +40,8 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_present)
+            const int ls_refinement,bool stl_geom_present,
+            Real fy_test, int steps)  // Add "steps" for test case
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 

@@ -3,6 +3,9 @@ amrex::ParallelFor(np,[=]
 {
     ParticleType& p1 = pstruct[i];
 
+    //For 2-particle test case
+    p1.rdata(realData::fy) += -fy_test * steps;
+
     for (const auto& p2 : nbor_data.getNeighbors(i))
     {                
         Real dist_x = p2.pos(0) - p1.pos(0);
@@ -162,6 +165,12 @@ amrex::ParallelFor(np,[=]
 
             Real avgtemp=0.5*(p1.rdata(realData::temperature) + p2.rdata(realData::temperature));
             p1.rdata(realData::temperature)=avgtemp;
+
+            // For test case
+            if (steps % 100 == 0)
+            {
+                printf("Fn_y at step %d = %.4f.\n", steps, fn[YDIR]);
+            }
         }
     }
 
