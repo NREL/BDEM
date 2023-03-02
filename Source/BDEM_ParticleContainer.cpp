@@ -577,6 +577,14 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     writeflags_real[realData::taux]=1;
     writeflags_real[realData::tauy]=1;
     writeflags_real[realData::tauz]=1;
+    writeflags_real[realData::mass]=1;
+    writeflags_real[realData::Ixinv]=1;
+    writeflags_real[realData::Iyinv]=1;
+    writeflags_real[realData::Izinv]=1;
+    writeflags_real[realData::q0]=1;
+    writeflags_real[realData::q1]=1;
+    writeflags_real[realData::q2]=1;
+    writeflags_real[realData::q3]=1;
     writeflags_real[realData::temperature]=1;
     for(int i=0;i<m_chemptr->nspecies;i++)
     {

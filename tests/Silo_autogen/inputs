@@ -1,7 +1,7 @@
 #geometry parameters
 bdem.prob_lo        = 0.      0.     0.      # lo corner of physical domain
 bdem.prob_hi        = 0.0064  0.0064 0.0064  # hi corner of physical domain
-bdem.ncells         = 32     32     32 
+bdem.ncells         = 16     16     16
 bdem.max_grid_size  = 8
 bdem.is_it_periodic = 0      0      0
  
@@ -11,9 +11,9 @@ bdem.bc_lower = 0 0 0
 bdem.bc_upper = 0 0 0
 
 #timestepping
-bdem.final_time=0.05
-bdem.max_steps=3000000
-bdem.write_output_time=0.005
+bdem.final_time=1.0
+bdem.max_steps=10000000
+bdem.write_output_time=0.01
 bdem.num_redist = 25
 bdem.cfl = 0.02
 bdem.init_particles_using_file = 0
@@ -24,7 +24,10 @@ bdem.meanvel_autogen   = 0 0 0
 bdem.fluctuation_autogen   = 0.1 0.1 0.1
 bdem.radius_autogen = 5e-5
 bdem.dens_autogen = 1000.0
-bdem.autogen_multiple_particles_per_cell=1
+bdem.autogen_multiple_particles_per_cell=0
+bdem.autogen_max_sphere=2
+
+#bdem.restart=rst00004
 
 #particle intrinsics
 bdem.normal_spring_constant = 10
@@ -40,6 +43,9 @@ bdem.wall_friction_coefficient = 0.1
 bdem.wall_tangential_spring_constant = 10
 bdem.wall_tangential_restitution_coefficient = 0.8
 bdem.wall_rolling_friction_coefficient = 0.1
+
+bdem.glued_sphere_particles=1
+bdem.visualize_component_spheres=true
 
 bdem.gravity = 0.0 -9.8 0.0
 
