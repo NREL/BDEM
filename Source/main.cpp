@@ -11,6 +11,8 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::e_n      = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu       = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_n_wall = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::e_n_wall = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_wall  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_wall  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_wall  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_t      = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::e_t      = zero;
@@ -51,7 +53,7 @@ int main (int argc, char* argv[])
 
         EBtools::init_eb(geom,ba,dm); 
 
-        const int ng_cells = one;
+        const int ng_cells = two;
         BDEMParticleContainer bpc(geom, dm, ba, ng_cells,specs.chemptr);
         if(!specs.restartedcase)
         {
@@ -65,7 +67,8 @@ int main (int argc, char* argv[])
                 Print()<<"Doing autogeneration\n";
                 bpc.InitParticles (specs.autogen_mincoords.data(),specs.autogen_maxcoords.data(), 
                         specs.autogen_meanvel.data(),  specs.autogen_fluctuation.data(), 
-                        specs.autogen_radius, specs.autogen_dens, specs.autogen_temp,
+                        specs.autogen_radius, specs.autogen_dens, specs.autogen_E, specs.autogen_nu, 
+                        specs.autogen_temp,
                         specs.autogen_species_massfracs.data(),
                         specs.autogen_multi_part_per_cell);
             }
@@ -143,7 +146,9 @@ int main (int argc, char* argv[])
             {
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 
-                                   specs.particle_sourcing_radius, specs.particle_sourcing_dens, specs.particle_sourcing_temp,
+                                   specs.particle_sourcing_radius, specs.particle_sourcing_dens,
+                                   specs.particle_sourcing_E, specs.particle_sourcing_nu,
+                                   specs.particle_sourcing_temp,
                                    specs.particle_sourcing_species_massfracs.data(),
                                    specs.particle_sourcing_multi_part_per_cell);
 
@@ -180,9 +185,9 @@ int main (int argc, char* argv[])
                 bpc.computeForces(dt,EBtools::ebfactory,EBtools::lsphi,
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
-                                  EBtools::ls_refinement,specs.stl_geom_present, 
-                                  specs.fy_test, steps);
-            }  // Add "steps" for test case
+                                  EBtools::ls_refinement,specs.stl_geom_present,
+                                  specs.contact_law, steps);
+            }
             BL_PROFILE_VAR_STOP(forceCalc);
 
             BL_PROFILE_VAR("MOVE_PART",movepart);

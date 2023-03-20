@@ -29,10 +29,25 @@ struct realData
     volume,
     mass,
     density,
+    E,
+    nu,
     temperature,
     posx_prvs,
     posy_prvs,
     posz_prvs,
+    // for debug
+    // overlap_n,
+    // kn,
+    // kt,
+    // eta_n,
+    // eta_t,
+    // overlap_n_y,
+    // fn_y,
+    // vr_n_y,
+    // overlap_t_y,
+    // ft_y,
+    // vr_t_y,
+    //up here
     firstspec,
     count
   };
@@ -59,13 +74,12 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real tcoll;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_n_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_n_wall;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_wall;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
-
-    //For test case
-    // extern AMREX_GPU_DEVICE_MANAGED amrex::Real fy_test;
 }
 
 class DEMspecs
@@ -79,6 +93,7 @@ class DEMspecs
 
         Vector<int> bclo;
         Vector<int> bchi;
+        int contact_law;
 
         Vector<Real> autogen_mincoords; 
         Vector<Real> autogen_maxcoords; 
@@ -87,6 +102,8 @@ class DEMspecs
         int autogen_multi_part_per_cell=0;
         Real autogen_radius; 
         Real autogen_dens;
+        Real autogen_E;
+        Real autogen_nu;
         Real autogen_temp;
         Vector<Real> autogen_species_massfracs;
 
@@ -113,6 +130,8 @@ class DEMspecs
         int particle_sourcing_multi_part_per_cell=0;
         Real particle_sourcing_radius; 
         Real particle_sourcing_dens;
+        Real particle_sourcing_E;
+        Real particle_sourcing_nu;
         Real particle_sourcing_temp;
         Real particle_sourcing_interval; 
         Vector<Real> particle_sourcing_species_massfracs;
@@ -149,9 +168,6 @@ class DEMspecs
         Vector<Real> strat_mincoords; 
         Vector<Real> strat_maxcoords;
         Vector<Real> strat_spec_massfracs; 
-
-        // For 2-particle test case
-        Real fy_test = 0.0;
 
         void read_dem_specs()
         {
@@ -213,6 +229,9 @@ class DEMspecs
             {
                 using_softwalls=true;
             }
+
+            // Contact law
+            pp.query("contact_law", contact_law);
         
             pp.query("stepoffset",stepoffset);
 
@@ -283,6 +302,8 @@ class DEMspecs
                 pp.getarr("fluctuation_autogen",autogen_fluctuation);
                 pp.get("radius_autogen",autogen_radius);
                 pp.get("dens_autogen",autogen_dens);
+                pp.get("E_autogen",autogen_E);
+                pp.get("nu_autogen",autogen_nu);
                 autogen_temp=NTP_TEMP;
                 pp.query("temp_autogen",autogen_temp);
                 autogen_species_massfracs[0]=1.0;
@@ -299,6 +320,8 @@ class DEMspecs
                 pp.getarr("fluctuation_particle_sourcing",particle_sourcing_fluctuation);
                 pp.get("radius_particle_sourcing",particle_sourcing_radius);
                 pp.get("dens_particle_sourcing",particle_sourcing_dens);
+                pp.get("dens_particle_sourcing",particle_sourcing_E);
+                pp.get("dens_particle_sourcing",particle_sourcing_nu);
                 pp.get("temp_particle_sourcing",particle_sourcing_temp);
                 pp.get("particle_sourcing_interval",particle_sourcing_interval);
                 pp.get("stop_sourcing_time",stop_sourcing_time);
@@ -316,6 +339,8 @@ class DEMspecs
             
             DEM::k_n_wall = DEM::k_n;
             DEM::e_n_wall = DEM::e_n;
+            DEM::E_wall  = 100.0;  // Initial unrealistic value
+            DEM::nu_wall  = 0.3;  // Default general nu_wall
             DEM::mu_wall  = DEM::mu;
 	    DEM::k_t_wall = DEM::k_t;
             DEM::e_t_wall = DEM::e_t;
@@ -323,6 +348,8 @@ class DEMspecs
 	    
             pp.query("wall_normal_spring_constant",DEM::k_n_wall);
             pp.query("wall_normal_restitution_coefficient",DEM::e_n_wall);
+            pp.query("elastic_modulus_wall",DEM::E_wall);
+            pp.query("poissons_ratio_wall",DEM::nu_wall);
             pp.query("wall_friction_coefficient",DEM::mu_wall);
 	    pp.query("wall_tangential_spring_constant",DEM::k_t_wall);
             pp.query("wall_tangential_restitution_coefficient",DEM::e_t_wall);
@@ -420,13 +447,7 @@ class DEMspecs
                     }
                 }
             }
-
-
-            //For 2-particle test case only
-            pp.query("force_per_dt", fy_test);
-            //2-particle test case related up here
-            
-
+        
         }
         void clear()
         {
