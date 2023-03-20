@@ -206,8 +206,7 @@ void get_levelset_normal(
 void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
         amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
-        amrex::Real rollfric_torq_by_d[THREEDIM],
-        int contact_law)
+        amrex::Real rollfric_torq_by_d[THREEDIM])
 {
     Real v_rot[3];
     v_rot[0] = walldist * p.rdata(realData::xangvel);
@@ -233,40 +232,16 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
 
     int phase = p.idata(intData::phase);
 
-    // Contact law: default - linear, 1 - hertz
+    Real kn_dem_w = DEM::k_n_wall;
     Real meff = p.rdata(realData::mass);
-    Real Reff = rp;
-    Real kn_dem_w;
-    Real etan_dem_w;
-    Real kt_dem_w;
-    Real etat_dem_w;
-    if (contact_law == CONTACT_HERTZ)
-    {
-        Real E1 = p.rdata(realData::E);
-        Real E2 = DEM::E_wall;
-        E2 = (E2==100.0) ? E1 : E2; // E_wall=E_p if not specified
-        Real nu1 = p.rdata(realData::nu);
-        Real nu2 = DEM::nu_wall;
-        Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
-        Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
-        Real G_eff = E1*E2/temp;
-        Real beta = log(DEM::e_n) / sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
-        Real temp1 = sqrt(Reff*overlap_n);
-        kn_dem_w = 4.0/3.0*E_eff*temp1;
-        kt_dem_w = 8.0*G_eff*temp1;
-        etan_dem_w = 2.0*sqrt(5.0/3.0)*beta*sqrt(meff*E_eff)*sqrt(temp1);
-        etat_dem_w = 4.0*sqrt(5.0/3.0)*beta*sqrt(meff*G_eff)*sqrt(temp1);
-    }
-    else
-    {            
-        kn_dem_w = DEM::k_n_wall;
-        etan_dem_w = two*sqrt(DEM::k_n_wall*meff)*fabs(log(DEM::e_n_wall));
-        etan_dem_w /= sqrt(PI*PI + log(DEM::e_n_wall)*log(DEM::e_n_wall));
+    Real etan_dem_w = two*sqrt(DEM::k_n_wall*meff)*fabs(log(DEM::e_n_wall));
+    etan_dem_w /= sqrt(PI*PI + log(DEM::e_n_wall)*log(DEM::e_n_wall));
 
-        kt_dem_w = DEM::k_t_wall;
-        etat_dem_w = two*sqrt(DEM::k_t_wall*meff)*fabs(log(DEM::e_t_wall));
-        etat_dem_w /= sqrt(PI*PI + log(DEM::e_t_wall)*log(DEM::e_t_wall));
-    }
+    Real kt_dem_w = DEM::k_t_wall;
+    Real Reff = rp;
+    Real rad1 = rp;
+    Real etat_dem_w = two*sqrt(DEM::k_t_wall*meff)*fabs(log(DEM::e_t_wall));
+    etat_dem_w /= sqrt(PI*PI + log(DEM::e_t_wall)*log(DEM::e_t_wall));
 
     Real overlap_t[3];
     Real mag_overlap_t;

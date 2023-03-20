@@ -78,7 +78,7 @@ amrex::ParallelFor(np,[=]
     
     if(collided)
     {
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,contact_law);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d);
 
         // each particle updates its force (no need for atomics)
         p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];

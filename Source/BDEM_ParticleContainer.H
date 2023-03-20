@@ -30,8 +30,7 @@ public:
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
-        Real dens, Real E, Real nu, 
-        Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0);
+        Real dens, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0);
 
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
@@ -43,8 +42,8 @@ public:
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_resent, int contact_law,
-            int steps);
+            const int ls_refinement,bool stl_geom_resent,
+            Real fy_test, int steps);  // For test case
 
     Real compute_coll_timescale();
 
@@ -60,8 +59,7 @@ public:
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
-                Real dens, Real rad, Real E, Real nu, 
-                Real temp,Real spec[MAXSPECIES]);
+                Real dens, Real rad, Real temp,Real spec[MAXSPECIES]);
 
     void redist_particles(const int local,bool using_softwalls)
     {

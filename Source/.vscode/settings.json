@@ -8,11 +8,6 @@
         "string": "cpp",
         "string_view": "cpp",
         "unordered_map": "cpp",
-        "vector": "cpp",
-        "complex": "cpp",
-        "__hash_table": "cpp",
-        "atomic": "cpp",
-        "ios": "cpp",
-        "system_error": "cpp"
+        "vector": "cpp"
     }
 }

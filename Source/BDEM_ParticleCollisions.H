@@ -3,6 +3,9 @@ amrex::ParallelFor(np,[=]
 {
     ParticleType& p1 = pstruct[i];
 
+    //For 2-particle test case
+    p1.rdata(realData::fy) += -fy_test * steps;
+
     for (const auto& p2 : nbor_data.getNeighbors(i))
     {                
         Real dist_x = p2.pos(0) - p1.pos(0);
@@ -42,37 +45,14 @@ amrex::ParallelFor(np,[=]
             Real rad2 = p2.rdata(realData::radius);
             Real Reff = rad1*rad2/(rad1+rad2);
 
-            // Contact law: default - linear, 1 - hertz
-            Real kn_dem;
-            Real eta_n_dem;
-            Real kt_dem;
-            Real eta_t_dem;
-            if (contact_law == CONTACT_HERTZ)
-            {
-                Real E1 = p1.rdata(realData::E);
-                Real E2 = p2.rdata(realData::E);
-                Real nu1 = p1.rdata(realData::nu);
-                Real nu2 = p2.rdata(realData::nu);
-                Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
-                Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
-                Real G_eff = E1*E2/temp;
-                Real beta = log(DEM::e_n) / sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
-                Real temp1 = sqrt(Reff*overlap_n);
-                kn_dem = 4.0/3.0*E_eff*temp1;
-                kt_dem = 8.0*G_eff*temp1;
-                eta_n_dem = 2.0*sqrt(5.0/3.0)*beta*sqrt(meff*E_eff)*sqrt(temp1);
-                eta_t_dem = 4.0*sqrt(5.0/3.0)*beta*sqrt(meff*G_eff)*sqrt(temp1);
-            }
-            else
-            {            
-                kn_dem = DEM::k_n;
-                eta_n_dem = two*sqrt(DEM::k_n*meff)*fabs(log(DEM::e_n));
-                eta_n_dem /= sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
+            Real kn_dem = DEM::k_n;
+            Real eta_n_dem = two*sqrt(DEM::k_n*meff)*fabs(log(DEM::e_n));
+            eta_n_dem /= sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
 
-                kt_dem = DEM::k_t;
-                eta_t_dem = two*sqrt(DEM::k_t*meff)*fabs(log(DEM::e_t));
-                eta_t_dem /= sqrt(PI*PI + log(DEM::e_t)*log(DEM::e_t));
-            }
+            // tangential components not implemented yet
+            Real kt_dem = DEM::k_t;
+            Real eta_t_dem = two*sqrt(DEM::k_t*meff)*fabs(log(DEM::e_t));
+            eta_t_dem /= sqrt(PI*PI + log(DEM::e_t)*log(DEM::e_t));
 
             Real fn[THREEDIM];
             Real ft[THREEDIM];
@@ -107,21 +87,15 @@ amrex::ParallelFor(np,[=]
                 tangent[YDIR] = overlap_t[YDIR]/mag_overlap_t;
                 tangent[ZDIR] = overlap_t[ZDIR]/mag_overlap_t;
                 // calculate the tangential contact force
-                // Real overlap_t_tan = dotpdt(overlap_t,tangent);
-                // Real vrel_t_tan = dotpdt(vrel_t,tangent);
+                Real overlap_t_tan = dotpdt(overlap_t,tangent);
+                Real vrel_t_tan = dotpdt(vrel_t,tangent);
 
-                ftsp[XDIR] = -(kt_dem*overlap_t[XDIR]
-                               + eta_t_dem*vrel_t[XDIR]);
-                ftsp[YDIR] = -(kt_dem*overlap_t[YDIR]
-                               + eta_t_dem*vrel_t[YDIR]);
-                ftsp[ZDIR] = -(kt_dem*overlap_t[ZDIR]
-                               + eta_t_dem*vrel_t[ZDIR]);
-                // ftsp[XDIR] = -(kt_dem*overlap_t_tan*tangent[XDIR]
-                //                + eta_t_dem*vrel_t_tan*tangent[XDIR]);
-                // ftsp[YDIR] = -(kt_dem*overlap_t_tan*tangent[YDIR]
-                //                + eta_t_dem*vrel_t_tan*tangent[YDIR]);
-                // ftsp[ZDIR] = -(kt_dem*overlap_t_tan*tangent[ZDIR]
-                //                + eta_t_dem*vrel_t_tan*tangent[ZDIR]);
+                ftsp[XDIR] = -(kt_dem*overlap_t_tan*tangent[XDIR]
+                               + eta_t_dem*vrel_t_tan*tangent[XDIR]);
+                ftsp[YDIR] = -(kt_dem*overlap_t_tan*tangent[YDIR]
+                               + eta_t_dem*vrel_t_tan*tangent[YDIR]);
+                ftsp[ZDIR] = -(kt_dem*overlap_t_tan*tangent[ZDIR]
+                               + eta_t_dem*vrel_t_tan*tangent[ZDIR]);
                 ftn[XDIR] = -fnmd * tangent[XDIR];
                 ftn[YDIR] = -fnmd * tangent[YDIR];
                 ftn[ZDIR] = -fnmd * tangent[ZDIR];
@@ -151,20 +125,6 @@ amrex::ParallelFor(np,[=]
             p1.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
             p1.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
             p1.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
-
-            // For debug
-            // p1.rdata(realData::overlap_n) = overlap_n;
-            // p1.rdata(realData::kn) = kn_dem;
-            // p1.rdata(realData::kt) = kt_dem;
-            // p1.rdata(realData::eta_n) = eta_n_dem;
-            // p1.rdata(realData::eta_t) = eta_t_dem;
-            // p1.rdata(realData::overlap_n_y) = overlap_n*normal[YDIR];
-            // p1.rdata(realData::fn_y) = fn[YDIR];
-            // p1.rdata(realData::vr_n_y) = vrel_trans_norm*normal[YDIR];
-            // p1.rdata(realData::overlap_t_y) = overlap_t[YDIR];
-            // p1.rdata(realData::ft_y) = ft[YDIR];
-            // p1.rdata(realData::vr_t_y) = vrel_t[YDIR];
-
 
             //Torque calculation
             //=================
@@ -205,6 +165,12 @@ amrex::ParallelFor(np,[=]
 
             Real avgtemp=0.5*(p1.rdata(realData::temperature) + p2.rdata(realData::temperature));
             p1.rdata(realData::temperature)=avgtemp;
+
+            // For test case
+            if (steps % 100 == 0)
+            {
+                printf("Fn_y at step %d = %.4f.\n", steps, fn[YDIR]);
+            }
         }
     }
 

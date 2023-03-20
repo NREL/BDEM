@@ -82,7 +82,7 @@ amrex::ParallelFor(np,[=]
             norm[1]*=-1;
             norm[2]*=-1;
 
-            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,contact_law);
+            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d);
 
             // each particle updates its force (no need for atomics)
             p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];

@@ -50,8 +50,6 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             ifs >> p.pos(2);
             ifs >> p.rdata(realData::radius);
             ifs >> p.rdata(realData::density);
-            ifs >> p.rdata(realData::E);
-            ifs >> p.rdata(realData::nu);
             ifs >> p.rdata(realData::xvel);
             ifs >> p.rdata(realData::yvel);
             ifs >> p.rdata(realData::zvel);
@@ -413,8 +411,7 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
 
 
 void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
-                                           Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
-                                           Real E, Real nu, Real temp,
+                                           Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens, Real temp,
                                            Real spec[MAXSPECIES],
                                            int do_multi_part_per_cell)
 {
@@ -456,8 +453,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                       dens, rad, E, nu, 
-                                                       temp, spec);
+                                                       dens,
+                                                       rad,temp,spec);
                     host_particles.push_back(p);
                 }
             }
@@ -488,8 +485,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                    meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                    meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                    meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                                   dens, rad, E, nu, 
-                                                                   temp, spec);
+                                                                   dens,
+                                                                   rad,temp,spec);
                                 host_particles.push_back(p);
                             }
                         }
@@ -516,8 +513,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
 BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Real x,Real y,Real z,
                                                                              Real velx, Real vely, Real velz,
-                                                                             Real dens, Real rad, Real E, Real nu,
-                                                                             Real temp, Real spec[MAXSPECIES])
+                                                                             Real dens, Real rad, Real temp,Real spec[MAXSPECIES])
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -530,8 +526,6 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.idata(intData::phase) = 0;
     p.rdata(realData::radius) = rad;
     p.rdata(realData::radinit) = rad;
-    p.rdata(realData::E) = E;
-    p.rdata(realData::nu) = nu;
 
     p.rdata(realData::density) = dens;
     p.rdata(realData::xvel) = velx;

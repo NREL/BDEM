@@ -1,6 +1,5 @@
 AMReX (23.02-6-g25fcdfc433ac) initialized
 tcoll:0.01476692522
-Time step dt = 0.0001476692522
 Num particles before eb removal  1
 Num particles after eb removal  1
 Num particles after stl removal 1
