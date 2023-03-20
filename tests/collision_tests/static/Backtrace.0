@@ -1,0 +1,8 @@
+ 0: amrex::BLBackTrace::print_backtrace_info(__sFILE*) (in bdem3d.llvm.ex) (AMReX_BLBackTrace.cpp:186)
+
+ 1: amrex::BLBackTrace::handler(int) (in bdem3d.llvm.ex) (AMReX_BLBackTrace.cpp:96)
+
+ 2: BDEMParticleContainer::InitParticles(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, bool&) (in bdem3d.llvm.ex) (BDEM_Init.cpp:98)
+
+ 3: main (in bdem3d.llvm.ex) (main.cpp:64)
+

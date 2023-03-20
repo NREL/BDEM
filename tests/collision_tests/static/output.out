@@ -1,112 +1,2373 @@
 AMReX (23.02-6-g25fcdfc433ac) initialized
-tcoll:0.02590290037
-Time step dt = 0.0002590290037
+tcoll:0.0002896032302
+Time step dt = 2.896032302e-06
 Num particles before eb removal  2
 Num particles after eb removal  2
 Num particles after stl removal 2
 Num particles after init is 2
-step:3	time:0.001036116015
-step:7	time:0.00207223203
-step:11	time:0.003108348044
-step:15	time:0.004144464059
-step:19	time:0.005180580074
-step:23	time:0.006216696089
-step:27	time:0.007252812104
-step:31	time:0.008288928118
-step:35	time:0.009325044133
-writing outputs at step,time:38	0.01010213114
-step:39	time:0.01036116015
-step:43	time:0.01139727616
-step:47	time:0.01243339218
-step:51	time:0.01346950819
-step:55	time:0.01450562421
-step:59	time:0.01554174022
-step:63	time:0.01657785624
-step:67	time:0.01761397225
-step:71	time:0.01865008827
-step:75	time:0.01968620428
-writing outputs at step,time:77	0.02020426229
-step:79	time:0.0207223203
-step:83	time:0.02175843631
-step:87	time:0.02279455233
-step:91	time:0.02383066834
-step:95	time:0.02486678436
-step:99	time:0.02590290037
-step:103	time:0.02693901638
-step:107	time:0.0279751324
-step:111	time:0.02901124841
-step:115	time:0.03004736443
-writing outputs at step,time:116	0.03030639343
-step:119	time:0.03108348044
-step:123	time:0.03211959646
-step:127	time:0.03315571247
-step:131	time:0.03419182849
-step:135	time:0.0352279445
-step:139	time:0.03626406052
-step:143	time:0.03730017653
-step:147	time:0.03833629255
-step:151	time:0.03937240856
-step:155	time:0.04040852458
-writing outputs at step,time:155	0.04040852458
-step:159	time:0.04144464059
-step:163	time:0.04248075661
-step:167	time:0.04351687262
-step:171	time:0.04455298864
-step:175	time:0.04558910465
-step:179	time:0.04662522067
-step:183	time:0.04766133668
-step:187	time:0.0486974527
-step:191	time:0.04973356871
-writing outputs at step,time:194	0.05051065572
-step:195	time:0.05076968472
-step:199	time:0.05180580074
-step:203	time:0.05284191675
-step:207	time:0.05387803277
-step:211	time:0.05491414878
-step:215	time:0.0559502648
-step:219	time:0.05698638081
-step:223	time:0.05802249683
-step:227	time:0.05905861284
-step:231	time:0.06009472886
-writing outputs at step,time:233	0.06061278687
-step:235	time:0.06113084487
-step:239	time:0.06216696089
-step:243	time:0.0632030769
-step:247	time:0.06423919292
-step:251	time:0.06527530893
-step:255	time:0.06631142495
-step:259	time:0.06734754096
-step:263	time:0.06838365698
-step:267	time:0.06941977299
-step:271	time:0.07045588901
-writing outputs at step,time:272	0.07071491801
-step:275	time:0.07149200502
-step:279	time:0.07252812104
-step:283	time:0.07356423705
-step:287	time:0.07460035307
-step:291	time:0.07563646908
-step:295	time:0.07667258509
-step:299	time:0.07770870111
-step:303	time:0.07874481712
-step:307	time:0.07978093314
-step:311	time:0.08081704915
-writing outputs at step,time:311	0.08081704915
-step:315	time:0.08185316517
-step:319	time:0.08288928118
-step:323	time:0.0839253972
-step:327	time:0.08496151321
-step:331	time:0.08599762923
-step:335	time:0.08703374524
-step:339	time:0.08806986126
-step:343	time:0.08910597727
-step:347	time:0.09014209329
-writing outputs at step,time:350	0.0909191803
-step:351	time:0.0911782093
-step:355	time:0.09221432532
-step:359	time:0.09325044133
-step:363	time:0.09428655735
-step:367	time:0.09532267336
-step:371	time:0.09635878938
-step:375	time:0.09739490539
-step:379	time:0.09843102141
-step:383	time:0.09946713742
+Fy at step 0 = 0.0000.
+Fy at step 0 = 0.0000.
+step:34	time:0.0001013611306
+step:69	time:0.0002027222611
+Fy at step 100 = -0.0001.
+Fy at step 100 = 0.0000.
+step:104	time:0.0003040833917
+step:139	time:0.0004054445223
+step:174	time:0.0005068056529
+Fy at step 200 = -0.0004.
+Fy at step 200 = 0.0000.
+step:209	time:0.0006081667834
+step:244	time:0.000709527914
+step:279	time:0.0008108890446
+Fy at step 300 = -0.0006.
+Fy at step 300 = 0.0000.
+step:314	time:0.0009122501752
+writing outputs at step,time:345	0.001002027177
+step:349	time:0.001013611306
+step:384	time:0.001114972436
+Fy at step 400 = -0.0008.
+Fy at step 400 = 0.0000.
+step:419	time:0.001216333567
+step:454	time:0.001317694697
+step:489	time:0.001419055828
+Fy at step 500 = -0.0009.
+Fy at step 500 = 0.0000.
+step:524	time:0.001520416959
+step:559	time:0.001621778089
+step:594	time:0.00172313922
+Fy at step 600 = -0.0009.
+Fy at step 600 = 0.0000.
+step:629	time:0.00182450035
+step:664	time:0.001925861481
+writing outputs at step,time:691	0.002004054353
+step:699	time:0.002027222611
+Fy at step 700 = -0.0008.
+Fy at step 700 = 0.0000.
+step:734	time:0.002128583742
+step:769	time:0.002229944873
+Fy at step 800 = -0.0004.
+Fy at step 800 = 0.0000.
+step:804	time:0.002331306003
+step:839	time:0.002432667134
+step:874	time:0.002534028264
+Fy at step 900 = 0.0002.
+Fy at step 900 = 0.0000.
+step:909	time:0.002635389395
+step:944	time:0.002736750525
+step:979	time:0.002838111656
+Fy at step 1000 = 0.0010.
+Fy at step 1000 = 0.0000.
+step:1014	time:0.002939472787
+writing outputs at step,time:1037	0.00300608153
+step:1049	time:0.003040833917
+step:1084	time:0.003142195048
+Fy at step 1100 = 0.0021.
+Fy at step 1100 = 0.0000.
+step:1119	time:0.003243556178
+step:1154	time:0.003344917309
+step:1189	time:0.003446278439
+Fy at step 1200 = 0.0036.
+Fy at step 1200 = 0.0000.
+step:1224	time:0.00354763957
+step:1259	time:0.003649000701
+step:1294	time:0.003750361831
+Fy at step 1300 = 0.0054.
+Fy at step 1300 = 0.0000.
+step:1329	time:0.003851722962
+step:1364	time:0.003953084092
+writing outputs at step,time:1383	0.004008108706
+step:1399	time:0.004054445223
+Fy at step 1400 = 0.0076.
+Fy at step 1400 = 0.0000.
+step:1434	time:0.004155806353
+step:1469	time:0.004257167484
+Fy at step 1500 = 0.0102.
+Fy at step 1500 = 0.0000.
+step:1504	time:0.004358528615
+step:1539	time:0.004459889745
+step:1574	time:0.004561250876
+Fy at step 1600 = 0.0133.
+Fy at step 1600 = 0.0000.
+step:1609	time:0.004662612006
+step:1644	time:0.004763973137
+step:1679	time:0.004865334267
+Fy at step 1700 = 0.0169.
+Fy at step 1700 = 0.0000.
+step:1714	time:0.004966695398
+writing outputs at step,time:1729	0.005010135883
+step:1749	time:0.005068056529
+step:1784	time:0.005169417659
+Fy at step 1800 = 0.0210.
+Fy at step 1800 = 0.0000.
+step:1819	time:0.00527077879
+step:1854	time:0.00537213992
+step:1889	time:0.005473501051
+Fy at step 1900 = 0.0257.
+Fy at step 1900 = 0.0000.
+step:1924	time:0.005574862181
+step:1959	time:0.005676223312
+step:1994	time:0.005777584443
+Fy at step 2000 = 0.0310.
+Fy at step 2000 = 0.0000.
+step:2029	time:0.005878945573
+step:2064	time:0.005980306704
+writing outputs at step,time:2075	0.006012163059
+step:2099	time:0.006081667834
+Fy at step 2100 = 0.0368.
+Fy at step 2100 = 0.0000.
+step:2134	time:0.006183028965
+step:2169	time:0.006284390095
+Fy at step 2200 = 0.0433.
+Fy at step 2200 = 0.0000.
+step:2204	time:0.006385751226
+step:2239	time:0.006487112357
+step:2274	time:0.006588473487
+Fy at step 2300 = 0.0504.
+Fy at step 2300 = 0.0000.
+step:2309	time:0.006689834618
+step:2344	time:0.006791195748
+step:2379	time:0.006892556879
+Fy at step 2400 = 0.0582.
+Fy at step 2400 = 0.0000.
+step:2414	time:0.006993918009
+writing outputs at step,time:2421	0.007014190236
+step:2449	time:0.00709527914
+step:2484	time:0.007196640271
+Fy at step 2500 = 0.0667.
+Fy at step 2500 = 0.0000.
+step:2519	time:0.007298001401
+step:2554	time:0.007399362532
+step:2589	time:0.007500723662
+Fy at step 2600 = 0.0759.
+Fy at step 2600 = 0.0000.
+step:2624	time:0.007602084793
+step:2659	time:0.007703445924
+step:2694	time:0.007804807054
+Fy at step 2700 = 0.0858.
+Fy at step 2700 = 0.0000.
+step:2729	time:0.007906168185
+step:2764	time:0.008007529315
+writing outputs at step,time:2767	0.008016217412
+step:2799	time:0.008108890446
+Fy at step 2800 = 0.0964.
+Fy at step 2800 = 0.0000.
+step:2834	time:0.008210251576
+step:2869	time:0.008311612707
+Fy at step 2900 = 0.1078.
+Fy at step 2900 = 0.0000.
+step:2904	time:0.008412973838
+step:2939	time:0.008514334968
+step:2974	time:0.008615696099
+Fy at step 3000 = 0.1200.
+Fy at step 3000 = 0.0000.
+step:3009	time:0.008717057229
+step:3044	time:0.00881841836
+step:3079	time:0.00891977949
+Fy at step 3100 = 0.1329.
+Fy at step 3100 = 0.0000.
+writing outputs at step,time:3113	0.009018244589
+step:3114	time:0.009021140621
+step:3149	time:0.009122501752
+step:3184	time:0.009223862882
+Fy at step 3200 = 0.1465.
+Fy at step 3200 = 0.0000.
+step:3219	time:0.009325224013
+step:3254	time:0.009426585143
+step:3289	time:0.009527946274
+Fy at step 3300 = 0.1609.
+Fy at step 3300 = 0.0000.
+step:3324	time:0.009629307404
+step:3359	time:0.009730668535
+step:3394	time:0.009832029666
+Fy at step 3400 = 0.1760.
+Fy at step 3400 = 0.0000.
+step:3429	time:0.009933390796
+writing outputs at step,time:3459	0.01002027177
+step:3464	time:0.01003475193
+step:3499	time:0.01013611306
+Fy at step 3500 = 0.1918.
+Fy at step 3500 = 0.0000.
+step:3534	time:0.01023747419
+step:3569	time:0.01033883532
+Fy at step 3600 = 0.2084.
+Fy at step 3600 = 0.0000.
+step:3604	time:0.01044019645
+step:3639	time:0.01054155758
+step:3674	time:0.01064291871
+Fy at step 3700 = 0.2256.
+Fy at step 3700 = 0.0000.
+step:3709	time:0.01074427984
+step:3744	time:0.01084564097
+step:3779	time:0.0109470021
+Fy at step 3800 = 0.2435.
+Fy at step 3800 = 0.0000.
+writing outputs at step,time:3805	0.01102229894
+step:3814	time:0.01104836323
+step:3849	time:0.01114972436
+step:3884	time:0.01125108549
+Fy at step 3900 = 0.2620.
+Fy at step 3900 = 0.0000.
+step:3919	time:0.01135244662
+step:3954	time:0.01145380775
+step:3989	time:0.01155516889
+Fy at step 4000 = 0.2812.
+Fy at step 4000 = 0.0000.
+step:4024	time:0.01165653002
+step:4059	time:0.01175789115
+step:4094	time:0.01185925228
+Fy at step 4100 = 0.3009.
+Fy at step 4100 = 0.0000.
+step:4129	time:0.01196061341
+writing outputs at step,time:4151	0.01202432612
+step:4164	time:0.01206197454
+step:4199	time:0.01216333567
+Fy at step 4200 = 0.3212.
+Fy at step 4200 = 0.0000.
+step:4234	time:0.0122646968
+step:4269	time:0.01236605793
+Fy at step 4300 = 0.3419.
+Fy at step 4300 = 0.0000.
+step:4304	time:0.01246741906
+step:4339	time:0.01256878019
+step:4374	time:0.01267014132
+Fy at step 4400 = 0.3631.
+Fy at step 4400 = 0.0000.
+step:4409	time:0.01277150245
+step:4444	time:0.01287286358
+step:4479	time:0.01297422471
+writing outputs at step,time:4497	0.01302635329
+Fy at step 4500 = 0.3847.
+Fy at step 4500 = 0.0000.
+step:4514	time:0.01307558584
+step:4549	time:0.01317694697
+step:4584	time:0.0132783081
+Fy at step 4600 = 0.4066.
+Fy at step 4600 = 0.0000.
+step:4619	time:0.01337966924
+step:4654	time:0.01348103037
+step:4689	time:0.0135823915
+Fy at step 4700 = 0.4288.
+Fy at step 4700 = 0.0000.
+step:4724	time:0.01368375263
+step:4759	time:0.01378511376
+step:4794	time:0.01388647489
+Fy at step 4800 = 0.4512.
+Fy at step 4800 = 0.0000.
+step:4829	time:0.01398783602
+writing outputs at step,time:4843	0.01402838047
+step:4864	time:0.01408919715
+step:4899	time:0.01419055828
+Fy at step 4900 = 0.4738.
+Fy at step 4900 = 0.0000.
+step:4934	time:0.01429191941
+step:4969	time:0.01439328054
+Fy at step 5000 = 0.4965.
+Fy at step 5000 = 0.0000.
+step:5004	time:0.01449464167
+step:5039	time:0.0145960028
+step:5074	time:0.01469736393
+Fy at step 5100 = 0.5192.
+Fy at step 5100 = 0.0000.
+step:5109	time:0.01479872506
+step:5144	time:0.01490008619
+step:5179	time:0.01500144732
+writing outputs at step,time:5189	0.01503040765
+Fy at step 5200 = 0.5418.
+Fy at step 5200 = 0.0000.
+step:5214	time:0.01510280846
+step:5249	time:0.01520416959
+step:5284	time:0.01530553072
+Fy at step 5300 = 0.5643.
+Fy at step 5300 = 0.0000.
+step:5319	time:0.01540689185
+step:5354	time:0.01550825298
+step:5389	time:0.01560961411
+Fy at step 5400 = 0.5865.
+Fy at step 5400 = 0.0000.
+step:5424	time:0.01571097524
+step:5459	time:0.01581233637
+step:5494	time:0.0159136975
+Fy at step 5500 = 0.6085.
+Fy at step 5500 = 0.0000.
+step:5529	time:0.01601505863
+writing outputs at step,time:5535	0.01603243482
+step:5564	time:0.01611641976
+step:5599	time:0.01621778089
+Fy at step 5600 = 0.6302.
+Fy at step 5600 = 0.0000.
+step:5634	time:0.01631914202
+step:5669	time:0.01642050315
+Fy at step 5700 = 0.6513.
+Fy at step 5700 = 0.0000.
+step:5704	time:0.01652186428
+step:5739	time:0.01662322541
+step:5774	time:0.01672458654
+Fy at step 5800 = 0.6720.
+Fy at step 5800 = 0.0000.
+step:5809	time:0.01682594768
+step:5844	time:0.01692730881
+step:5879	time:0.01702866994
+writing outputs at step,time:5881	0.017034462
+Fy at step 5900 = 0.6921.
+Fy at step 5900 = 0.0000.
+step:5914	time:0.01713003107
+step:5949	time:0.0172313922
+step:5984	time:0.01733275333
+Fy at step 6000 = 0.7114.
+Fy at step 6000 = 0.0000.
+step:6019	time:0.01743411446
+step:6054	time:0.01753547559
+step:6089	time:0.01763683672
+Fy at step 6100 = 0.7300.
+Fy at step 6100 = 0.0000.
+step:6124	time:0.01773819785
+step:6159	time:0.01783955898
+step:6194	time:0.01794092011
+Fy at step 6200 = 0.7478.
+Fy at step 6200 = 0.0000.
+writing outputs at step,time:6227	0.01803648918
+step:6229	time:0.01804228124
+step:6264	time:0.01814364237
+step:6299	time:0.0182450035
+Fy at step 6300 = 0.7647.
+Fy at step 6300 = 0.0000.
+step:6334	time:0.01834636463
+step:6369	time:0.01844772576
+Fy at step 6400 = 0.7806.
+Fy at step 6400 = 0.0000.
+step:6404	time:0.01854908689
+step:6439	time:0.01865044803
+step:6474	time:0.01875180916
+Fy at step 6500 = 0.7955.
+Fy at step 6500 = 0.0000.
+step:6509	time:0.01885317029
+step:6544	time:0.01895453142
+writing outputs at step,time:6573	0.01903851635
+step:6579	time:0.01905589255
+Fy at step 6600 = 0.8092.
+Fy at step 6600 = 0.0000.
+step:6614	time:0.01915725368
+step:6649	time:0.01925861481
+step:6684	time:0.01935997594
+Fy at step 6700 = 0.8218.
+Fy at step 6700 = 0.0000.
+step:6719	time:0.01946133707
+step:6754	time:0.0195626982
+step:6789	time:0.01966405933
+Fy at step 6800 = 0.8331.
+Fy at step 6800 = 0.0000.
+step:6824	time:0.01976542046
+step:6859	time:0.01986678159
+step:6894	time:0.01996814272
+Fy at step 6900 = 0.8432.
+Fy at step 6900 = 0.0000.
+writing outputs at step,time:6919	0.02004054353
+step:6929	time:0.02006950385
+step:6964	time:0.02017086498
+step:6999	time:0.02027222611
+Fy at step 7000 = 0.8520.
+Fy at step 7000 = 0.0000.
+step:7034	time:0.02037358725
+step:7069	time:0.02047494838
+Fy at step 7100 = 0.8594.
+Fy at step 7100 = 0.0000.
+step:7104	time:0.02057630951
+step:7139	time:0.02067767064
+step:7174	time:0.02077903177
+Fy at step 7200 = 0.8654.
+Fy at step 7200 = 0.0000.
+step:7209	time:0.0208803929
+step:7244	time:0.02098175403
+writing outputs at step,time:7265	0.02104257071
+step:7279	time:0.02108311516
+Fy at step 7300 = 0.8700.
+Fy at step 7300 = 0.0000.
+step:7314	time:0.02118447629
+step:7349	time:0.02128583742
+step:7384	time:0.02138719855
+Fy at step 7400 = 0.8731.
+Fy at step 7400 = 0.0000.
+step:7419	time:0.02148855968
+step:7454	time:0.02158992081
+step:7489	time:0.02169128194
+Fy at step 7500 = 0.8748.
+Fy at step 7500 = 0.0000.
+step:7524	time:0.02179264307
+step:7559	time:0.0218940042
+step:7594	time:0.02199536533
+Fy at step 7600 = 0.8750.
+Fy at step 7600 = 0.0000.
+writing outputs at step,time:7611	0.02204459788
+step:7629	time:0.02209672646
+step:7664	time:0.0221980876
+step:7699	time:0.02229944873
+Fy at step 7700 = 0.8737.
+Fy at step 7700 = 0.0000.
+step:7734	time:0.02240080986
+step:7769	time:0.02250217099
+Fy at step 7800 = 0.8709.
+Fy at step 7800 = 0.0000.
+step:7804	time:0.02260353212
+step:7839	time:0.02270489325
+step:7874	time:0.02280625438
+Fy at step 7900 = 0.8666.
+Fy at step 7900 = 0.0000.
+step:7909	time:0.02290761551
+step:7944	time:0.02300897664
+writing outputs at step,time:7957	0.02304662506
+step:7979	time:0.02311033777
+Fy at step 8000 = 0.8609.
+Fy at step 8000 = 0.0000.
+step:8014	time:0.0232116989
+step:8049	time:0.02331306003
+step:8084	time:0.02341442116
+Fy at step 8100 = 0.8538.
+Fy at step 8100 = 0.0000.
+step:8119	time:0.02351578229
+step:8154	time:0.02361714342
+step:8189	time:0.02371850455
+Fy at step 8200 = 0.8453.
+Fy at step 8200 = 0.0000.
+step:8224	time:0.02381986568
+step:8259	time:0.02392122682
+step:8294	time:0.02402258795
+Fy at step 8300 = 0.8354.
+Fy at step 8300 = 0.0000.
+writing outputs at step,time:8303	0.02404865224
+step:8329	time:0.02412394908
+step:8364	time:0.02422531021
+step:8399	time:0.02432667134
+dist < r1+r2 
+Fny at step 8400 = 0.0071
+overlap_n at step 8400 = 0.03386474
+Fy at step 8400 = 0.8324.
+dist < r1+r2 
+Fny at step 8400 = -0.0071
+overlap_n at step 8400 = 0.03386474
+Fy at step 8400 = -0.0082.
+step:8434	time:0.02442803247
+step:8469	time:0.0245293936
+dist < r1+r2 
+Fny at step 8500 = 0.0005
+overlap_n at step 8500 = 0.11208025
+Fy at step 8500 = 0.8120.
+dist < r1+r2 
+Fny at step 8500 = -0.0005
+overlap_n at step 8500 = 0.11208025
+Fy at step 8500 = -0.0003.
+step:8504	time:0.02463075473
+step:8539	time:0.02473211586
+step:8574	time:0.02483347699
+dist < r1+r2 
+Fny at step 8600 = -0.0125
+overlap_n at step 8600 = 0.19218447
+Fy at step 8600 = 0.7872.
+dist < r1+r2 
+Fny at step 8600 = 0.0125
+overlap_n at step 8600 = 0.19218447
+Fy at step 8600 = 0.0107.
+step:8609	time:0.02493483812
+step:8644	time:0.02503619925
+writing outputs at step,time:8649	0.02505067941
+step:8679	time:0.02513756038
+dist < r1+r2 
+Fny at step 8700 = -0.0300
+overlap_n at step 8700 = 0.27383514
+Fy at step 8700 = 0.7550.
+dist < r1+r2 
+Fny at step 8700 = 0.0300
+overlap_n at step 8700 = 0.27383514
+Fy at step 8700 = 0.0279.
+step:8714	time:0.02523892151
+step:8749	time:0.02534028264
+step:8784	time:0.02544164377
+dist < r1+r2 
+Fny at step 8800 = -0.0512
+overlap_n at step 8800 = 0.35657768
+Fy at step 8800 = 0.7179.
+dist < r1+r2 
+Fny at step 8800 = 0.0512
+overlap_n at step 8800 = 0.35657768
+Fy at step 8800 = 0.0489.
+step:8819	time:0.0255430049
+step:8854	time:0.02564436603
+step:8889	time:0.02574572717
+dist < r1+r2 
+Fny at step 8900 = -0.0757
+overlap_n at step 8900 = 0.43986430
+Fy at step 8900 = 0.6766.
+dist < r1+r2 
+Fny at step 8900 = 0.0757
+overlap_n at step 8900 = 0.43986430
+Fy at step 8900 = 0.0732.
+step:8924	time:0.0258470883
+step:8959	time:0.02594844943
+step:8994	time:0.02604981056
+writing outputs at step,time:8995	0.02605270659
+dist < r1+r2 
+Fny at step 9000 = -0.1030
+overlap_n at step 9000 = 0.52306679
+Fy at step 9000 = 0.6316.
+dist < r1+r2 
+Fny at step 9000 = 0.1030
+overlap_n at step 9000 = 0.52306679
+Fy at step 9000 = 0.1002.
+step:9029	time:0.02615117169
+step:9064	time:0.02625253282
+step:9099	time:0.02635389395
+dist < r1+r2 
+Fny at step 9100 = -0.1325
+overlap_n at step 9100 = 0.60548795
+Fy at step 9100 = 0.5836.
+dist < r1+r2 
+Fny at step 9100 = 0.1325
+overlap_n at step 9100 = 0.60548795
+Fy at step 9100 = 0.1296.
+step:9134	time:0.02645525508
+step:9169	time:0.02655661621
+dist < r1+r2 
+Fny at step 9200 = -0.1638
+overlap_n at step 9200 = 0.68637335
+Fy at step 9200 = 0.5332.
+dist < r1+r2 
+Fny at step 9200 = 0.1638
+overlap_n at step 9200 = 0.68637335
+Fy at step 9200 = 0.1607.
+step:9204	time:0.02665797734
+step:9239	time:0.02675933847
+step:9274	time:0.0268606996
+dist < r1+r2 
+Fny at step 9300 = -0.1963
+overlap_n at step 9300 = 0.76492412
+Fy at step 9300 = 0.4811.
+dist < r1+r2 
+Fny at step 9300 = 0.1963
+overlap_n at step 9300 = 0.76492412
+Fy at step 9300 = 0.1930.
+step:9309	time:0.02696206073
+writing outputs at step,time:9341	0.02705473377
+step:9344	time:0.02706342186
+step:9379	time:0.02716478299
+dist < r1+r2 
+Fny at step 9400 = -0.2294
+overlap_n at step 9400 = 0.84031075
+Fy at step 9400 = 0.4281.
+dist < r1+r2 
+Fny at step 9400 = 0.2294
+overlap_n at step 9400 = 0.84031075
+Fy at step 9400 = 0.2259.
+step:9414	time:0.02726614412
+step:9449	time:0.02736750525
+step:9484	time:0.02746886639
+dist < r1+r2 
+Fny at step 9500 = -0.2625
+overlap_n at step 9500 = 0.91168813
+Fy at step 9500 = 0.3749.
+dist < r1+r2 
+Fny at step 9500 = 0.2625
+overlap_n at step 9500 = 0.91168813
+Fy at step 9500 = 0.2587.
+step:9519	time:0.02757022752
+step:9554	time:0.02767158865
+step:9589	time:0.02777294978
+dist < r1+r2 
+Fny at step 9600 = -0.2948
+overlap_n at step 9600 = 0.97821156
+Fy at step 9600 = 0.3225.
+dist < r1+r2 
+Fny at step 9600 = 0.2948
+overlap_n at step 9600 = 0.97821156
+Fy at step 9600 = 0.2908.
+step:9624	time:0.02787431091
+step:9659	time:0.02797567204
+writing outputs at step,time:9687	0.02805676094
+step:9694	time:0.02807703317
+dist < r1+r2 
+Fny at step 9700 = -0.3256
+overlap_n at step 9700 = 1.03905334
+Fy at step 9700 = 0.2716.
+dist < r1+r2 
+Fny at step 9700 = 0.3256
+overlap_n at step 9700 = 1.03905334
+Fy at step 9700 = 0.3214.
+step:9729	time:0.0281783943
+step:9764	time:0.02827975543
+step:9799	time:0.02838111656
+dist < r1+r2 
+Fny at step 9800 = -0.3543
+overlap_n at step 9800 = 1.09341988
+Fy at step 9800 = 0.2230.
+dist < r1+r2 
+Fny at step 9800 = 0.3543
+overlap_n at step 9800 = 1.09341988
+Fy at step 9800 = 0.3499.
+step:9834	time:0.02848247769
+step:9869	time:0.02858383882
+dist < r1+r2 
+Fny at step 9900 = -0.3802
+overlap_n at step 9900 = 1.14056853
+Fy at step 9900 = 0.1776.
+dist < r1+r2 
+Fny at step 9900 = 0.3802
+overlap_n at step 9900 = 1.14056853
+Fy at step 9900 = 0.3756.
+step:9904	time:0.02868519995
+step:9939	time:0.02878656108
+step:9974	time:0.02888792221
+dist < r1+r2 
+Fny at step 10000 = -0.4027
+overlap_n at step 10000 = 1.17982400
+Fy at step 10000 = 0.1361.
+dist < r1+r2 
+Fny at step 10000 = 0.4027
+overlap_n at step 10000 = 1.17982400
+Fy at step 10000 = 0.3979.
+step:10009	time:0.02898928334
+writing outputs at step,time:10033	0.02905878812
+step:10044	time:0.02909064447
+step:10079	time:0.0291920056
+dist < r1+r2 
+Fny at step 10100 = -0.4211
+overlap_n at step 10100 = 1.21059370
+Fy at step 10100 = 0.0991.
+dist < r1+r2 
+Fny at step 10100 = 0.4211
+overlap_n at step 10100 = 1.21059370
+Fy at step 10100 = 0.4161.
+step:10114	time:0.02929336674
+step:10149	time:0.02939472787
+step:10184	time:0.029496089
+dist < r1+r2 
+Fny at step 10200 = -0.4351
+overlap_n at step 10200 = 1.23238147
+Fy at step 10200 = 0.0672.
+dist < r1+r2 
+Fny at step 10200 = 0.4351
+overlap_n at step 10200 = 1.23238147
+Fy at step 10200 = 0.4300.
+step:10219	time:0.02959745013
+step:10254	time:0.02969881126
+step:10289	time:0.02980017239
+dist < r1+r2 
+Fny at step 10300 = -0.4443
+overlap_n at step 10300 = 1.24479946
+Fy at step 10300 = 0.0408.
+dist < r1+r2 
+Fny at step 10300 = 0.4443
+overlap_n at step 10300 = 1.24479946
+Fy at step 10300 = 0.4389.
+step:10324	time:0.02990153352
+step:10359	time:0.03000289465
+writing outputs at step,time:10379	0.0300608153
+step:10394	time:0.03010425578
+dist < r1+r2 
+Fny at step 10400 = -0.4483
+overlap_n at step 10400 = 1.24757750
+Fy at step 10400 = 0.0203.
+dist < r1+r2 
+Fny at step 10400 = 0.4483
+overlap_n at step 10400 = 1.24757750
+Fy at step 10400 = 0.4428.
+step:10429	time:0.03020561691
+step:10464	time:0.03030697804
+step:10499	time:0.03040833917
+dist < r1+r2 
+Fny at step 10500 = -0.4471
+overlap_n at step 10500 = 1.24056980
+Fy at step 10500 = 0.0059.
+dist < r1+r2 
+Fny at step 10500 = 0.4471
+overlap_n at step 10500 = 1.24056980
+Fy at step 10500 = 0.4415.
+step:10534	time:0.0305097003
+step:10569	time:0.03061106143
+dist < r1+r2 
+Fny at step 10600 = -0.4407
+overlap_n at step 10600 = 1.22375863
+Fy at step 10600 = -0.0025.
+dist < r1+r2 
+Fny at step 10600 = 0.4407
+overlap_n at step 10600 = 1.22375863
+Fy at step 10600 = 0.4349.
+step:10604	time:0.03071242256
+step:10639	time:0.03081378369
+step:10674	time:0.03091514482
+dist < r1+r2 
+Fny at step 10700 = -0.4291
+overlap_n at step 10700 = 1.19725481
+Fy at step 10700 = -0.0049.
+dist < r1+r2 
+Fny at step 10700 = 0.4291
+overlap_n at step 10700 = 1.19725481
+Fy at step 10700 = 0.4231.
+step:10709	time:0.03101650596
+writing outputs at step,time:10725	0.03106284247
+step:10744	time:0.03111786709
+step:10779	time:0.03121922822
+dist < r1+r2 
+Fny at step 10800 = -0.4126
+overlap_n at step 10800 = 1.16129509
+Fy at step 10800 = -0.0016.
+dist < r1+r2 
+Fny at step 10800 = 0.4126
+overlap_n at step 10800 = 1.16129509
+Fy at step 10800 = 0.4065.
+step:10814	time:0.03132058935
+step:10849	time:0.03142195048
+step:10884	time:0.03152331161
+dist < r1+r2 
+Fny at step 10900 = -0.3916
+overlap_n at step 10900 = 1.11623631
+Fy at step 10900 = 0.0070.
+dist < r1+r2 
+Fny at step 10900 = 0.3916
+overlap_n at step 10900 = 1.11623631
+Fy at step 10900 = 0.3854.
+step:10919	time:0.03162467274
+step:10954	time:0.03172603387
+step:10989	time:0.031827395
+dist < r1+r2 
+Fny at step 11000 = -0.3666
+overlap_n at step 11000 = 1.06254662
+Fy at step 11000 = 0.0205.
+dist < r1+r2 
+Fny at step 11000 = 0.3666
+overlap_n at step 11000 = 1.06254662
+Fy at step 11000 = 0.3603.
+step:11024	time:0.03192875613
+step:11059	time:0.03203011726
+writing outputs at step,time:11071	0.03206486965
+step:11094	time:0.03213147839
+dist < r1+r2 
+Fny at step 11100 = -0.3381
+overlap_n at step 11100 = 1.00079396
+Fy at step 11100 = 0.0381.
+dist < r1+r2 
+Fny at step 11100 = 0.3381
+overlap_n at step 11100 = 1.00079396
+Fy at step 11100 = 0.3317.
+step:11129	time:0.03223283952
+step:11164	time:0.03233420065
+step:11199	time:0.03243556178
+dist < r1+r2 
+Fny at step 11200 = -0.3069
+overlap_n at step 11200 = 0.93163224
+Fy at step 11200 = 0.0593.
+dist < r1+r2 
+Fny at step 11200 = 0.3069
+overlap_n at step 11200 = 0.93163224
+Fy at step 11200 = 0.3004.
+step:11234	time:0.03253692291
+step:11269	time:0.03263828404
+dist < r1+r2 
+Fny at step 11300 = -0.2736
+overlap_n at step 11300 = 0.85578547
+Fy at step 11300 = 0.0832.
+dist < r1+r2 
+Fny at step 11300 = 0.2736
+overlap_n at step 11300 = 0.85578547
+Fy at step 11300 = 0.2671.
+step:11304	time:0.03273964517
+step:11339	time:0.03284100631
+step:11374	time:0.03294236744
+dist < r1+r2 
+Fny at step 11400 = -0.2389
+overlap_n at step 11400 = 0.77403043
+Fy at step 11400 = 0.1090.
+dist < r1+r2 
+Fny at step 11400 = 0.2389
+overlap_n at step 11400 = 0.77403043
+Fy at step 11400 = 0.2324.
+step:11409	time:0.03304372857
+writing outputs at step,time:11417	0.03306689683
+step:11444	time:0.0331450897
+step:11479	time:0.03324645083
+dist < r1+r2 
+Fny at step 11500 = -0.2038
+overlap_n at step 11500 = 0.68717824
+Fy at step 11500 = 0.1358.
+dist < r1+r2 
+Fny at step 11500 = 0.2038
+overlap_n at step 11500 = 0.68717824
+Fy at step 11500 = 0.1973.
+step:11514	time:0.03334781196
+step:11549	time:0.03344917309
+step:11584	time:0.03355053422
+dist < r1+r2 
+Fny at step 11600 = -0.1689
+overlap_n at step 11600 = 0.59605530
+Fy at step 11600 = 0.1629.
+dist < r1+r2 
+Fny at step 11600 = 0.1689
+overlap_n at step 11600 = 0.59605530
+Fy at step 11600 = 0.1625.
+step:11619	time:0.03365189535
+step:11654	time:0.03375325648
+step:11689	time:0.03385461761
+dist < r1+r2 
+Fny at step 11700 = -0.1351
+overlap_n at step 11700 = 0.50148395
+Fy at step 11700 = 0.1893.
+dist < r1+r2 
+Fny at step 11700 = 0.1351
+overlap_n at step 11700 = 0.50148395
+Fy at step 11700 = 0.1287.
+step:11724	time:0.03395597874
+step:11759	time:0.03405733987
+writing outputs at step,time:11763	0.034068924
+step:11794	time:0.034158701
+dist < r1+r2 
+Fny at step 11800 = -0.1031
+overlap_n at step 11800 = 0.40426306
+Fy at step 11800 = 0.2142.
+dist < r1+r2 
+Fny at step 11800 = 0.1031
+overlap_n at step 11800 = 0.40426306
+Fy at step 11800 = 0.0969.
+step:11829	time:0.03426006213
+step:11864	time:0.03436142326
+step:11899	time:0.03446278439
+dist < r1+r2 
+Fny at step 11900 = -0.0737
+overlap_n at step 11900 = 0.30514877
+Fy at step 11900 = 0.2366.
+dist < r1+r2 
+Fny at step 11900 = 0.0737
+overlap_n at step 11900 = 0.30514877
+Fy at step 11900 = 0.0679.
+step:11934	time:0.03456414553
+step:11969	time:0.03466550666
+dist < r1+r2 
+Fny at step 12000 = -0.0478
+overlap_n at step 12000 = 0.20483508
+Fy at step 12000 = 0.2558.
+dist < r1+r2 
+Fny at step 12000 = 0.0478
+overlap_n at step 12000 = 0.20483508
+Fy at step 12000 = 0.0424.
+step:12004	time:0.03476686779
+step:12039	time:0.03486822892
+step:12074	time:0.03496959005
+dist < r1+r2 
+Fny at step 12100 = -0.0262
+overlap_n at step 12100 = 0.10393392
+Fy at step 12100 = 0.2706.
+dist < r1+r2 
+Fny at step 12100 = 0.0262
+overlap_n at step 12100 = 0.10393392
+Fy at step 12100 = 0.0215.
+step:12109	time:0.03507095118
+writing outputs at step,time:12109	0.03507095118
+step:12144	time:0.03517231231
+step:12179	time:0.03527367344
+dist < r1+r2 
+Fny at step 12200 = -0.0064
+overlap_n at step 12200 = 0.00295656
+Fy at step 12200 = 0.2817.
+dist < r1+r2 
+Fny at step 12200 = 0.0064
+overlap_n at step 12200 = 0.00295656
+Fy at step 12200 = 0.0044.
+step:12214	time:0.03537503457
+step:12249	time:0.0354763957
+step:12284	time:0.03557775683
+Fy at step 12300 = 0.2804.
+Fy at step 12300 = 0.0000.
+step:12319	time:0.03567911796
+step:12354	time:0.03578047909
+step:12389	time:0.03588184022
+Fy at step 12400 = 0.2747.
+Fy at step 12400 = 0.0000.
+step:12424	time:0.03598320135
+writing outputs at step,time:12455	0.03607297835
+step:12459	time:0.03608456248
+step:12494	time:0.03618592361
+Fy at step 12500 = 0.2692.
+Fy at step 12500 = 0.0000.
+step:12529	time:0.03628728474
+step:12564	time:0.03638864588
+step:12599	time:0.03649000701
+Fy at step 12600 = 0.2638.
+Fy at step 12600 = 0.0000.
+step:12634	time:0.03659136814
+step:12669	time:0.03669272927
+Fy at step 12700 = 0.2585.
+Fy at step 12700 = 0.0000.
+step:12704	time:0.0367940904
+step:12739	time:0.03689545153
+step:12774	time:0.03699681266
+Fy at step 12800 = 0.2534.
+Fy at step 12800 = 0.0000.
+writing outputs at step,time:12801	0.03707500553
+step:12809	time:0.03709817379
+step:12844	time:0.03719953492
+step:12879	time:0.03730089605
+Fy at step 12900 = 0.2485.
+Fy at step 12900 = 0.0000.
+step:12914	time:0.03740225718
+step:12949	time:0.03750361831
+step:12984	time:0.03760497944
+Fy at step 13000 = 0.2436.
+Fy at step 13000 = 0.0000.
+step:13019	time:0.03770634057
+step:13054	time:0.0378077017
+step:13089	time:0.03790906283
+Fy at step 13100 = 0.2390.
+Fy at step 13100 = 0.0000.
+step:13124	time:0.03801042396
+writing outputs at step,time:13147	0.03807703271
+step:13159	time:0.0381117851
+step:13194	time:0.03821314623
+Fy at step 13200 = 0.2345.
+Fy at step 13200 = 0.0000.
+step:13229	time:0.03831450736
+step:13264	time:0.03841586849
+step:13299	time:0.03851722962
+Fy at step 13300 = 0.2302.
+Fy at step 13300 = 0.0000.
+step:13334	time:0.03861859075
+step:13369	time:0.03871995188
+Fy at step 13400 = 0.2261.
+Fy at step 13400 = 0.0000.
+step:13404	time:0.03882131301
+step:13439	time:0.03892267414
+step:13474	time:0.03902403527
+writing outputs at step,time:13493	0.03907905988
+Fy at step 13500 = 0.2222.
+Fy at step 13500 = 0.0000.
+step:13509	time:0.0391253964
+step:13544	time:0.03922675753
+step:13579	time:0.03932811866
+Fy at step 13600 = 0.2185.
+Fy at step 13600 = 0.0000.
+step:13614	time:0.03942947979
+step:13649	time:0.03953084092
+step:13684	time:0.03963220205
+Fy at step 13700 = 0.2150.
+Fy at step 13700 = 0.0000.
+step:13719	time:0.03973356318
+step:13754	time:0.03983492431
+step:13789	time:0.03993628545
+Fy at step 13800 = 0.2116.
+Fy at step 13800 = 0.0000.
+step:13824	time:0.04003764658
+writing outputs at step,time:13839	0.04008108706
+step:13859	time:0.04013900771
+step:13894	time:0.04024036884
+Fy at step 13900 = 0.2085.
+Fy at step 13900 = 0.0000.
+step:13929	time:0.04034172997
+step:13964	time:0.0404430911
+step:13999	time:0.04054445223
+Fy at step 14000 = 0.2056.
+Fy at step 14000 = 0.0000.
+step:14034	time:0.04064581336
+step:14069	time:0.04074717449
+Fy at step 14100 = 0.2029.
+Fy at step 14100 = 0.0000.
+step:14104	time:0.04084853562
+step:14139	time:0.04094989675
+step:14174	time:0.04105125788
+writing outputs at step,time:14185	0.04108311424
+Fy at step 14200 = 0.2004.
+Fy at step 14200 = 0.0000.
+step:14209	time:0.04115261901
+step:14244	time:0.04125398014
+step:14279	time:0.04135534127
+Fy at step 14300 = 0.1981.
+Fy at step 14300 = 0.0000.
+step:14314	time:0.0414567024
+step:14349	time:0.04155806353
+step:14384	time:0.04165942467
+Fy at step 14400 = 0.1960.
+Fy at step 14400 = 0.0000.
+step:14419	time:0.0417607858
+step:14454	time:0.04186214693
+step:14489	time:0.04196350806
+Fy at step 14500 = 0.1942.
+Fy at step 14500 = 0.0000.
+step:14524	time:0.04206486919
+writing outputs at step,time:14531	0.04208514141
+step:14559	time:0.04216623032
+step:14594	time:0.04226759145
+Fy at step 14600 = 0.1925.
+Fy at step 14600 = 0.0000.
+step:14629	time:0.04236895258
+step:14664	time:0.04247031371
+step:14699	time:0.04257167484
+Fy at step 14700 = 0.1911.
+Fy at step 14700 = 0.0000.
+step:14734	time:0.04267303597
+step:14769	time:0.0427743971
+Fy at step 14800 = 0.1899.
+Fy at step 14800 = 0.0000.
+step:14804	time:0.04287575823
+step:14839	time:0.04297711936
+step:14874	time:0.04307848049
+writing outputs at step,time:14877	0.04308716859
+Fy at step 14900 = 0.1890.
+Fy at step 14900 = 0.0000.
+step:14909	time:0.04317984162
+step:14944	time:0.04328120275
+step:14979	time:0.04338256388
+Fy at step 15000 = 0.1882.
+Fy at step 15000 = 0.0000.
+step:15014	time:0.04348392502
+step:15049	time:0.04358528615
+step:15084	time:0.04368664728
+Fy at step 15100 = 0.1877.
+Fy at step 15100 = 0.0000.
+step:15119	time:0.04378800841
+step:15154	time:0.04388936954
+step:15189	time:0.04399073067
+Fy at step 15200 = 0.1874.
+Fy at step 15200 = 0.0000.
+writing outputs at step,time:15223	0.04408919577
+step:15224	time:0.0440920918
+step:15259	time:0.04419345293
+step:15294	time:0.04429481406
+Fy at step 15300 = 0.1874.
+Fy at step 15300 = 0.0000.
+step:15329	time:0.04439617519
+step:15364	time:0.04449753632
+step:15399	time:0.04459889745
+Fy at step 15400 = 0.1875.
+Fy at step 15400 = 0.0000.
+step:15434	time:0.04470025858
+step:15469	time:0.04480161971
+Fy at step 15500 = 0.1880.
+Fy at step 15500 = 0.0000.
+step:15504	time:0.04490298084
+step:15539	time:0.04500434197
+writing outputs at step,time:15569	0.04509122294
+step:15574	time:0.0451057031
+Fy at step 15600 = 0.1886.
+Fy at step 15600 = 0.0000.
+step:15609	time:0.04520706424
+step:15644	time:0.04530842537
+step:15679	time:0.0454097865
+Fy at step 15700 = 0.1894.
+Fy at step 15700 = 0.0000.
+step:15714	time:0.04551114763
+step:15749	time:0.04561250876
+step:15784	time:0.04571386989
+Fy at step 15800 = 0.1905.
+Fy at step 15800 = 0.0000.
+step:15819	time:0.04581523102
+step:15854	time:0.04591659215
+step:15889	time:0.04601795328
+Fy at step 15900 = 0.1919.
+Fy at step 15900 = 0.0000.
+writing outputs at step,time:15915	0.04609325012
+step:15924	time:0.04611931441
+step:15959	time:0.04622067554
+step:15994	time:0.04632203667
+Fy at step 16000 = 0.1934.
+Fy at step 16000 = 0.0000.
+step:16029	time:0.0464233978
+step:16064	time:0.04652475893
+step:16099	time:0.04662612006
+Fy at step 16100 = 0.1952.
+Fy at step 16100 = 0.0000.
+step:16134	time:0.04672748119
+step:16169	time:0.04682884232
+Fy at step 16200 = 0.1972.
+Fy at step 16200 = 0.0000.
+step:16204	time:0.04693020346
+step:16239	time:0.04703156459
+writing outputs at step,time:16261	0.0470952773
+step:16274	time:0.04713292572
+Fy at step 16300 = 0.1995.
+Fy at step 16300 = 0.0000.
+step:16309	time:0.04723428685
+step:16344	time:0.04733564798
+step:16379	time:0.04743700911
+Fy at step 16400 = 0.2020.
+Fy at step 16400 = 0.0000.
+step:16414	time:0.04753837024
+step:16449	time:0.04763973137
+step:16484	time:0.0477410925
+Fy at step 16500 = 0.2047.
+Fy at step 16500 = 0.0000.
+step:16519	time:0.04784245363
+step:16554	time:0.04794381476
+step:16589	time:0.04804517589
+Fy at step 16600 = 0.2076.
+Fy at step 16600 = 0.0000.
+writing outputs at step,time:16607	0.04809730447
+step:16624	time:0.04814653702
+step:16659	time:0.04824789815
+step:16694	time:0.04834925928
+Fy at step 16700 = 0.2108.
+Fy at step 16700 = 0.0000.
+step:16729	time:0.04845062041
+step:16764	time:0.04855198154
+step:16799	time:0.04865334267
+Fy at step 16800 = 0.2142.
+Fy at step 16800 = 0.0000.
+step:16834	time:0.04875470381
+step:16869	time:0.04885606494
+Fy at step 16900 = 0.2178.
+Fy at step 16900 = 0.0000.
+step:16904	time:0.04895742607
+step:16939	time:0.0490587872
+writing outputs at step,time:16953	0.04909933165
+step:16974	time:0.04916014833
+Fy at step 17000 = 0.2216.
+Fy at step 17000 = 0.0000.
+step:17009	time:0.04926150946
+step:17044	time:0.04936287059
+step:17079	time:0.04946423172
+Fy at step 17100 = 0.2257.
+Fy at step 17100 = 0.0000.
+step:17114	time:0.04956559285
+step:17149	time:0.04966695398
+step:17184	time:0.04976831511
+Fy at step 17200 = 0.2299.
+Fy at step 17200 = 0.0000.
+step:17219	time:0.04986967624
+step:17254	time:0.04997103737
+step:17289	time:0.0500723985
+writing outputs at step,time:17299	0.05010135883
+Fy at step 17300 = 0.2344.
+Fy at step 17300 = 0.0000.
+step:17324	time:0.05017375963
+step:17359	time:0.05027512076
+step:17394	time:0.05037648189
+Fy at step 17400 = 0.2391.
+Fy at step 17400 = 0.0000.
+step:17429	time:0.05047784303
+step:17464	time:0.05057920416
+step:17499	time:0.05068056529
+Fy at step 17500 = 0.2440.
+Fy at step 17500 = 0.0000.
+step:17534	time:0.05078192642
+step:17569	time:0.05088328755
+Fy at step 17600 = 0.2491.
+Fy at step 17600 = 0.0000.
+step:17604	time:0.05098464868
+step:17639	time:0.05108600981
+writing outputs at step,time:17645	0.051103386
+step:17674	time:0.05118737094
+Fy at step 17700 = 0.2544.
+Fy at step 17700 = 0.0000.
+step:17709	time:0.05128873207
+step:17744	time:0.0513900932
+step:17779	time:0.05149145433
+Fy at step 17800 = 0.2598.
+Fy at step 17800 = 0.0000.
+step:17814	time:0.05159281546
+step:17849	time:0.05169417659
+step:17884	time:0.05179553772
+Fy at step 17900 = 0.2655.
+Fy at step 17900 = 0.0000.
+step:17919	time:0.05189689885
+step:17954	time:0.05199825998
+step:17989	time:0.05209962111
+writing outputs at step,time:17991	0.05210541318
+Fy at step 18000 = 0.2713.
+Fy at step 18000 = 0.0000.
+step:18024	time:0.05220098224
+step:18059	time:0.05230234338
+step:18094	time:0.05240370451
+Fy at step 18100 = 0.2773.
+Fy at step 18100 = 0.0000.
+step:18129	time:0.05250506564
+step:18164	time:0.05260642677
+step:18199	time:0.0527077879
+Fy at step 18200 = 0.2835.
+Fy at step 18200 = 0.0000.
+step:18234	time:0.05280914903
+step:18269	time:0.05291051016
+Fy at step 18300 = 0.2897.
+Fy at step 18300 = 0.0000.
+step:18304	time:0.05301187129
+writing outputs at step,time:18337	0.05310744036
+step:18339	time:0.05311323242
+step:18374	time:0.05321459355
+Fy at step 18400 = 0.2962.
+Fy at step 18400 = 0.0000.
+step:18409	time:0.05331595468
+step:18444	time:0.05341731581
+step:18479	time:0.05351867694
+Fy at step 18500 = 0.3027.
+Fy at step 18500 = 0.0000.
+step:18514	time:0.05362003807
+step:18549	time:0.0537213992
+step:18584	time:0.05382276033
+Fy at step 18600 = 0.3094.
+Fy at step 18600 = 0.0000.
+step:18619	time:0.05392412146
+step:18654	time:0.0540254826
+writing outputs at step,time:18683	0.05410946753
+step:18689	time:0.05412684373
+Fy at step 18700 = 0.3161.
+Fy at step 18700 = 0.0000.
+step:18724	time:0.05422820486
+step:18759	time:0.05432956599
+step:18794	time:0.05443092712
+Fy at step 18800 = 0.3230.
+Fy at step 18800 = 0.0000.
+step:18829	time:0.05453228825
+step:18864	time:0.05463364938
+step:18899	time:0.05473501051
+Fy at step 18900 = 0.3299.
+Fy at step 18900 = 0.0000.
+step:18934	time:0.05483637164
+step:18969	time:0.05493773277
+Fy at step 19000 = 0.3369.
+Fy at step 19000 = 0.0000.
+step:19004	time:0.0550390939
+writing outputs at step,time:19029	0.05511149471
+step:19039	time:0.05514045503
+step:19074	time:0.05524181616
+Fy at step 19100 = 0.3440.
+Fy at step 19100 = 0.0000.
+step:19109	time:0.05534317729
+step:19144	time:0.05544453842
+step:19179	time:0.05554589955
+Fy at step 19200 = 0.3511.
+Fy at step 19200 = 0.0000.
+step:19214	time:0.05564726068
+step:19249	time:0.05574862181
+step:19284	time:0.05584998295
+Fy at step 19300 = 0.3582.
+Fy at step 19300 = 0.0000.
+step:19319	time:0.05595134408
+step:19354	time:0.05605270521
+writing outputs at step,time:19375	0.05611352188
+step:19389	time:0.05615406634
+Fy at step 19400 = 0.3653.
+Fy at step 19400 = 0.0000.
+step:19424	time:0.05625542747
+step:19459	time:0.0563567886
+step:19494	time:0.05645814973
+Fy at step 19500 = 0.3724.
+Fy at step 19500 = 0.0000.
+step:19529	time:0.05655951086
+step:19564	time:0.05666087199
+step:19599	time:0.05676223312
+Fy at step 19600 = 0.3795.
+Fy at step 19600 = 0.0000.
+step:19634	time:0.05686359425
+step:19669	time:0.05696495538
+Fy at step 19700 = 0.3865.
+Fy at step 19700 = 0.0000.
+step:19704	time:0.05706631651
+writing outputs at step,time:19721	0.05711554906
+step:19739	time:0.05716767764
+step:19774	time:0.05726903877
+Fy at step 19800 = 0.3935.
+Fy at step 19800 = 0.0000.
+step:19809	time:0.0573703999
+step:19844	time:0.05747176103
+step:19879	time:0.05757312217
+Fy at step 19900 = 0.4004.
+Fy at step 19900 = 0.0000.
+step:19914	time:0.0576744833
+step:19949	time:0.05777584443
+step:19984	time:0.05787720556
+Fy at step 20000 = 0.4072.
+Fy at step 20000 = 0.0000.
+step:20019	time:0.05797856669
+step:20054	time:0.05807992782
+writing outputs at step,time:20067	0.05811757624
+step:20089	time:0.05818128895
+Fy at step 20100 = 0.4139.
+Fy at step 20100 = 0.0000.
+step:20124	time:0.05828265008
+step:20159	time:0.05838401121
+step:20194	time:0.05848537234
+Fy at step 20200 = 0.4204.
+Fy at step 20200 = 0.0000.
+step:20229	time:0.05858673347
+step:20264	time:0.0586880946
+step:20299	time:0.05878945573
+Fy at step 20300 = 0.4269.
+Fy at step 20300 = 0.0000.
+step:20334	time:0.05889081686
+step:20369	time:0.05899217799
+Fy at step 20400 = 0.4331.
+Fy at step 20400 = 0.0000.
+step:20404	time:0.05909353912
+writing outputs at step,time:20413	0.05911960341
+step:20439	time:0.05919490025
+step:20474	time:0.05929626138
+Fy at step 20500 = 0.4392.
+Fy at step 20500 = 0.0000.
+step:20509	time:0.05939762252
+step:20544	time:0.05949898365
+step:20579	time:0.05960034478
+Fy at step 20600 = 0.4451.
+Fy at step 20600 = 0.0000.
+step:20614	time:0.05970170591
+step:20649	time:0.05980306704
+step:20684	time:0.05990442817
+Fy at step 20700 = 0.4507.
+Fy at step 20700 = 0.0000.
+step:20719	time:0.0600057893
+step:20754	time:0.06010715043
+writing outputs at step,time:20759	0.06012163059
+step:20789	time:0.06020851156
+Fy at step 20800 = 0.4562.
+Fy at step 20800 = 0.0000.
+step:20824	time:0.06030987269
+step:20859	time:0.06041123382
+step:20894	time:0.06051259495
+Fy at step 20900 = 0.4614.
+Fy at step 20900 = 0.0000.
+step:20929	time:0.06061395608
+step:20964	time:0.06071531721
+step:20999	time:0.06081667834
+Fy at step 21000 = 0.4663.
+Fy at step 21000 = 0.0000.
+step:21034	time:0.06091803947
+step:21069	time:0.0610194006
+Fy at step 21100 = 0.4709.
+Fy at step 21100 = 0.0000.
+step:21104	time:0.06112076174
+writing outputs at step,time:21105	0.06112365777
+step:21139	time:0.06122212287
+step:21174	time:0.061323484
+Fy at step 21200 = 0.4753.
+Fy at step 21200 = 0.0000.
+step:21209	time:0.06142484513
+step:21244	time:0.06152620626
+step:21279	time:0.06162756739
+Fy at step 21300 = 0.4794.
+Fy at step 21300 = 0.0000.
+step:21314	time:0.06172892852
+step:21349	time:0.06183028965
+step:21384	time:0.06193165078
+Fy at step 21400 = 0.4831.
+Fy at step 21400 = 0.0000.
+step:21419	time:0.06203301191
+writing outputs at step,time:21451	0.06212568494
+step:21454	time:0.06213437304
+step:21489	time:0.06223573417
+Fy at step 21500 = 0.4866.
+Fy at step 21500 = 0.0000.
+step:21524	time:0.0623370953
+step:21559	time:0.06243845643
+step:21594	time:0.06253981756
+Fy at step 21600 = 0.4896.
+Fy at step 21600 = 0.0000.
+step:21629	time:0.06264117869
+step:21664	time:0.06274253982
+step:21699	time:0.06284390095
+Fy at step 21700 = 0.4924.
+Fy at step 21700 = 0.0000.
+step:21734	time:0.06294526209
+step:21769	time:0.06304662322
+writing outputs at step,time:21797	0.06312771212
+Fy at step 21800 = 0.4948.
+Fy at step 21800 = 0.0000.
+step:21804	time:0.06314798435
+step:21839	time:0.06324934548
+step:21874	time:0.06335070661
+Fy at step 21900 = 0.4968.
+Fy at step 21900 = 0.0000.
+step:21909	time:0.06345206774
+step:21944	time:0.06355342887
+step:21979	time:0.06365479
+Fy at step 22000 = 0.4984.
+Fy at step 22000 = 0.0000.
+step:22014	time:0.06375615113
+step:22049	time:0.06385751226
+step:22084	time:0.06395887339
+Fy at step 22100 = 0.4997.
+Fy at step 22100 = 0.0000.
+step:22119	time:0.06406023452
+writing outputs at step,time:22143	0.0641297393
+step:22154	time:0.06416159565
+step:22189	time:0.06426295678
+Fy at step 22200 = 0.5006.
+Fy at step 22200 = 0.0000.
+step:22224	time:0.06436431791
+step:22259	time:0.06446567904
+step:22294	time:0.06456704017
+Fy at step 22300 = 0.5011.
+Fy at step 22300 = 0.0000.
+step:22329	time:0.06466840131
+step:22364	time:0.06476976244
+step:22399	time:0.06487112357
+Fy at step 22400 = 0.5012.
+Fy at step 22400 = 0.0000.
+step:22434	time:0.0649724847
+step:22469	time:0.06507384583
+writing outputs at step,time:22489	0.06513176647
+Fy at step 22500 = 0.5010.
+Fy at step 22500 = 0.0000.
+step:22504	time:0.06517520696
+step:22539	time:0.06527656809
+step:22574	time:0.06537792922
+Fy at step 22600 = 0.5003.
+Fy at step 22600 = 0.0000.
+step:22609	time:0.06547929035
+step:22644	time:0.06558065148
+step:22679	time:0.06568201261
+Fy at step 22700 = 0.4993.
+Fy at step 22700 = 0.0000.
+step:22714	time:0.06578337374
+step:22749	time:0.06588473487
+step:22784	time:0.065986096
+Fy at step 22800 = 0.4978.
+Fy at step 22800 = 0.0000.
+step:22819	time:0.06608745713
+writing outputs at step,time:22835	0.06613379365
+step:22854	time:0.06618881826
+step:22889	time:0.06629017939
+Fy at step 22900 = 0.4960.
+Fy at step 22900 = 0.0000.
+step:22924	time:0.06639154052
+step:22959	time:0.06649290166
+step:22994	time:0.06659426279
+Fy at step 23000 = 0.4938.
+Fy at step 23000 = 0.0000.
+step:23029	time:0.06669562392
+step:23064	time:0.06679698505
+step:23099	time:0.06689834618
+Fy at step 23100 = 0.4913.
+Fy at step 23100 = 0.0000.
+step:23134	time:0.06699970731
+step:23169	time:0.06710106844
+writing outputs at step,time:23181	0.06713582083
+Fy at step 23200 = 0.4883.
+Fy at step 23200 = 0.0000.
+step:23204	time:0.06720242957
+step:23239	time:0.0673037907
+step:23274	time:0.06740515183
+Fy at step 23300 = 0.4850.
+Fy at step 23300 = 0.0000.
+step:23309	time:0.06750651296
+step:23344	time:0.06760787409
+step:23379	time:0.06770923522
+Fy at step 23400 = 0.4814.
+Fy at step 23400 = 0.0000.
+step:23414	time:0.06781059635
+step:23449	time:0.06791195748
+step:23484	time:0.06801331861
+Fy at step 23500 = 0.4774.
+Fy at step 23500 = 0.0000.
+step:23519	time:0.06811467974
+writing outputs at step,time:23527	0.068137848
+step:23554	time:0.06821604088
+step:23589	time:0.06831740201
+Fy at step 23600 = 0.4731.
+Fy at step 23600 = 0.0000.
+step:23624	time:0.06841876314
+step:23659	time:0.06852012427
+step:23694	time:0.0686214854
+Fy at step 23700 = 0.4685.
+Fy at step 23700 = 0.0000.
+step:23729	time:0.06872284653
+step:23764	time:0.06882420766
+step:23799	time:0.06892556879
+Fy at step 23800 = 0.4636.
+Fy at step 23800 = 0.0000.
+step:23834	time:0.06902692992
+step:23869	time:0.06912829105
+writing outputs at step,time:23873	0.06913987518
+Fy at step 23900 = 0.4584.
+Fy at step 23900 = 0.0000.
+step:23904	time:0.06922965218
+step:23939	time:0.06933101331
+step:23974	time:0.06943237444
+Fy at step 24000 = 0.4529.
+Fy at step 24000 = 0.0000.
+step:24009	time:0.06953373557
+step:24044	time:0.0696350967
+step:24079	time:0.06973645783
+Fy at step 24100 = 0.4471.
+Fy at step 24100 = 0.0000.
+step:24114	time:0.06983781896
+step:24149	time:0.06993918009
+step:24184	time:0.07004054123
+Fy at step 24200 = 0.4412.
+Fy at step 24200 = 0.0000.
+step:24219	time:0.07014190236
+writing outputs at step,time:24219	0.07014190236
+step:24254	time:0.07024326349
+step:24289	time:0.07034462462
+Fy at step 24300 = 0.4349.
+Fy at step 24300 = 0.0000.
+step:24324	time:0.07044598575
+step:24359	time:0.07054734688
+step:24394	time:0.07064870801
+Fy at step 24400 = 0.4285.
+Fy at step 24400 = 0.0000.
+step:24429	time:0.07075006914
+step:24464	time:0.07085143027
+step:24499	time:0.0709527914
+Fy at step 24500 = 0.4219.
+Fy at step 24500 = 0.0000.
+step:24534	time:0.07105415253
+writing outputs at step,time:24565	0.07114392953
+step:24569	time:0.07115551366
+Fy at step 24600 = 0.4151.
+Fy at step 24600 = 0.0000.
+step:24604	time:0.07125687479
+step:24639	time:0.07135823592
+step:24674	time:0.07145959705
+Fy at step 24700 = 0.4081.
+Fy at step 24700 = 0.0000.
+step:24709	time:0.07156095818
+step:24744	time:0.07166231931
+step:24779	time:0.07176368045
+Fy at step 24800 = 0.4010.
+Fy at step 24800 = 0.0000.
+step:24814	time:0.07186504158
+step:24849	time:0.07196640271
+step:24884	time:0.07206776384
+Fy at step 24900 = 0.3937.
+Fy at step 24900 = 0.0000.
+writing outputs at step,time:24911	0.07214595671
+step:24919	time:0.07216912497
+step:24954	time:0.0722704861
+step:24989	time:0.07237184723
+Fy at step 25000 = 0.3864.
+Fy at step 25000 = 0.0000.
+step:25024	time:0.07247320836
+step:25059	time:0.07257456949
+step:25094	time:0.07267593062
+Fy at step 25100 = 0.3789.
+Fy at step 25100 = 0.0000.
+step:25129	time:0.07277729175
+step:25164	time:0.07287865288
+step:25199	time:0.07298001401
+Fy at step 25200 = 0.3714.
+Fy at step 25200 = 0.0000.
+step:25234	time:0.07308137514
+writing outputs at step,time:25257	0.07314798389
+step:25269	time:0.07318273627
+Fy at step 25300 = 0.3638.
+Fy at step 25300 = 0.0000.
+step:25304	time:0.0732840974
+step:25339	time:0.07338545853
+step:25374	time:0.07348681966
+Fy at step 25400 = 0.3562.
+Fy at step 25400 = 0.0000.
+step:25409	time:0.0735881808
+step:25444	time:0.07368954193
+step:25479	time:0.07379090306
+Fy at step 25500 = 0.3486.
+Fy at step 25500 = 0.0000.
+step:25514	time:0.07389226419
+step:25549	time:0.07399362532
+step:25584	time:0.07409498645
+Fy at step 25600 = 0.3410.
+Fy at step 25600 = 0.0000.
+writing outputs at step,time:25603	0.07415001106
+step:25619	time:0.07419634758
+step:25654	time:0.07429770871
+step:25689	time:0.07439906984
+Fy at step 25700 = 0.3333.
+Fy at step 25700 = 0.0000.
+step:25724	time:0.07450043097
+step:25759	time:0.0746017921
+step:25794	time:0.07470315323
+Fy at step 25800 = 0.3257.
+Fy at step 25800 = 0.0000.
+step:25829	time:0.07480451436
+step:25864	time:0.07490587549
+step:25899	time:0.07500723662
+Fy at step 25900 = 0.3182.
+Fy at step 25900 = 0.0000.
+step:25934	time:0.07510859775
+writing outputs at step,time:25949	0.07515203824
+step:25969	time:0.07520995888
+Fy at step 26000 = 0.3107.
+Fy at step 26000 = 0.0000.
+step:26004	time:0.07531132002
+step:26039	time:0.07541268115
+step:26074	time:0.07551404228
+Fy at step 26100 = 0.3033.
+Fy at step 26100 = 0.0000.
+step:26109	time:0.07561540341
+step:26144	time:0.07571676454
+step:26179	time:0.07581812567
+Fy at step 26200 = 0.2960.
+Fy at step 26200 = 0.0000.
+step:26214	time:0.0759194868
+step:26249	time:0.07602084793
+step:26284	time:0.07612220906
+writing outputs at step,time:26295	0.07615406542
+Fy at step 26300 = 0.2887.
+Fy at step 26300 = 0.0000.
+step:26319	time:0.07622357019
+step:26354	time:0.07632493132
+step:26389	time:0.07642629245
+Fy at step 26400 = 0.2816.
+Fy at step 26400 = 0.0000.
+step:26424	time:0.07652765358
+step:26459	time:0.07662901471
+step:26494	time:0.07673037584
+Fy at step 26500 = 0.2746.
+Fy at step 26500 = 0.0000.
+step:26529	time:0.07683173697
+step:26564	time:0.0769330981
+step:26599	time:0.07703445923
+Fy at step 26600 = 0.2678.
+Fy at step 26600 = 0.0000.
+step:26634	time:0.07713582037
+writing outputs at step,time:26641	0.07715609259
+step:26669	time:0.0772371815
+Fy at step 26700 = 0.2611.
+Fy at step 26700 = 0.0000.
+step:26704	time:0.07733854263
+step:26739	time:0.07743990376
+step:26774	time:0.07754126489
+Fy at step 26800 = 0.2546.
+Fy at step 26800 = 0.0000.
+step:26809	time:0.07764262602
+step:26844	time:0.07774398715
+step:26879	time:0.07784534828
+Fy at step 26900 = 0.2482.
+Fy at step 26900 = 0.0000.
+step:26914	time:0.07794670941
+step:26949	time:0.07804807054
+step:26984	time:0.07814943167
+writing outputs at step,time:26987	0.07815811977
+Fy at step 27000 = 0.2420.
+Fy at step 27000 = 0.0000.
+step:27019	time:0.0782507928
+step:27054	time:0.07835215393
+step:27089	time:0.07845351506
+Fy at step 27100 = 0.2360.
+Fy at step 27100 = 0.0000.
+step:27124	time:0.07855487619
+step:27159	time:0.07865623732
+step:27194	time:0.07875759845
+Fy at step 27200 = 0.2302.
+Fy at step 27200 = 0.0000.
+step:27229	time:0.07885895959
+step:27264	time:0.07896032072
+step:27299	time:0.07906168185
+Fy at step 27300 = 0.2246.
+Fy at step 27300 = 0.0000.
+writing outputs at step,time:27333	0.07916014694
+step:27334	time:0.07916304298
+step:27369	time:0.07926440411
+Fy at step 27400 = 0.2192.
+Fy at step 27400 = 0.0000.
+step:27404	time:0.07936576524
+step:27439	time:0.07946712637
+step:27474	time:0.0795684875
+Fy at step 27500 = 0.2140.
+Fy at step 27500 = 0.0000.
+step:27509	time:0.07966984863
+step:27544	time:0.07977120976
+step:27579	time:0.07987257089
+Fy at step 27600 = 0.2090.
+Fy at step 27600 = 0.0000.
+step:27614	time:0.07997393202
+step:27649	time:0.08007529315
+writing outputs at step,time:27679	0.08016217412
+step:27684	time:0.08017665428
+Fy at step 27700 = 0.2042.
+Fy at step 27700 = 0.0000.
+step:27719	time:0.08027801541
+step:27754	time:0.08037937654
+step:27789	time:0.08048073767
+Fy at step 27800 = 0.1997.
+Fy at step 27800 = 0.0000.
+step:27824	time:0.08058209881
+step:27859	time:0.08068345994
+step:27894	time:0.08078482107
+Fy at step 27900 = 0.1954.
+Fy at step 27900 = 0.0000.
+step:27929	time:0.0808861822
+step:27964	time:0.08098754333
+step:27999	time:0.08108890446
+Fy at step 28000 = 0.1914.
+Fy at step 28000 = 0.0000.
+writing outputs at step,time:28025	0.0811642013
+step:28034	time:0.08119026559
+step:28069	time:0.08129162672
+Fy at step 28100 = 0.1876.
+Fy at step 28100 = 0.0000.
+step:28104	time:0.08139298785
+step:28139	time:0.08149434898
+step:28174	time:0.08159571011
+Fy at step 28200 = 0.1840.
+Fy at step 28200 = 0.0000.
+step:28209	time:0.08169707124
+step:28244	time:0.08179843237
+step:28279	time:0.0818997935
+Fy at step 28300 = 0.1806.
+Fy at step 28300 = 0.0000.
+step:28314	time:0.08200115463
+step:28349	time:0.08210251576
+writing outputs at step,time:28371	0.08216622847
+step:28384	time:0.08220387689
+Fy at step 28400 = 0.1776.
+Fy at step 28400 = 0.0000.
+step:28419	time:0.08230523802
+step:28454	time:0.08240659916
+step:28489	time:0.08250796029
+Fy at step 28500 = 0.1747.
+Fy at step 28500 = 0.0000.
+step:28524	time:0.08260932142
+step:28559	time:0.08271068255
+step:28594	time:0.08281204368
+Fy at step 28600 = 0.1721.
+Fy at step 28600 = 0.0000.
+step:28629	time:0.08291340481
+step:28664	time:0.08301476594
+step:28699	time:0.08311612707
+Fy at step 28700 = 0.1698.
+Fy at step 28700 = 0.0000.
+writing outputs at step,time:28717	0.08316825565
+step:28734	time:0.0832174882
+step:28769	time:0.08331884933
+Fy at step 28800 = 0.1677.
+Fy at step 28800 = 0.0000.
+step:28804	time:0.08342021046
+step:28839	time:0.08352157159
+step:28874	time:0.08362293272
+Fy at step 28900 = 0.1658.
+Fy at step 28900 = 0.0000.
+step:28909	time:0.08372429385
+step:28944	time:0.08382565498
+step:28979	time:0.08392701611
+Fy at step 29000 = 0.1642.
+Fy at step 29000 = 0.0000.
+step:29014	time:0.08402837724
+step:29049	time:0.08412973838
+writing outputs at step,time:29063	0.08417028283
+step:29084	time:0.08423109951
+Fy at step 29100 = 0.1629.
+Fy at step 29100 = 0.0000.
+step:29119	time:0.08433246064
+step:29154	time:0.08443382177
+step:29189	time:0.0845351829
+Fy at step 29200 = 0.1618.
+Fy at step 29200 = 0.0000.
+step:29224	time:0.08463654403
+step:29259	time:0.08473790516
+step:29294	time:0.08483926629
+Fy at step 29300 = 0.1610.
+Fy at step 29300 = 0.0000.
+step:29329	time:0.08494062742
+step:29364	time:0.08504198855
+step:29399	time:0.08514334968
+Fy at step 29400 = 0.1604.
+Fy at step 29400 = 0.0000.
+writing outputs at step,time:29409	0.08517231
+step:29434	time:0.08524471081
+step:29469	time:0.08534607194
+Fy at step 29500 = 0.1601.
+Fy at step 29500 = 0.0000.
+step:29504	time:0.08544743307
+step:29539	time:0.0855487942
+step:29574	time:0.08565015533
+Fy at step 29600 = 0.1601.
+Fy at step 29600 = 0.0000.
+step:29609	time:0.08575151646
+step:29644	time:0.08585287759
+step:29679	time:0.08595423873
+Fy at step 29700 = 0.1603.
+Fy at step 29700 = 0.0000.
+step:29714	time:0.08605559986
+step:29749	time:0.08615696099
+writing outputs at step,time:29755	0.08617433718
+step:29784	time:0.08625832212
+Fy at step 29800 = 0.1607.
+Fy at step 29800 = 0.0000.
+step:29819	time:0.08635968325
+step:29854	time:0.08646104438
+step:29889	time:0.08656240551
+Fy at step 29900 = 0.1615.
+Fy at step 29900 = 0.0000.
+step:29924	time:0.08666376664
+step:29959	time:0.08676512777
+step:29994	time:0.0868664889
+Fy at step 30000 = 0.1625.
+Fy at step 30000 = 0.0000.
+step:30029	time:0.08696785003
+step:30064	time:0.08706921116
+step:30099	time:0.08717057229
+Fy at step 30100 = 0.1637.
+Fy at step 30100 = 0.0000.
+writing outputs at step,time:30101	0.08717636436
+step:30134	time:0.08727193342
+step:30169	time:0.08737329455
+Fy at step 30200 = 0.1652.
+Fy at step 30200 = 0.0000.
+step:30204	time:0.08747465568
+step:30239	time:0.08757601681
+step:30274	time:0.08767737795
+Fy at step 30300 = 0.1670.
+Fy at step 30300 = 0.0000.
+step:30309	time:0.08777873908
+step:30344	time:0.08788010021
+step:30379	time:0.08798146134
+Fy at step 30400 = 0.1691.
+Fy at step 30400 = 0.0000.
+step:30414	time:0.08808282247
+writing outputs at step,time:30447	0.08817839153
+step:30449	time:0.0881841836
+step:30484	time:0.08828554473
+Fy at step 30500 = 0.1714.
+Fy at step 30500 = 0.0000.
+step:30519	time:0.08838690586
+step:30554	time:0.08848826699
+step:30589	time:0.08858962812
+Fy at step 30600 = 0.1740.
+Fy at step 30600 = 0.0000.
+step:30624	time:0.08869098925
+step:30659	time:0.08879235038
+step:30694	time:0.08889371151
+Fy at step 30700 = 0.1768.
+Fy at step 30700 = 0.0000.
+step:30729	time:0.08899507264
+step:30764	time:0.08909643377
+writing outputs at step,time:30793	0.08918041871
+step:30799	time:0.0891977949
+Fy at step 30800 = 0.1799.
+Fy at step 30800 = 0.0000.
+step:30834	time:0.08929915603
+step:30869	time:0.08940051716
+Fy at step 30900 = 0.1833.
+Fy at step 30900 = 0.0000.
+step:30904	time:0.0895018783
+step:30939	time:0.08960323943
+step:30974	time:0.08970460056
+Fy at step 31000 = 0.1870.
+Fy at step 31000 = 0.0000.
+step:31009	time:0.08980596169
+step:31044	time:0.08990732282
+step:31079	time:0.09000868395
+Fy at step 31100 = 0.1909.
+Fy at step 31100 = 0.0000.
+step:31114	time:0.09011004508
+writing outputs at step,time:31139	0.09018244589
+step:31149	time:0.09021140621
+step:31184	time:0.09031276734
+Fy at step 31200 = 0.1951.
+Fy at step 31200 = 0.0000.
+step:31219	time:0.09041412847
+step:31254	time:0.0905154896
+step:31289	time:0.09061685073
+Fy at step 31300 = 0.1995.
+Fy at step 31300 = 0.0000.
+step:31324	time:0.09071821186
+step:31359	time:0.09081957299
+step:31394	time:0.09092093412
+Fy at step 31400 = 0.2043.
+Fy at step 31400 = 0.0000.
+step:31429	time:0.09102229525
+step:31464	time:0.09112365638
+writing outputs at step,time:31485	0.09118447306
+step:31499	time:0.09122501752
+Fy at step 31500 = 0.2092.
+Fy at step 31500 = 0.0000.
+step:31534	time:0.09132637865
+step:31569	time:0.09142773978
+Fy at step 31600 = 0.2145.
+Fy at step 31600 = 0.0000.
+step:31604	time:0.09152910091
+step:31639	time:0.09163046204
+step:31674	time:0.09173182317
+Fy at step 31700 = 0.2200.
+Fy at step 31700 = 0.0000.
+step:31709	time:0.0918331843
+step:31744	time:0.09193454543
+step:31779	time:0.09203590656
+Fy at step 31800 = 0.2257.
+Fy at step 31800 = 0.0000.
+step:31814	time:0.09213726769
+writing outputs at step,time:31831	0.09218650024
+step:31849	time:0.09223862882
+step:31884	time:0.09233998995
+Fy at step 31900 = 0.2317.
+Fy at step 31900 = 0.0000.
+step:31919	time:0.09244135108
+step:31954	time:0.09254271221
+step:31989	time:0.09264407334
+Fy at step 32000 = 0.2379.
+Fy at step 32000 = 0.0000.
+step:32024	time:0.09274543447
+step:32059	time:0.0928467956
+step:32094	time:0.09294815673
+Fy at step 32100 = 0.2444.
+Fy at step 32100 = 0.0000.
+step:32129	time:0.09304951787
+step:32164	time:0.093150879
+writing outputs at step,time:32177	0.09318852742
+step:32199	time:0.09325224013
+Fy at step 32200 = 0.2511.
+Fy at step 32200 = 0.0000.
+step:32234	time:0.09335360126
+step:32269	time:0.09345496239
+Fy at step 32300 = 0.2580.
+Fy at step 32300 = 0.0000.
+step:32304	time:0.09355632352
+step:32339	time:0.09365768465
+step:32374	time:0.09375904578
+Fy at step 32400 = 0.2651.
+Fy at step 32400 = 0.0000.
+step:32409	time:0.09386040691
+step:32444	time:0.09396176804
+step:32479	time:0.09406312917
+Fy at step 32500 = 0.2724.
+Fy at step 32500 = 0.0000.
+step:32514	time:0.0941644903
+writing outputs at step,time:32523	0.09419055459
+step:32549	time:0.09426585143
+step:32584	time:0.09436721256
+Fy at step 32600 = 0.2799.
+Fy at step 32600 = 0.0000.
+step:32619	time:0.09446857369
+step:32654	time:0.09456993482
+step:32689	time:0.09467129595
+Fy at step 32700 = 0.2876.
+Fy at step 32700 = 0.0000.
+step:32724	time:0.09477265709
+step:32759	time:0.09487401822
+step:32794	time:0.09497537935
+Fy at step 32800 = 0.2954.
+Fy at step 32800 = 0.0000.
+step:32829	time:0.09507674048
+step:32864	time:0.09517810161
+writing outputs at step,time:32869	0.09519258177
+step:32899	time:0.09527946274
+Fy at step 32900 = 0.3034.
+Fy at step 32900 = 0.0000.
+step:32934	time:0.09538082387
+step:32969	time:0.095482185
+Fy at step 33000 = 0.3116.
+Fy at step 33000 = 0.0000.
+step:33004	time:0.09558354613
+step:33039	time:0.09568490726
+step:33074	time:0.09578626839
+Fy at step 33100 = 0.3199.
+Fy at step 33100 = 0.0000.
+step:33109	time:0.09588762952
+step:33144	time:0.09598899065
+step:33179	time:0.09609035178
+Fy at step 33200 = 0.3282.
+Fy at step 33200 = 0.0000.
+step:33214	time:0.09619171291
+writing outputs at step,time:33215	0.09619460895
+step:33249	time:0.09629307404
+step:33284	time:0.09639443517
+Fy at step 33300 = 0.3367.
+Fy at step 33300 = 0.0000.
+step:33319	time:0.0964957963
+step:33354	time:0.09659715744
+step:33389	time:0.09669851857
+Fy at step 33400 = 0.3453.
+Fy at step 33400 = 0.0000.
+step:33424	time:0.0967998797
+step:33459	time:0.09690124083
+step:33494	time:0.09700260196
+Fy at step 33500 = 0.3539.
+Fy at step 33500 = 0.0000.
+step:33529	time:0.09710396309
+writing outputs at step,time:33561	0.09719663612
+step:33564	time:0.09720532422
+step:33599	time:0.09730668535
+Fy at step 33600 = 0.3625.
+Fy at step 33600 = 0.0000.
+step:33634	time:0.09740804648
+step:33669	time:0.09750940761
+Fy at step 33700 = 0.3712.
+Fy at step 33700 = 0.0000.
+step:33704	time:0.09761076874
+step:33739	time:0.09771212987
+step:33774	time:0.097813491
+Fy at step 33800 = 0.3799.
+Fy at step 33800 = 0.0000.
+step:33809	time:0.09791485213
+step:33844	time:0.09801621326
+step:33879	time:0.09811757439
+Fy at step 33900 = 0.3886.
+Fy at step 33900 = 0.0000.
+writing outputs at step,time:33907	0.0981986633
+step:33914	time:0.09821893552
+step:33949	time:0.09832029666
+step:33984	time:0.09842165779
+Fy at step 34000 = 0.3972.
+Fy at step 34000 = 0.0000.
+step:34019	time:0.09852301892
+step:34054	time:0.09862438005
+step:34089	time:0.09872574118
+Fy at step 34100 = 0.4058.
+Fy at step 34100 = 0.0000.
+step:34124	time:0.09882710231
+step:34159	time:0.09892846344
+step:34194	time:0.09902982457
+Fy at step 34200 = 0.4142.
+Fy at step 34200 = 0.0000.
+step:34229	time:0.0991311857
+writing outputs at step,time:34253	0.09920069048
+step:34264	time:0.09923254683
+step:34299	time:0.09933390796
+Fy at step 34300 = 0.4226.
+Fy at step 34300 = 0.0000.
+step:34334	time:0.09943526909
+step:34369	time:0.09953663022
+Fy at step 34400 = 0.4309.
+Fy at step 34400 = 0.0000.
+step:34404	time:0.09963799135
+step:34439	time:0.09973935248
+step:34474	time:0.09984071361
+Fy at step 34500 = 0.4390.
+Fy at step 34500 = 0.0000.
+step:34509	time:0.09994207474
+step:34544	time:0.1000434359
+step:34579	time:0.100144797
+writing outputs at step,time:34599	0.1002027177
+Fy at step 34600 = 0.4469.
+Fy at step 34600 = 0.0000.
+step:34614	time:0.1002461581
+step:34649	time:0.1003475193
+step:34684	time:0.1004488804
+Fy at step 34700 = 0.4547.
+Fy at step 34700 = 0.0000.
+step:34719	time:0.1005502415
+step:34754	time:0.1006516027
+step:34789	time:0.1007529638
+Fy at step 34800 = 0.4622.
+Fy at step 34800 = 0.0000.
+step:34824	time:0.1008543249
+step:34859	time:0.1009556861
+step:34894	time:0.1010570472
+Fy at step 34900 = 0.4695.
+Fy at step 34900 = 0.0000.
+step:34929	time:0.1011584083
+writing outputs at step,time:34945	0.1012047448
+step:34964	time:0.1012597694
+step:34999	time:0.1013611306
+Fy at step 35000 = 0.4765.
+Fy at step 35000 = 0.0000.
+step:35034	time:0.1014624917
+step:35069	time:0.1015638528
+Fy at step 35100 = 0.4833.
+Fy at step 35100 = 0.0000.
+step:35104	time:0.101665214
+step:35139	time:0.1017665751
+step:35174	time:0.1018679362
+Fy at step 35200 = 0.4898.
+Fy at step 35200 = 0.0000.
+step:35209	time:0.1019692974
+step:35244	time:0.1020706585
+step:35279	time:0.1021720196
+writing outputs at step,time:35291	0.102206772
+Fy at step 35300 = 0.4959.
+Fy at step 35300 = 0.0000.
+step:35314	time:0.1022733807
+step:35349	time:0.1023747419
+step:35384	time:0.102476103
+Fy at step 35400 = 0.5017.
+Fy at step 35400 = 0.0000.
+step:35419	time:0.1025774641
+step:35454	time:0.1026788253
+step:35489	time:0.1027801864
+Fy at step 35500 = 0.5072.
+Fy at step 35500 = 0.0000.
+step:35524	time:0.1028815475
+step:35559	time:0.1029829087
+step:35594	time:0.1030842698
+Fy at step 35600 = 0.5123.
+Fy at step 35600 = 0.0000.
+step:35629	time:0.1031856309
+writing outputs at step,time:35637	0.1032087992
+step:35664	time:0.1032869921
+step:35699	time:0.1033883532
+Fy at step 35700 = 0.5169.
+Fy at step 35700 = 0.0000.
+step:35734	time:0.1034897143
+step:35769	time:0.1035910754
+Fy at step 35800 = 0.5212.
+Fy at step 35800 = 0.0000.
+step:35804	time:0.1036924366
+step:35839	time:0.1037937977
+step:35874	time:0.1038951588
+Fy at step 35900 = 0.5251.
+Fy at step 35900 = 0.0000.
+step:35909	time:0.10399652
+step:35944	time:0.1040978811
+step:35979	time:0.1041992422
+writing outputs at step,time:35983	0.1042108264
+Fy at step 36000 = 0.5285.
+Fy at step 36000 = 0.0000.
+step:36014	time:0.1043006034
+step:36049	time:0.1044019645
+step:36084	time:0.1045033256
+Fy at step 36100 = 0.5315.
+Fy at step 36100 = 0.0000.
+step:36119	time:0.1046046868
+step:36154	time:0.1047060479
+step:36189	time:0.104807409
+Fy at step 36200 = 0.5341.
+Fy at step 36200 = 0.0000.
+step:36224	time:0.1049087701
+step:36259	time:0.1050101313
+step:36294	time:0.1051114924
+Fy at step 36300 = 0.5361.
+Fy at step 36300 = 0.0000.
+step:36329	time:0.1052128535
+writing outputs at step,time:36329	0.1052128535
+step:36364	time:0.1053142147
+step:36399	time:0.1054155758
+Fy at step 36400 = 0.5377.
+Fy at step 36400 = 0.0000.
+step:36434	time:0.1055169369
+step:36469	time:0.1056182981
+Fy at step 36500 = 0.5389.
+Fy at step 36500 = 0.0000.
+step:36504	time:0.1057196592
+step:36539	time:0.1058210203
+step:36574	time:0.1059223814
+Fy at step 36600 = 0.5395.
+Fy at step 36600 = 0.0000.
+step:36609	time:0.1060237426
+step:36644	time:0.1061251037
+writing outputs at step,time:36675	0.1062148807
+step:36679	time:0.1062264648
+Fy at step 36700 = 0.5397.
+Fy at step 36700 = 0.0000.
+step:36714	time:0.106327826
+step:36749	time:0.1064291871
+step:36784	time:0.1065305482
+Fy at step 36800 = 0.5393.
+Fy at step 36800 = 0.0000.
+step:36819	time:0.1066319094
+step:36854	time:0.1067332705
+step:36889	time:0.1068346316
+Fy at step 36900 = 0.5385.
+Fy at step 36900 = 0.0000.
+step:36924	time:0.1069359928
+step:36959	time:0.1070373539
+step:36994	time:0.107138715
+Fy at step 37000 = 0.5372.
+Fy at step 37000 = 0.0000.
+writing outputs at step,time:37021	0.1072169079
+step:37029	time:0.1072400761
+step:37064	time:0.1073414373
+step:37099	time:0.1074427984
+Fy at step 37100 = 0.5354.
+Fy at step 37100 = 0.0000.
+step:37134	time:0.1075441595
+step:37169	time:0.1076455207
+Fy at step 37200 = 0.5332.
+Fy at step 37200 = 0.0000.
+step:37204	time:0.1077468818
+step:37239	time:0.1078482429
+step:37274	time:0.1079496041
+Fy at step 37300 = 0.5304.
+Fy at step 37300 = 0.0000.
+step:37309	time:0.1080509652
+step:37344	time:0.1081523263
+writing outputs at step,time:37367	0.1082189351
+step:37379	time:0.1082536875
+Fy at step 37400 = 0.5272.
+Fy at step 37400 = 0.0000.
+step:37414	time:0.1083550486
+step:37449	time:0.1084564097
+step:37484	time:0.1085577708
+Fy at step 37500 = 0.5236.
+Fy at step 37500 = 0.0000.
+step:37519	time:0.108659132
+step:37554	time:0.1087604931
+step:37589	time:0.1088618542
+Fy at step 37600 = 0.5195.
+Fy at step 37600 = 0.0000.
+step:37624	time:0.1089632154
+step:37659	time:0.1090645765
+step:37694	time:0.1091659376
+Fy at step 37700 = 0.5150.
+Fy at step 37700 = 0.0000.
+writing outputs at step,time:37713	0.1092209622
+step:37729	time:0.1092672988
+step:37764	time:0.1093686599
+step:37799	time:0.109470021
+Fy at step 37800 = 0.5100.
+Fy at step 37800 = 0.0000.
+step:37834	time:0.1095713821
+step:37869	time:0.1096727433
+Fy at step 37900 = 0.5046.
+Fy at step 37900 = 0.0000.
+step:37904	time:0.1097741044
+step:37939	time:0.1098754655
+step:37974	time:0.1099768267
+Fy at step 38000 = 0.4989.
+Fy at step 38000 = 0.0000.
+step:38009	time:0.1100781878
+step:38044	time:0.1101795489
+writing outputs at step,time:38059	0.1102229894
+step:38079	time:0.1102809101
+Fy at step 38100 = 0.4928.
+Fy at step 38100 = 0.0000.
+step:38114	time:0.1103822712
+step:38149	time:0.1104836323
+step:38184	time:0.1105849935
+Fy at step 38200 = 0.4863.
+Fy at step 38200 = 0.0000.
+step:38219	time:0.1106863546
+step:38254	time:0.1107877157
+step:38289	time:0.1108890768
+Fy at step 38300 = 0.4795.
+Fy at step 38300 = 0.0000.
+step:38324	time:0.110990438
+step:38359	time:0.1110917991
+step:38394	time:0.1111931602
+Fy at step 38400 = 0.4724.
+Fy at step 38400 = 0.0000.
+writing outputs at step,time:38405	0.1112250166
+step:38429	time:0.1112945214
+step:38464	time:0.1113958825
+step:38499	time:0.1114972436
+Fy at step 38500 = 0.4649.
+Fy at step 38500 = 0.0000.
+step:38534	time:0.1115986048
+step:38569	time:0.1116999659
+Fy at step 38600 = 0.4572.
+Fy at step 38600 = 0.0000.
+step:38604	time:0.111801327
+step:38639	time:0.1119026882
+step:38674	time:0.1120040493
+Fy at step 38700 = 0.4493.
+Fy at step 38700 = 0.0000.
+step:38709	time:0.1121054104
+step:38744	time:0.1122067715
+writing outputs at step,time:38751	0.1122270438
+step:38779	time:0.1123081327
+Fy at step 38800 = 0.4411.
+Fy at step 38800 = 0.0000.
+step:38814	time:0.1124094938
+step:38849	time:0.1125108549
+step:38884	time:0.1126122161
+Fy at step 38900 = 0.4327.
+Fy at step 38900 = 0.0000.
+step:38919	time:0.1127135772
+step:38954	time:0.1128149383
+step:38989	time:0.1129162995
+Fy at step 39000 = 0.4241.
+Fy at step 39000 = 0.0000.
+step:39024	time:0.1130176606
+step:39059	time:0.1131190217
+step:39094	time:0.1132203828
+writing outputs at step,time:39097	0.1132290709
+Fy at step 39100 = 0.4153.
+Fy at step 39100 = 0.0000.
+step:39129	time:0.113321744
+step:39164	time:0.1134231051
+step:39199	time:0.1135244662
+Fy at step 39200 = 0.4064.
+Fy at step 39200 = 0.0000.
+step:39234	time:0.1136258274
+step:39269	time:0.1137271885
+Fy at step 39300 = 0.3974.
+Fy at step 39300 = 0.0000.
+step:39304	time:0.1138285496
+step:39339	time:0.1139299108
+step:39374	time:0.1140312719
+Fy at step 39400 = 0.3883.
+Fy at step 39400 = 0.0000.
+step:39409	time:0.114132633
+writing outputs at step,time:39443	0.1142310981
+step:39444	time:0.1142339942
+step:39479	time:0.1143353553
+Fy at step 39500 = 0.3791.
+Fy at step 39500 = 0.0000.
+step:39514	time:0.1144367164
+step:39549	time:0.1145380775
+step:39584	time:0.1146394387
+Fy at step 39600 = 0.3698.
+Fy at step 39600 = 0.0000.
+step:39619	time:0.1147407998
+step:39654	time:0.1148421609
+step:39689	time:0.1149435221
+Fy at step 39700 = 0.3606.
+Fy at step 39700 = 0.0000.
+step:39724	time:0.1150448832
+step:39759	time:0.1151462443
+writing outputs at step,time:39789	0.1152331253
+step:39794	time:0.1152476055
+Fy at step 39800 = 0.3513.
+Fy at step 39800 = 0.0000.
+step:39829	time:0.1153489666
+step:39864	time:0.1154503277
+step:39899	time:0.1155516889
+Fy at step 39900 = 0.3420.
+Fy at step 39900 = 0.0000.
+step:39934	time:0.11565305
+step:39969	time:0.1157544111
+Fy at step 40000 = 0.3328.
+Fy at step 40000 = 0.0000.
+step:40004	time:0.1158557722
+step:40039	time:0.1159571334
+step:40074	time:0.1160584945
+Fy at step 40100 = 0.3236.
+Fy at step 40100 = 0.0000.
+step:40109	time:0.1161598556
+writing outputs at step,time:40135	0.1162351525
+step:40144	time:0.1162612168
+step:40179	time:0.1163625779
+Fy at step 40200 = 0.3145.
+Fy at step 40200 = 0.0000.
+step:40214	time:0.116463939
+step:40249	time:0.1165653002
+step:40284	time:0.1166666613
+Fy at step 40300 = 0.3055.
+Fy at step 40300 = 0.0000.
+step:40319	time:0.1167680224
+step:40354	time:0.1168693835
+step:40389	time:0.1169707447
+Fy at step 40400 = 0.2966.
+Fy at step 40400 = 0.0000.
+step:40424	time:0.1170721058
+step:40459	time:0.1171734669
+writing outputs at step,time:40481	0.1172371797
+step:40494	time:0.1172748281
+Fy at step 40500 = 0.2878.
+Fy at step 40500 = 0.0000.
+step:40529	time:0.1173761892
+step:40564	time:0.1174775503
+step:40599	time:0.1175789115
+Fy at step 40600 = 0.2791.
+Fy at step 40600 = 0.0000.
+step:40634	time:0.1176802726
+step:40669	time:0.1177816337
+Fy at step 40700 = 0.2707.
+Fy at step 40700 = 0.0000.
+step:40704	time:0.1178829949
+step:40739	time:0.117984356
+step:40774	time:0.1180857171
+Fy at step 40800 = 0.2623.
+Fy at step 40800 = 0.0000.
+step:40809	time:0.1181870782
+writing outputs at step,time:40827	0.1182392068
+step:40844	time:0.1182884394
+step:40879	time:0.1183898005
+Fy at step 40900 = 0.2542.
+Fy at step 40900 = 0.0000.
+step:40914	time:0.1184911616
+step:40949	time:0.1185925228
+step:40984	time:0.1186938839
+Fy at step 41000 = 0.2463.
+Fy at step 41000 = 0.0000.
+step:41019	time:0.118795245
+step:41054	time:0.1188966062
+step:41089	time:0.1189979673
+Fy at step 41100 = 0.2385.
+Fy at step 41100 = 0.0000.
+step:41124	time:0.1190993284
+step:41159	time:0.1192006896
+writing outputs at step,time:41173	0.119241234
+step:41194	time:0.1193020507
+Fy at step 41200 = 0.2310.
+Fy at step 41200 = 0.0000.
+step:41229	time:0.1194034118
+step:41264	time:0.1195047729
+step:41299	time:0.1196061341
+Fy at step 41300 = 0.2237.
+Fy at step 41300 = 0.0000.
+step:41334	time:0.1197074952
+step:41369	time:0.1198088563
+Fy at step 41400 = 0.2167.
+Fy at step 41400 = 0.0000.
+step:41404	time:0.1199102175
