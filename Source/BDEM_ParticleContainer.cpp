@@ -538,6 +538,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("pay");
     real_data_names.push_back("paz");
     real_data_names.push_back("liquid_volume");
+    real_data_names.push_back("total_bridge_volume");
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -586,6 +587,8 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     writeflags_real[realData::q2]=1;
     writeflags_real[realData::q3]=1;
     writeflags_real[realData::temperature]=1;
+    writeflags_real[realData::liquid_volume]=1;
+    writeflags_real[realData::total_bridge_volume]=1;
     for(int i=0;i<m_chemptr->nspecies;i++)
     {
         writeflags_real[realData::firstspec+i]=1;
@@ -682,6 +685,8 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::taux) = p_in.rdata(realData::taux);
                 pcomp.rdata(realData::tauy) = p_in.rdata(realData::tauy);
                 pcomp.rdata(realData::tauz) = p_in.rdata(realData::tauz);
+                pcomp.rdata(realData::liquid_volume) = p_in.rdata(realData::liquid_volume) / p_in.idata(intData::num_comp_sphere);
+                pcomp.rdata(realData::total_bridge_volume) = p_in.rdata(realData::total_bridge_volume) / p_in.idata(intData::num_comp_sphere);
 
                 for(int br=0; br<MAXBRIDGES; br++){
                     pcomp.idata(intData::first_bridge+3*br) = -1;

@@ -149,6 +149,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
                 p.idata(intData::first_bridge+3*br+2) = -1;
             }
             p.rdata(realData::liquid_volume) = zero;
+            p.rdata(realData::total_bridge_volume) = zero;
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
@@ -658,6 +659,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
         p.idata(intData::first_bridge+3*br+2) = -1;
     }
     p.rdata(realData::liquid_volume) = zero;
+    p.rdata(realData::total_bridge_volume) = zero;
 
     for(int i=0;i<MAXSPECIES;i++)
     {

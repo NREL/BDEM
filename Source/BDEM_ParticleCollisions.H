@@ -113,11 +113,19 @@ amrex::ParallelFor(np,[=]
                             if(bridge_index == MAXBRIDGES) Abort("\nMaximum number of liquid bridges reached, MAXBRIDGES needs to be increased!\n");
                         }
 
-                        // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
-                        p1.idata(intData::first_bridge+bridge_index*3 + 0) = p2.id();
-                        p1.idata(intData::first_bridge+bridge_index*3 + 1) = pc1;
-                        p1.idata(intData::first_bridge+bridge_index*3 + 2) = pc2;
-                        bridge_exists = true;
+                        // Calculate the liquid volume belonging to p1 that contributes to the new bridge, and add to bridge total
+                        Real Vtot = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0-sqrt(1.0-(pow(rad2,two)/(pow(rad1,two)+pow(rad2,two)))));
+    
+                        // Only create new bridge if the particle has sufficient liquid volume to do so
+                        if(p1.rdata(realData::total_bridge_volume) + Vtot < p1.rdata(realData::liquid_volume)){
+                            p1.rdata(realData::total_bridge_volume) += Vtot;
+
+                            // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
+                            p1.idata(intData::first_bridge+bridge_index*3 + 0) = p2.id();
+                            p1.idata(intData::first_bridge+bridge_index*3 + 1) = pc1;
+                            p1.idata(intData::first_bridge+bridge_index*3 + 2) = pc2;
+                            bridge_exists = true;
+                        }
                     }
                     
                     // Normal vector pointing from center of component sphere 2 to component sphere 2
@@ -285,8 +293,9 @@ amrex::ParallelFor(np,[=]
                 // Calculate the capillary force from the liquid bridge
                 if(bridge_exists){
                     // Recalculate bridge volume (not necessary if there's an easy/efficient way to store this) 
-                    Real Vtot = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))))
-                              + (p2.rdata(realData::liquid_volume)/(p2.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
+                    Real Vp1 = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))));
+                    Real Vp2 = (p2.rdata(realData::liquid_volume)/(p2.idata(intData::num_comp_sphere)*2.0))*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
+                    Real Vtot = Vp1 + Vp2;
 
                     // Calculate the separation distance
                     Real Sdist = (distmag - (rad1+rad2) > 0.0) ? distmag - (rad1+rad2):0.0;
@@ -297,33 +306,34 @@ amrex::ParallelFor(np,[=]
                         p1.idata(intData::first_bridge+bridge_index*3 + 0) = -1;
                         p1.idata(intData::first_bridge+bridge_index*3 + 1) = -1;
                         p1.idata(intData::first_bridge+bridge_index*3 + 2) = -1;
+                        p1.rdata(realData::total_bridge_volume) -= Vp1;
+                    } else {
+                        // Calculate the fitting coefficients from Soulie et al. (2006)
+                        Real acoef = -1.1*pow( Vtot/pow(rad2,3.0) ,-0.53);
+                        Real bcoef = (-0.148*log(Vtot/pow(rad2,3.0)) - 0.96)*pow(DEM::contact_angle,two) - 0.0082*log(Vtot/pow(rad2,3.0)) + 0.48;
+                        Real ccoef = 0.0018*log(Vtot/pow(rad2,3.0)) + 0.078;
+
+                        // Calculate the normal capillary force and normal/tangential viscous forces 
+                        Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
+                        
+                        Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
+                        Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
+
+                        Real bridge_force[THREEDIM];
+                        Real torq[THREEDIM];
+                        bridge_force[XDIR] = (Fcap + Fvisc_n)*normal[XDIR] + Fvisc_t*tangent[XDIR];
+                        bridge_force[YDIR] = (Fcap + Fvisc_n)*normal[YDIR] + Fvisc_t*tangent[YDIR];
+                        bridge_force[ZDIR] = (Fcap + Fvisc_n)*normal[ZDIR] + Fvisc_t*tangent[ZDIR];
+
+                        p1.rdata(realData::fx) += bridge_force[XDIR];
+                        p1.rdata(realData::fy) += bridge_force[YDIR];
+                        p1.rdata(realData::fz) += bridge_force[ZDIR];
+
+                        crosspdt(contact_vect1, bridge_force, torq);
+                        p1.rdata(realData::taux) += torq[XDIR];
+                        p1.rdata(realData::tauy) += torq[YDIR];
+                        p1.rdata(realData::tauz) += torq[ZDIR];
                     }
-
-                    // Calculate the fitting coefficients from Soulie et al. (2006)
-                    Real acoef = -1.1*pow( Vtot/pow(rad2,3.0) ,-0.53);
-                    Real bcoef = (-0.148*log(Vtot/pow(rad2,3.0)) - 0.96)*pow(DEM::contact_angle,two) - 0.0082*log(Vtot/pow(rad2,3.0)) + 0.48;
-                    Real ccoef = 0.0018*log(Vtot/pow(rad2,3.0)) + 0.078;
-
-                    // Calculate the normal capillary force and normal/tangential viscous forces 
-                    Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
-                    
-                    Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
-                    Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
-
-                    Real bridge_force[THREEDIM];
-                    Real torq[THREEDIM];
-                    bridge_force[XDIR] = (Fcap + Fvisc_n)*normal[XDIR] + Fvisc_t*tangent[XDIR];
-                    bridge_force[YDIR] = (Fcap + Fvisc_n)*normal[YDIR] + Fvisc_t*tangent[YDIR];
-                    bridge_force[ZDIR] = (Fcap + Fvisc_n)*normal[ZDIR] + Fvisc_t*tangent[ZDIR];
-
-                    p1.rdata(realData::fx) += bridge_force[XDIR];
-                    p1.rdata(realData::fy) += bridge_force[YDIR];
-                    p1.rdata(realData::fz) += bridge_force[ZDIR];
-
-                    crosspdt(contact_vect1, bridge_force, torq);
-                    p1.rdata(realData::taux) += torq[XDIR];
-                    p1.rdata(realData::tauy) += torq[YDIR];
-                    p1.rdata(realData::tauz) += torq[ZDIR];
                 }
             }
         }

@@ -47,6 +47,7 @@ struct realData
     pay,
     paz,
     liquid_volume,   
+    total_bridge_volume,
     firstspec,
     count
   };

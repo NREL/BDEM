@@ -182,6 +182,9 @@ int main (int argc, char* argv[])
                 }
                 amrex::Print() << "Num particles after sourcing " << bpc.TotalNumberOfParticles() << "\n";
                 particle_sourcing_time=zero;
+        
+                // FIXME: Just calculating moisture for all particles, but should only be for newly sourced particles
+                if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
             }
 
             if (steps % specs.num_redist == 0)
