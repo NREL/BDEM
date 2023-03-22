@@ -22,6 +22,8 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::tcoll    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_liq   = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond  = zero;
 
 using namespace amrex;
 
@@ -60,7 +62,11 @@ int main (int argc, char* argv[])
         {
             if(specs.init_particles_using_file == 1)
             {
-                bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, specs.glued_sphere_particles);
+                if(specs.bonded_sphere_particles){
+                    bpc.InitBondedParticles("particle_input.dat",specs.do_heat_transfer);
+                } else {
+                    bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, specs.glued_sphere_particles, specs.temp_mean, specs.temp_stdev);
+                }
                 bpc.InitChemSpecies(specs.species_massfracs.data());
             }
             else
@@ -108,6 +114,7 @@ int main (int argc, char* argv[])
 
         amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
         //if(EBtools::using_levelset_geometry and !specs.restartedcase)
+        // FIXME: How do we handle bonded sphere particles that are partially outside boundary?
         if(EBtools::using_levelset_geometry)
         {
             bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
@@ -212,7 +219,9 @@ int main (int argc, char* argv[])
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present,
-                                  specs.gravity,specs.glued_sphere_particles,
+                                  specs.gravity,
+                                  specs.glued_sphere_particles,
+                                  specs.bonded_sphere_particles,
                                   specs.liquid_bridging, specs.init_force,
                                   specs.init_force_dir, specs.init_force_comp);
             }

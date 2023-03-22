@@ -48,6 +48,12 @@ struct realData
     paz,
     liquid_volume,   
     total_bridge_volume,
+    fx_bond,
+    fy_bond,
+    fz_bond,
+    taux_bond,
+    tauy_bond,
+    tauz_bond,
     firstspec,
     count
   };
@@ -58,10 +64,11 @@ struct intData
   enum 
   {
     phase = 0,
-    near_softwall,
-    num_comp_sphere,
-    first_bridge,
-    count
+    near_softwall = 1,
+    num_comp_sphere = 2,
+    first_bridge = 3,
+    first_bond = first_bridge + 3*MAXBRIDGES,
+    count = first_bond + MAXBONDS
   };
 };
 
@@ -80,9 +87,13 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
+
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real gamma;
+
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_bond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
 }
 
 class DEMspecs
@@ -185,6 +196,14 @@ class DEMspecs
         Real init_force = 0.0;
         int init_force_dir = 0;
         int init_force_comp = 0;
+
+        // Bonded sphere model variables
+        int bonded_sphere_particles = 0;
+        Real poisson_rat_bond = 0;
+
+        // Options for initializing particle temperatures according to normal dist.
+        Real temp_mean = -1.0;
+        Real temp_stdev = -1.0;
 
         void read_dem_specs()
         {
@@ -483,6 +502,19 @@ class DEMspecs
             pp.query("init_force", init_force);
             pp.query("init_force_dir", init_force_dir);
             pp.query("init_force_comp", init_force_comp);
+
+            // Normal dist. temperature variables
+            pp.query("temp_mean", temp_mean);
+            pp.query("temp_stdev", temp_stdev);
+
+            // Bonded sphere model variables
+            pp.query("bonded_sphere_particles", bonded_sphere_particles);
+            if(glued_sphere_particles && bonded_sphere_particles) Abort("\nGlued sphere and bonded sphere models are not compatible, only one may be chosen!\n");
+            if(bonded_sphere_particles){
+                pp.get("young_mod_bond", DEM::E_bond);
+                pp.get("poisson_rat_bond", poisson_rat_bond);
+                DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
+            }
         }
         void clear()
         {

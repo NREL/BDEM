@@ -8,7 +8,13 @@
 #define HARDWALL_BC 1
 #define SOFTWALL_BC 2
 #define MAXSPECIES 5
-#define MAXBRIDGES 20
+#define MAXBRIDGES 6
+#define MAXBONDS 6
+
+#define BP_NP0 1
+#define BP_NP1 3
+#define BP_NP2 5
+#define BP_NP3 10
 
 #define NTP_TEMP 293
 #define fourbythree 1.3333333333

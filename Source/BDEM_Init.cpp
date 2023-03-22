@@ -1,8 +1,13 @@
 #include <BDEM_ParticleContainer.H>
 #include <BDEM_Collide_Utils.H>
 #include <stl_tools/STLtools.H>
+#include <AMReX_Random.H>
+#include <BDEM_BondedParticleUtils.H>
 
-void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_heat_transfer,int glued_sphere_particles)
+void BDEMParticleContainer::InitParticles (const std::string& filename,
+                                           bool &do_heat_transfer,
+                                           int glued_sphere_particles, 
+                                           Real temp_mean, Real temp_stdev)
 {
 
     // only read the file on the IO proc
@@ -58,11 +63,18 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             if(do_heat_transfer)
             {
                 ifs >> p.rdata(realData::temperature);
+
+                // Overwrite temperature in file if a valid mean temperature and temp stdev are specified
+                if(temp_mean > 0.0 && temp_stdev > 0.0){
+                    p.rdata(realData::temperature) = amrex::RandomNormal(temp_mean, temp_stdev);
+                }
             }
             else
             {
                p.rdata(realData::temperature)=NTP_TEMP;
             }
+            
+           
 
             if(glued_sphere_particles)
             {
@@ -94,7 +106,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
                 p.rdata(realData::euler_angle_x) = zero;
                 p.rdata(realData::euler_angle_y) = zero;
                 p.rdata(realData::euler_angle_z) = zero;
-                p.rdata(realData::q0) = zero;
+                p.rdata(realData::q0) = 1.0;
                 p.rdata(realData::q1) = zero;
                 p.rdata(realData::q2) = zero;
                 p.rdata(realData::q3) = zero;
@@ -141,6 +153,12 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             p.rdata(realData::taux) = zero;
             p.rdata(realData::tauy) = zero;
             p.rdata(realData::tauz) = zero;
+            p.rdata(realData::fx_bond) = zero;
+            p.rdata(realData::fy_bond) = zero;
+            p.rdata(realData::fz_bond) = zero;
+            p.rdata(realData::taux_bond) = zero;
+            p.rdata(realData::tauy_bond) = zero;
+            p.rdata(realData::tauz_bond) = zero;
 
             // Set bridge indices to -1 to indicate no existing bridges
             for(int br=0; br<MAXBRIDGES; br++){
@@ -150,6 +168,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
             }
             p.rdata(realData::liquid_volume) = zero;
             p.rdata(realData::total_bridge_volume) = zero;
+
+            for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
@@ -159,6 +179,139 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,bool &do_
 
             // Add everything to the data structure
             host_particles.push_back(p);
+
+            if (!ifs.good())
+            {
+                amrex::Abort("Error initializing particles from Ascii file. \n");
+            }
+        }
+        
+        auto old_size = particle_tile.GetArrayOfStructs().size();
+        auto new_size = old_size + host_particles.size();
+        particle_tile.resize(new_size);
+
+        Gpu::copy(Gpu::hostToDevice,
+                  host_particles.begin(),
+                  host_particles.end(),
+                  particle_tile.GetArrayOfStructs().begin() + old_size);
+    }
+    
+    Redistribute();
+}
+
+void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
+                                                 bool &do_heat_transfer)
+{
+
+    // only read the file on the IO proc
+    if (ParallelDescriptor::IOProcessor())  
+    {
+        std::ifstream ifs;
+        ifs.open(filename.c_str(), std::ios::in);
+
+        if (!ifs.good())
+        {
+            amrex::FileOpenFailed(filename);
+        }
+
+        int np = -1;
+        ifs >> np >> std::ws;
+
+        // Issue an error if nparticles = 0 is specified
+        if ( np == -1 )
+        {
+            Abort("\nCannot read number of particles from particle_input.dat: file is corrupt.\
+                    \nPerhaps you forgot to specify the number of particles on the first line??? ");
+        }
+
+        // we add all the particles to grid 0 and tile 0 and let
+        // Redistribute() put them in the right places.
+        const int lev  = 0;
+        const int grid = 0;
+        const int tile = 0;
+
+        Gpu::HostVector<ParticleType> host_particles;
+        
+        auto& particle_tile = DefineAndReturnParticleTile(lev,grid,tile);
+
+        const bondedParticleData bp_data = bondedParticleData();
+
+        for (int i = 0; i < np; i++) 
+        {
+            // Read in standard particle properties
+            int bp_phase;
+            Real bp_pos[THREEDIM];
+            Real bp_radius, bp_density, bp_temperature;
+            Real bp_vel[THREEDIM];
+            Real bp_euler_angles[THREEDIM] = {0.0, 0.0, 0.0}; 
+
+            ifs >> bp_phase;
+            ifs >> bp_pos[XDIR];
+            ifs >> bp_pos[YDIR];
+            ifs >> bp_pos[ZDIR];
+            ifs >> bp_radius;
+            ifs >> bp_density;
+            ifs >> bp_vel[XDIR];
+            ifs >> bp_vel[YDIR];
+            ifs >> bp_vel[ZDIR];
+            if(do_heat_transfer){
+                ifs >> bp_temperature;
+            } else {
+                bp_temperature = NTP_TEMP;
+            }
+            ifs >> bp_euler_angles[XDIR];
+            ifs >> bp_euler_angles[YDIR];
+            ifs >> bp_euler_angles[ZDIR];
+
+            // Last entry should be the bonded particle type
+            int bp_type;
+            ifs >> bp_type;
+
+            // TODO: Find a way to do this without repeating code blocks
+            Real pc_pos[THREEDIM];                    
+            if(bp_type == 0){
+                int bp_ids[BP_NP0];
+                for(int j = 0; j<BP_NP0; j++) bp_ids[j] = ParticleType::NextID();
+                for(int j = 0; j<BP_NP0; j++){
+                    ParticleType p;
+                    p.id() = bp_ids[j];
+                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
+                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                    host_particles.push_back(p);
+                } 
+            } else if (bp_type == 1) {
+                int bp_ids[BP_NP1];
+                for(int j = 0; j<BP_NP1; j++) bp_ids[j] = ParticleType::NextID();
+                for(int j = 0; j<BP_NP1; j++){
+                    ParticleType p;
+                    p.id() = bp_ids[j];
+                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
+                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                    host_particles.push_back(p);
+                } 
+            } else if (bp_type == 2){
+                int bp_ids[BP_NP2];
+                for(int j = 0; j<BP_NP2; j++) bp_ids[j] = ParticleType::NextID();
+                for(int j = 0; j<BP_NP2; j++){
+                    ParticleType p;
+                    p.id() = bp_ids[j];
+                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
+                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                    host_particles.push_back(p);
+                } 
+            }else if (bp_type == 3){
+                int bp_ids[BP_NP3];
+                for(int j = 0; j<BP_NP3; j++) bp_ids[j] = ParticleType::NextID();
+                for(int j = 0; j<BP_NP3; j++){
+                    ParticleType p;
+                    p.id() = bp_ids[j];
+                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
+                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                    host_particles.push_back(p);
+                } 
+            }else {
+                Abort("\nBonded particle type not recognized!\n");
+            }
 
             if (!ifs.good())
             {
@@ -621,6 +774,12 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::taux) = zero;
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
+    p.rdata(realData::fx_bond) = zero;
+    p.rdata(realData::fy_bond) = zero;
+    p.rdata(realData::fz_bond) = zero;
+    p.rdata(realData::taux_bond) = zero;
+    p.rdata(realData::tauy_bond) = zero;
+    p.rdata(realData::tauz_bond) = zero;
 
     p.idata(intData::num_comp_sphere) = num_sphere;
     p.rdata(realData::euler_angle_x) = amrex::Random()*PI/2.0;
@@ -660,6 +819,8 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     }
     p.rdata(realData::liquid_volume) = zero;
     p.rdata(realData::total_bridge_volume) = zero;
+
+    for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
 
     for(int i=0;i<MAXSPECIES;i++)
     {

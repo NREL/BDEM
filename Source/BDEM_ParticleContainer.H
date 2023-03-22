@@ -10,7 +10,7 @@
 
 
 class BDEMParticleContainer
-    : public amrex::NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count+MAXBRIDGES*3-1>
+    : public amrex::NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count>
 {
 
 public:
@@ -21,16 +21,22 @@ public:
                          int                                numcells,
                          mechanism *chemptr)
 
-    : NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count+MAXBRIDGES*3-1>(geom, dmap, ba, numcells)
+    : NeighborParticleContainer<realData::count+MAXSPECIES-1, intData::count>(geom, dmap, ba, numcells)
     {
         m_chemptr=chemptr;
     }
 
-    void InitParticles (const std::string & filename,bool &do_heat_transfer, int glued_sphere_particles);
+    void InitParticles (const std::string & filename,
+                        bool &do_heat_transfer, 
+                        int glued_sphere_particles, 
+                        Real temp_mean, Real temp_stdev);
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
         Real dens, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
+
+    void InitBondedParticles (const std::string & filename,
+                              bool &do_heat_transfer);
 
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
@@ -43,7 +49,9 @@ public:
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent,
-            RealVect &gravity,const int glued_sphere_particles=0,
+            RealVect &gravity,
+            const int glued_sphere_particles=0,
+            const int bonded_sphere_particles=0,
             const int liquid_bridging=0, const Real init_force = 0.0,
             const int init_force_dir = 0, const int init_force_comp = 0);
 

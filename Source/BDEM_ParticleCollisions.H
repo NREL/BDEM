@@ -4,7 +4,6 @@ amrex::ParallelFor(np,[=]
     ParticleType& p1 = pstruct[i];
 
     for(int pc1 = 0; pc1 < p1.idata(intData::num_comp_sphere); pc1++){
-        
         // Calculate center of mass of component spheres
         //    - Alternative to recalculating this for each force evaluation would be to store positions in a vector and update with each step
         //    - Adhoc position evaluation like this only an option for simple cases like rod-like glued sphere particle
@@ -81,6 +80,16 @@ amrex::ParallelFor(np,[=]
                         }
                     }
                 }
+                
+                // Check to see if particles are bonded
+                bool bond_exists = false;
+                if(bonded_sphere_particles){
+                    for(int b=0; b<MAXBONDS; b++){
+                        if(p1.idata(intData::first_bond+b) == p2.id()){
+                            bond_exists = true;
+                        }
+                    }
+                }
   
                 // Initialize variables used for both contact and liquid bridge force calculations
                 // Calculate effective quantities
@@ -103,7 +112,8 @@ amrex::ParallelFor(np,[=]
                 Real cpdt1[THREEDIM];
                 Real cpdt2[THREEDIM];
 
-                if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists )
+                // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
+                if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists )
                 {
                     // Add liquid bridge between particles if there isn't one already, and at least one particle has moisture content
                     if(liquid_bridging && !bridge_exists && (p1.rdata(realData::liquid_volume) + p2.rdata(realData::liquid_volume) > 0.0)){
@@ -177,9 +187,66 @@ amrex::ParallelFor(np,[=]
                         vrel_trans_tan = dotpdt(vrel, tangent);
                     }
                 }
-                if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) )
-                {
 
+                // Evaluate the bond force
+                if(bond_exists)
+                {
+                    // Use Young and shear moduli along with particle info to evaluate stiffnesses
+                    // NOTE: Assumes bond radius = effective radius, and length = dist between particle centers
+
+                    // Bond area and moments
+                    Real A_bond = PI * pow(Reff,two);
+                    Real I_bond = PI * pow(Reff,4) / 4.0;
+                    Real I_p_bond = I_bond * 2.0;
+
+                    // Calculate stiffnesses
+                    Real k_n_bond = DEM::E_bond * A_bond / distmag;
+                    Real k_t_bond = DEM::G_bond * A_bond / distmag;
+                    Real k_tor_bond = DEM::G_bond * I_p_bond / distmag;
+                    Real k_ben_bond = DEM::E_bond * I_bond / distmag;
+
+                    // Evaluate relative angular displacement components
+                    Real angvel_rel[THREEDIM];
+                    angvel_rel[XDIR] = angvel1[XDIR] - angvel2[XDIR];  
+                    angvel_rel[YDIR] = angvel1[YDIR] - angvel2[YDIR];  
+                    angvel_rel[ZDIR] = angvel1[ZDIR] - angvel2[ZDIR];  
+
+                    // Calculate normal and tangential relative angular velocity components
+                    Real angvel_rel_norm;
+                    Real angvel_rel_n[THREEDIM];
+                    Real angvel_rel_t[THREEDIM];
+
+                    angvel_rel_norm = dotpdt(angvel_rel, normal);
+                    angvel_rel_n[XDIR] = angvel_rel_norm*normal[XDIR];
+                    angvel_rel_n[YDIR] = angvel_rel_norm*normal[YDIR];
+                    angvel_rel_n[ZDIR] = angvel_rel_norm*normal[ZDIR];
+
+                    angvel_rel_t[XDIR] = angvel_rel[XDIR] - angvel_rel_n[XDIR];
+                    angvel_rel_t[YDIR] = angvel_rel[YDIR] - angvel_rel_n[YDIR];
+                    angvel_rel_t[ZDIR] = angvel_rel[ZDIR] - angvel_rel_n[ZDIR];
+                    
+                    // Calculate the incremental change to forces and torques
+                    p1.rdata(realData::fx_bond) -= (k_n_bond*vrel_n[XDIR] + k_t_bond*vrel_t[XDIR]) * dt;
+                    p1.rdata(realData::fy_bond) -= (k_n_bond*vrel_n[YDIR] + k_t_bond*vrel_t[YDIR]) * dt;
+                    p1.rdata(realData::fz_bond) -= (k_n_bond*vrel_n[ZDIR] + k_t_bond*vrel_t[ZDIR]) * dt;
+
+                    p1.rdata(realData::taux_bond) -= (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) * dt;
+                    p1.rdata(realData::tauy_bond) -= (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) * dt;
+                    p1.rdata(realData::tauz_bond) -= (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) * dt;
+
+                    // Total bond forces and torques are added to particle quantities
+                    p1.rdata(realData::fx) += p1.rdata(realData::fx_bond);
+                    p1.rdata(realData::fy) += p1.rdata(realData::fy_bond);
+                    p1.rdata(realData::fz) += p1.rdata(realData::fz_bond);
+
+                    p1.rdata(realData::taux) += p1.rdata(realData::taux_bond);
+                    p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond);
+                    p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond);
+                }
+
+                // Evaluate the contact force if p1 and p2 don't have a bond between them
+                if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) and (!bond_exists))
+                {
                     Real kn_dem = DEM::k_n;
                     // TODO: Does eta need to be changed or does it remain the same?
                     Real eta_n_dem = two*sqrt(DEM::k_n*meff)*fabs(log(DEM::e_n));

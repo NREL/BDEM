@@ -43,7 +43,9 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present,
-            RealVect &gravity,const int glued_sphere_particles,
+            RealVect &gravity,
+            const int glued_sphere_particles,
+            const int bonded_sphere_particles,
             const int liquid_bridging, const Real init_force,
             const int init_force_dir, const int init_force_comp)
 {
@@ -266,6 +268,14 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                     p.rdata(realData::q1) = (q1 - amrex::Math::copysign(1.0,q1)*TINYVAL)/qmag;
                     p.rdata(realData::q2) = (q2 - amrex::Math::copysign(1.0,q2)*TINYVAL)/qmag;
                     p.rdata(realData::q3) = (q3 - amrex::Math::copysign(1.0,q3)*TINYVAL)/qmag;
+                }
+
+                // Make sure single particles are not rotated
+                if(p.idata(intData::num_comp_sphere) == 1){
+                    p.rdata(realData::q0) = 1.0;
+                    p.rdata(realData::q1) = zero;
+                    p.rdata(realData::q2) = zero;
+                    p.rdata(realData::q3) = zero;
                 }
 
                 // Rotate updated body-fixed angular velocity back to inertial frame
@@ -497,7 +507,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     const std::string& pltfile = amrex::Concatenate("plt", n, 5);
 
     Vector<int> writeflags_real(realData::count+MAXSPECIES-1,0);
-    Vector<int> writeflags_int(intData::count+MAXBRIDGES*3-1,0);
+    Vector<int> writeflags_int(intData::count,0);
 
     Vector<std::string> real_data_names;
     Vector<std::string>  int_data_names;
@@ -539,6 +549,12 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("paz");
     real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
+    real_data_names.push_back("fx_bond");
+    real_data_names.push_back("fy_bond");
+    real_data_names.push_back("fz_bond");
+    real_data_names.push_back("taux_bond");
+    real_data_names.push_back("tauy_bond");
+    real_data_names.push_back("tauz_bond");
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -563,6 +579,11 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
         int_data_names.push_back(bridgeidx);
         bridgeidx = amrex::Concatenate("p2cs",i,2);
         int_data_names.push_back(bridgeidx);
+    }
+    for(int i=0;i<MAXBONDS;i++)
+    {
+        std::string bondidx = amrex::Concatenate("bidx",i,2);
+        int_data_names.push_back(bondidx);
     }
 
     writeflags_real[realData::radius]=1;
@@ -687,6 +708,12 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::tauz) = p_in.rdata(realData::tauz);
                 pcomp.rdata(realData::liquid_volume) = p_in.rdata(realData::liquid_volume) / p_in.idata(intData::num_comp_sphere);
                 pcomp.rdata(realData::total_bridge_volume) = p_in.rdata(realData::total_bridge_volume) / p_in.idata(intData::num_comp_sphere);
+                pcomp.rdata(realData::fx_bond) = p_in.rdata(realData::fx_bond);
+                pcomp.rdata(realData::fy_bond) = p_in.rdata(realData::fy_bond);
+                pcomp.rdata(realData::fz_bond) = p_in.rdata(realData::fz_bond);
+                pcomp.rdata(realData::taux_bond) = p_in.rdata(realData::taux_bond);
+                pcomp.rdata(realData::tauy_bond) = p_in.rdata(realData::tauy_bond);
+                pcomp.rdata(realData::tauz_bond) = p_in.rdata(realData::tauz_bond);
 
                 for(int br=0; br<MAXBRIDGES; br++){
                     pcomp.idata(intData::first_bridge+3*br) = -1;
@@ -697,6 +724,7 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 {
                     pcomp.rdata(realData::firstspec+sp)=p_in.rdata(realData::firstspec+sp);
                 }
+                for(int b=0; b<MAXBONDS; b++) pcomp.idata(intData::first_bond + b) = -1;
    
                 host_particles.push_back(pcomp);
             }
