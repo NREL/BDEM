@@ -7,7 +7,8 @@
 void BDEMParticleContainer::InitParticles (const std::string& filename,
                                            bool &do_heat_transfer,
                                            int glued_sphere_particles, 
-                                           Real temp_mean, Real temp_stdev)
+                                           Real temp_mean, Real temp_stdev,
+                                           int contact_law)
 {
 
     // only read the file on the IO proc
@@ -56,6 +57,13 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             ifs >> p.pos(2);
             ifs >> p.rdata(realData::radius);
             ifs >> p.rdata(realData::density);
+            if(contact_law == 1){
+                ifs >> p.rdata(realData::E);
+                ifs >> p.rdata(realData::nu);
+            } else {
+                p.rdata(realData::E) = 100.0;
+                p.rdata(realData::nu) = 0.3;
+            }
             ifs >> p.rdata(realData::xvel);
             ifs >> p.rdata(realData::yvel);
             ifs >> p.rdata(realData::zvel);
@@ -646,7 +654,8 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
 
 
 void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
-                                           Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens, Real temp,
+                                           Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
+                                           Real E, Real nu, Real temp,
                                            Real spec[MAXSPECIES],
                                            int do_multi_part_per_cell, int max_sphere)
 {
@@ -688,8 +697,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                       dens,
-                                                       rad,temp,spec,ceil(amrex::Random()*max_sphere));
+                                                       dens, rad, E, nu, 
+                                                       temp, spec,ceil(amrex::Random()*max_sphere));
                     host_particles.push_back(p);
                 }
             }
@@ -720,8 +729,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                    meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                    meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                    meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                                   dens,
-                                                                   rad,temp,spec,ceil(amrex::Random()*max_sphere));
+                                                                   dens, rad, E, nu, 
+                                                                   temp, spec,ceil(amrex::Random()*max_sphere));
                                 host_particles.push_back(p);
                             }
                         }
@@ -748,7 +757,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
 BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Real x,Real y,Real z,
                                                                              Real velx, Real vely, Real velz,
-                                                                             Real dens, Real rad, Real temp,Real spec[MAXSPECIES], int num_sphere)
+                                                                             Real dens, Real rad, Real E, Real nu,
+                                                                             Real temp, Real spec[MAXSPECIES], int num_sphere)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -761,6 +771,8 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.idata(intData::phase) = 0;
     p.rdata(realData::radius) = rad;
     p.rdata(realData::radinit) = rad;
+    p.rdata(realData::E) = E;
+    p.rdata(realData::nu) = nu;
 
     p.rdata(realData::density) = dens;
     p.rdata(realData::xvel) = velx;

@@ -7,6 +7,7 @@
 #define ZDIR 2
 #define HARDWALL_BC 1
 #define SOFTWALL_BC 2
+#define CONTACT_HERTZ 1
 #define MAXSPECIES 5
 #define MAXBRIDGES 6
 #define MAXBONDS 6

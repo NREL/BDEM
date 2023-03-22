@@ -25,7 +25,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         if (x_hi_bc==SOFTWALL_BC and pos[XDIR] > (phi[XDIR]-rp))
         {
@@ -36,7 +36,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         if (y_lo_bc==SOFTWALL_BC and pos[YDIR] < (plo[YDIR]+rp))
         {
@@ -47,7 +47,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         if (y_hi_bc==SOFTWALL_BC and pos[YDIR] > (phi[YDIR]-rp))
         {
@@ -58,7 +58,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         if (z_lo_bc==SOFTWALL_BC and pos[ZDIR] < (plo[ZDIR]+rp))
         {
@@ -69,7 +69,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=-1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         if (z_hi_bc==SOFTWALL_BC and pos[ZDIR] > (phi[ZDIR]-rp))
         {
@@ -80,7 +80,7 @@ amrex::ParallelFor(np,[=]
             normal[YDIR]=0.0;
             normal[ZDIR]=0.0;
             normal[dir]=1.0;
-            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos);
+            get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law);
         }
         
         if(collided)

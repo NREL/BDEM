@@ -116,6 +116,7 @@ amrex::ParallelFor(np,[=]
                 if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists )
                 {
                     // Add liquid bridge between particles if there isn't one already, and at least one particle has moisture content
+                    // FIXME: make compatible with bonded sphere
                     if(liquid_bridging && !bridge_exists && (p1.rdata(realData::liquid_volume) + p2.rdata(realData::liquid_volume) > 0.0)){
                         // Find first available bridge index (denoted with -1 value)
                         while(p1.idata(intData::first_bridge+bridge_index*3) != -1){
@@ -247,15 +248,34 @@ amrex::ParallelFor(np,[=]
                 // Evaluate the contact force if p1 and p2 don't have a bond between them
                 if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) and (!bond_exists))
                 {
-                    Real kn_dem = DEM::k_n;
-                    // TODO: Does eta need to be changed or does it remain the same?
-                    Real eta_n_dem = two*sqrt(DEM::k_n*meff)*fabs(log(DEM::e_n));
-                    eta_n_dem /= sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
+                    Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
+                    if (contact_law == CONTACT_HERTZ)
+                    {
+                        Real E1 = p1.rdata(realData::E);
+                        Real E2 = p2.rdata(realData::E);
+                        Real nu1 = p1.rdata(realData::nu);
+                        Real nu2 = p2.rdata(realData::nu);
+                        Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
+                        Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
+                        Real G_eff = E1*E2/temp;
+                        Real beta = log(DEM::e_n) / sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
+                        Real temp1 = sqrt(Reff*overlap_n);
+                        kn_dem = 4.0/3.0*E_eff*temp1;
+                        kt_dem = 8.0*G_eff*temp1;
+                        eta_n_dem = 2.0*sqrt(5.0/3.0)*beta*sqrt(meff*E_eff)*sqrt(temp1);
+                        eta_t_dem = 4.0*sqrt(5.0/3.0)*beta*sqrt(meff*G_eff)*sqrt(temp1);
+                    }
+                    else
+                    {            
+                        kn_dem = DEM::k_n;
+                        // TODO: Does eta need to be changed or does it remain the same?
+                        eta_n_dem = two*sqrt(DEM::k_n*meff)*fabs(log(DEM::e_n));
+                        eta_n_dem /= sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
 
-                    // tangential components not implemented yet
-                    Real kt_dem = DEM::k_t;
-                    Real eta_t_dem = two*sqrt(DEM::k_t*meff)*fabs(log(DEM::e_t));
-                    eta_t_dem /= sqrt(PI*PI + log(DEM::e_t)*log(DEM::e_t));
+                        kt_dem = DEM::k_t;
+                        eta_t_dem = two*sqrt(DEM::k_t*meff)*fabs(log(DEM::e_t));
+                        eta_t_dem /= sqrt(PI*PI + log(DEM::e_t)*log(DEM::e_t));
+                    }
 
                     Real fn[THREEDIM];
                     Real ft[THREEDIM];

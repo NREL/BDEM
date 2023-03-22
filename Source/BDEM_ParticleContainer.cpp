@@ -42,7 +42,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_present,
+            const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
             RealVect &gravity,
             const int glued_sphere_particles,
             const int bonded_sphere_particles,
@@ -202,6 +202,7 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
             ParticleType& p = pstruct[i];
             Real pos_old[3];
             Real pos_new[3];
+            Real rp = p.rdata(realData::radius);
 
             pos_old[0]=p.pos(0);
             pos_old[1]=p.pos(1);
@@ -327,34 +328,34 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
             }
 
             // FIXME: Update for glued sphere code
-            if (x_lo_bc==HARDWALL_BC and p.pos(0) < plo[0])
+            if (x_lo_bc==HARDWALL_BC and p.pos(0) < (plo[0]+rp))
             {
-                p.pos(0) = two*plo[0] - p.pos(0);
+                p.pos(0) = two*(plo[0]+rp) - p.pos(0);
                 p.rdata(realData::xvel) = -p.rdata(realData::xvel);
             }
-            if (x_hi_bc==HARDWALL_BC and p.pos(0) > phi[0])
+            if (x_hi_bc==HARDWALL_BC and p.pos(0) > (phi[0]-rp))
             {
-                p.pos(0) = two*phi[0] - p.pos(0);
+                p.pos(0) = two*(phi[0]-rp) - p.pos(0);
                 p.rdata(realData::xvel) = -p.rdata(realData::xvel);
             }
-            if (y_lo_bc==HARDWALL_BC and p.pos(1) < plo[1])
+            if (y_lo_bc==HARDWALL_BC and p.pos(1) < (plo[1]+rp))
             {
-                p.pos(1) = two*plo[1] - p.pos(1);
+                p.pos(1) = two*(plo[1]+rp) - p.pos(1);
                 p.rdata(realData::yvel) = -p.rdata(realData::yvel);
             }
-            if (y_hi_bc==HARDWALL_BC and p.pos(1) > phi[1])
+            if (y_hi_bc==HARDWALL_BC and p.pos(1) > (phi[1]-rp))
             {
-                p.pos(1) = two*phi[1] - p.pos(1);
+                p.pos(1) = two*(phi[1]-rp) - p.pos(1);
                 p.rdata(realData::yvel) = -p.rdata(realData::yvel);
             }
-            if (z_lo_bc==HARDWALL_BC and p.pos(2) < plo[2])
+            if (z_lo_bc==HARDWALL_BC and p.pos(2) < (plo[2]+rp))
             {
-                p.pos(2) = two*plo[2] - p.pos(2);
+                p.pos(2) = two*(plo[2]+rp) - p.pos(2);
                 p.rdata(realData::zvel) = -p.rdata(realData::zvel);
             }
-            if (z_hi_bc==HARDWALL_BC and p.pos(2) > phi[2])
+            if (z_hi_bc==HARDWALL_BC and p.pos(2) > (phi[2]-rp))
             {
-                p.pos(2) = two*phi[2] - p.pos(2);
+                p.pos(2) = two*(phi[2]-rp) - p.pos(2);
                 p.rdata(realData::zvel) = -p.rdata(realData::zvel);
             }
 
@@ -533,6 +534,8 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("volume");
     real_data_names.push_back("mass");
     real_data_names.push_back("density");
+    real_data_names.push_back("E");
+    real_data_names.push_back("nu");
     real_data_names.push_back("temperature");
     real_data_names.push_back("posx_prvs");
     real_data_names.push_back("posy_prvs");
@@ -555,6 +558,19 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("taux_bond");
     real_data_names.push_back("tauy_bond");
     real_data_names.push_back("tauz_bond");
+
+    // For debug
+    // real_data_names.push_back("overlap_n");
+    // real_data_names.push_back("kn");
+    // real_data_names.push_back("kt");
+    // real_data_names.push_back("eta_n");
+    // real_data_names.push_back("eta_t");
+    // real_data_names.push_back("overlap_n_y");
+    // real_data_names.push_back("fn_y");
+    // real_data_names.push_back("vr_n_y");
+    // real_data_names.push_back("overlap_t_y");
+    // real_data_names.push_back("ft_y");
+    // real_data_names.push_back("vr_t_y");
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -610,6 +626,20 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     writeflags_real[realData::temperature]=1;
     writeflags_real[realData::liquid_volume]=1;
     writeflags_real[realData::total_bridge_volume]=1;
+
+    // for debug
+    // writeflags_real[realData::overlap_n]=1;
+    // writeflags_real[realData::kn]=1;
+    // writeflags_real[realData::kt]=1;
+    // writeflags_real[realData::eta_n]=1;
+    // writeflags_real[realData::eta_t]=1;
+    // writeflags_real[realData::overlap_n_y]=1;
+    // writeflags_real[realData::fn_y]=1;
+    // writeflags_real[realData::vr_n_y]=1;
+    // writeflags_real[realData::overlap_t_y]=1;
+    // writeflags_real[realData::ft_y]=1;
+    // writeflags_real[realData::vr_t_y]=1;
+
     for(int i=0;i<m_chemptr->nspecies;i++)
     {
         writeflags_real[realData::firstspec+i]=1;

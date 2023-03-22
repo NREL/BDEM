@@ -29,15 +29,15 @@ public:
     void InitParticles (const std::string & filename,
                         bool &do_heat_transfer, 
                         int glued_sphere_particles, 
-                        Real temp_mean, Real temp_stdev);
+                        Real temp_mean, Real temp_stdev,
+                        int contact_law);
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
-        Real dens, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
+        Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
 
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer);
-
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
 
@@ -48,7 +48,7 @@ public:
             const MultiFab *lsmfab,
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
-            const int ls_refinement,bool stl_geom_resent,
+            const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
             RealVect &gravity,
             const int glued_sphere_particles=0,
             const int bonded_sphere_particles=0,
@@ -69,7 +69,7 @@ public:
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
-                Real dens, Real rad, Real temp,Real spec[MAXSPECIES], int num_sphere);
+                Real dens, Real E, Real nu, Real rad, Real temp,Real spec[MAXSPECIES], int num_sphere);
 
     void createGluedSpheres(BDEMParticleContainer& pin);
 
