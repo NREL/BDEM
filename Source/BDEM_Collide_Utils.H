@@ -285,8 +285,6 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     vrel_t[1] = vrel[1] - vreltrans_norm*normal[1];
     vrel_t[2] = vrel[2] - vreltrans_norm*normal[2];
 
-    int phase = p.idata(intData::phase);
-
     // Contact law: default - linear, 1 - hertz
     Real meff = p.rdata(realData::mass);
     Real Reff = rp;

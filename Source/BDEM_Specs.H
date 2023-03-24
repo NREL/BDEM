@@ -124,7 +124,7 @@ class DEMspecs
 
         Vector<int> bclo;
         Vector<int> bchi;
-        int contact_law;
+        int contact_law = 0;
 
         Vector<Real> autogen_mincoords; 
         Vector<Real> autogen_maxcoords; 
@@ -222,6 +222,12 @@ class DEMspecs
         // Bonded sphere model variables
         int bonded_sphere_particles = 0;
         Real poisson_rat_bond = 0;
+
+        // Cantilever beam test case variables
+        int cantilever_beam_test = 0;
+        Real cb_force_max = 0.0;
+        int cb_dir = 1;
+        Real cb_load_time = 1.0;
 
         // Options for initializing particle temperatures according to normal dist.
         Real temp_mean = -1.0;
@@ -547,6 +553,14 @@ class DEMspecs
                 pp.get("young_mod_bond", DEM::E_bond);
                 pp.get("poisson_rat_bond", poisson_rat_bond);
                 DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
+
+                pp.query("cantilever_beam_test", cantilever_beam_test);
+                if(cantilever_beam_test){
+                    if(restartedcase || !init_particles_using_file || particle_sourcing) Abort("\nCantilever beam test case not compatible with restart, autogen, or sourcing!\n"); 
+                    pp.get("cb_force_max", cb_force_max);
+                    pp.get("cb_dir", cb_dir);
+                    pp.get("cb_load_time", cb_load_time);
+                }
             }
         
         }

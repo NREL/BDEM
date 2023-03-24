@@ -22,6 +22,7 @@ amrex::ParallelFor(np,[=]
         posvect[YDIR] = p1pos_inert[YDIR] - p1.pos(1);
         posvect[ZDIR] = p1pos_inert[ZDIR] - p1.pos(2);
 
+        // TODO: Should code for specific test case be moved into another fcn?
         // Code for glued sphere spin test
         Real f_init[THREEDIM] = {0.0, 0.0, 0.0};
         f_init[init_force_dir] = init_force;
@@ -35,6 +36,16 @@ amrex::ParallelFor(np,[=]
             p1.rdata(realData::taux) += torq_init[XDIR];
             p1.rdata(realData::tauy) += torq_init[YDIR];
             p1.rdata(realData::tauz) += torq_init[ZDIR];
+        }
+
+        // Code for cantilever beam test
+        // Force is only applied to right-most particle (which generated first with id = 1)
+        if(cb_force != 0.0 && p1.id() == 1){
+            Real cb_force_vect[THREEDIM] = {0.0, 0.0, 0.0};
+            cb_force_vect[cb_dir] = cb_force;        
+            p1.rdata(realData::fx) += cb_force_vect[XDIR];
+            p1.rdata(realData::fy) += cb_force_vect[YDIR];
+            p1.rdata(realData::fz) += cb_force_vect[ZDIR];
         }
 
         for (const auto& p2 : nbor_data.getNeighbors(i))
@@ -72,7 +83,7 @@ amrex::ParallelFor(np,[=]
                 if(liquid_bridging){
                     // Check to see if a liquid bridge exists between the component spheres
                     for(int br=0; br<MAXBRIDGES; br++){
-                        if(p1.idata(intData::first_bridge+3*br+0) == p2.id()){
+                        if(p1.idata(intData::first_bridge+3*br+0) == (int)p2.id()){
                             if(p1.idata(intData::first_bridge+3*br+1) == pc1 && p1.idata(intData::first_bridge+3*br+2) == pc2){
                                 bridge_exists = true;
                                 bridge_index = br;
@@ -85,7 +96,7 @@ amrex::ParallelFor(np,[=]
                 bool bond_exists = false;
                 if(bonded_sphere_particles){
                     for(int b=0; b<MAXBONDS; b++){
-                        if(p1.idata(intData::first_bond+b) == p2.id()){
+                        if(p1.idata(intData::first_bond+b) == (int)p2.id()){
                             bond_exists = true;
                         }
                     }
@@ -115,30 +126,6 @@ amrex::ParallelFor(np,[=]
                 // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
                 if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists )
                 {
-                    // Add liquid bridge between particles if there isn't one already, and at least one particle has moisture content
-                    // FIXME: make compatible with bonded sphere
-                    if(liquid_bridging && !bridge_exists && (p1.rdata(realData::liquid_volume) + p2.rdata(realData::liquid_volume) > 0.0)){
-                        // Find first available bridge index (denoted with -1 value)
-                        while(p1.idata(intData::first_bridge+bridge_index*3) != -1){
-                            bridge_index++;
-                            if(bridge_index == MAXBRIDGES) Abort("\nMaximum number of liquid bridges reached, MAXBRIDGES needs to be increased!\n");
-                        }
-
-                        // Calculate the liquid volume belonging to p1 that contributes to the new bridge, and add to bridge total
-                        Real Vtot = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0-sqrt(1.0-(pow(rad2,two)/(pow(rad1,two)+pow(rad2,two)))));
-    
-                        // Only create new bridge if the particle has sufficient liquid volume to do so
-                        if(p1.rdata(realData::total_bridge_volume) + Vtot < p1.rdata(realData::liquid_volume)){
-                            p1.rdata(realData::total_bridge_volume) += Vtot;
-
-                            // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
-                            p1.idata(intData::first_bridge+bridge_index*3 + 0) = p2.id();
-                            p1.idata(intData::first_bridge+bridge_index*3 + 1) = pc1;
-                            p1.idata(intData::first_bridge+bridge_index*3 + 2) = pc2;
-                            bridge_exists = true;
-                        }
-                    }
-                    
                     // Normal vector pointing from center of component sphere 2 to component sphere 2
                     normal[XDIR] = dist_x*distmag_inv;
                     normal[YDIR] = dist_y*distmag_inv;
@@ -187,6 +174,29 @@ amrex::ParallelFor(np,[=]
                         tangent[ZDIR] = vrel_t[ZDIR] / mag_vrel_t;
                         vrel_trans_tan = dotpdt(vrel, tangent);
                     }
+
+                    // Add liquid bridge between particles if there isn't one already, particles are not bonded, and at least one particle has moisture content
+                    if(liquid_bridging && !bridge_exists && !bond_exists && (p1.rdata(realData::liquid_volume) + p2.rdata(realData::liquid_volume) > 0.0)){
+                        // Find first available bridge index (denoted with -1 value)
+                        while(p1.idata(intData::first_bridge+bridge_index*3) != -1){
+                            bridge_index++;
+                            if(bridge_index == MAXBRIDGES) Abort("\nMaximum number of liquid bridges reached, MAXBRIDGES needs to be increased!\n");
+                        }
+
+                        // Calculate the liquid volume belonging to p1 that contributes to the new bridge, and add to bridge total
+                        Real Vtot = (p1.rdata(realData::liquid_volume)/(p1.idata(intData::num_comp_sphere)*2.0))*(1.0-sqrt(1.0-(pow(rad2,two)/(pow(rad1,two)+pow(rad2,two)))));
+    
+                        // Only create new bridge if the particle has sufficient liquid volume to do so
+                        if(p1.rdata(realData::total_bridge_volume) + Vtot < p1.rdata(realData::liquid_volume)){
+                            p1.rdata(realData::total_bridge_volume) += Vtot;
+
+                            // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
+                            p1.idata(intData::first_bridge+bridge_index*3 + 0) = (int)p2.id();
+                            p1.idata(intData::first_bridge+bridge_index*3 + 1) = pc1;
+                            p1.idata(intData::first_bridge+bridge_index*3 + 2) = pc2;
+                            bridge_exists = true;
+                        }
+                    }
                 }
 
                 // Evaluate the bond force
@@ -201,10 +211,10 @@ amrex::ParallelFor(np,[=]
                     Real I_p_bond = I_bond * 2.0;
 
                     // Calculate stiffnesses
-                    Real k_n_bond = DEM::E_bond * A_bond / distmag;
-                    Real k_t_bond = DEM::G_bond * A_bond / distmag;
-                    Real k_tor_bond = DEM::G_bond * I_p_bond / distmag;
-                    Real k_ben_bond = DEM::E_bond * I_bond / distmag;
+                    Real k_n_bond = DEM::E_bond * A_bond / rad_sum;
+                    Real k_t_bond = DEM::G_bond * A_bond / rad_sum;
+                    Real k_tor_bond = DEM::G_bond * I_p_bond / rad_sum;
+                    Real k_ben_bond = DEM::E_bond * I_bond / rad_sum;
 
                     // Evaluate relative angular displacement components
                     Real angvel_rel[THREEDIM];
@@ -225,15 +235,28 @@ amrex::ParallelFor(np,[=]
                     angvel_rel_t[XDIR] = angvel_rel[XDIR] - angvel_rel_n[XDIR];
                     angvel_rel_t[YDIR] = angvel_rel[YDIR] - angvel_rel_n[YDIR];
                     angvel_rel_t[ZDIR] = angvel_rel[ZDIR] - angvel_rel_n[ZDIR];
+
+                    // Calculate bending d theta due to tangential displacement
+                    Real overlap_t[THREEDIM];
+                    Real mag_overlap_t;
+                    overlap_t[XDIR] = dt*vrel_t[XDIR];
+                    overlap_t[YDIR] = dt*vrel_t[YDIR];
+                    overlap_t[ZDIR] = dt*vrel_t[ZDIR];
+                    mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
+                    Real dtheta_bend = atan(mag_overlap_t / distmag);
+
+                    // Calculate vector normal to tangential displacement 
+                    Real normal_bend[THREEDIM];
+                    crosspdt(normal, tangent, normal_bend);
                     
                     // Calculate the incremental change to forces and torques
                     p1.rdata(realData::fx_bond) -= (k_n_bond*vrel_n[XDIR] + k_t_bond*vrel_t[XDIR]) * dt;
                     p1.rdata(realData::fy_bond) -= (k_n_bond*vrel_n[YDIR] + k_t_bond*vrel_t[YDIR]) * dt;
                     p1.rdata(realData::fz_bond) -= (k_n_bond*vrel_n[ZDIR] + k_t_bond*vrel_t[ZDIR]) * dt;
 
-                    p1.rdata(realData::taux_bond) -= (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) * dt;
-                    p1.rdata(realData::tauy_bond) -= (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) * dt;
-                    p1.rdata(realData::tauz_bond) -= (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) * dt;
+                    p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + k_ben_bond*dtheta_bend*normal_bend[XDIR] ;
+                    p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + k_ben_bond*dtheta_bend*normal_bend[YDIR] ;
+                    p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + k_ben_bond*dtheta_bend*normal_bend[ZDIR] ;
 
                     // Total bond forces and torques are added to particle quantities
                     p1.rdata(realData::fx) += p1.rdata(realData::fx_bond);

@@ -13,16 +13,20 @@ struct bondedParticleData {
     {{4.0, 0.0, 0.0}, {2.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {-2.0, 0.0, 0.0}, {-4.0, 0.0, 0.0}};
 
   amrex::Real Type3_positions[BP_NP3][THREEDIM] =
+    {{9.0, 0.0, 0.0}, {7.0, 0.0, 0.0}, {5.0, 0.0, 0.0}, {3.0, 0.0, 0.0}, {1.0, 0.0, 0.0},
+     {-1.0, 0.0, 0.0}, {-3.0, 0.0, 0.0}, {-5.0, 0.0, 0.0}, {-7.0, 0.0, 0.0}, {-9.0, 0.0, 0.0}};
+
+  amrex::Real Type4_positions[BP_NP4][THREEDIM] =
     {{2.0, 1.73205080756, 0.0}, {0.0, 1.73205080756, 0.0}, {-2.0, 1.73205080756, 0.0},        // Top row
      {3.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {-3.0, 0.0, 0.0},                    // Middle row
      {2.0, -1.73205080756, 0.0}, {0.0, -1.73205080756, 0.0}, {-2.0, -1.73205080756, 0.0}};    // Bottom row
 
   // Initialize arrays that contain bond data
-  // NOTE: We can initialize to zero since particle ids begin with 1
-  int Type0_bonds[BP_NP0][MAXBONDS] = {0};
-  int Type1_bonds[BP_NP1][MAXBONDS] = {0};
-  int Type2_bonds[BP_NP2][MAXBONDS] = {0};
-  int Type3_bonds[BP_NP3][MAXBONDS] = {0};
+  int Type0_bonds[BP_NP0][MAXBONDS];
+  int Type1_bonds[BP_NP1][MAXBONDS];
+  int Type2_bonds[BP_NP2][MAXBONDS];
+  int Type3_bonds[BP_NP3][MAXBONDS];
+  int Type4_bonds[BP_NP4][MAXBONDS];
 
   // Constructor to fill in bond info
   bondedParticleData(){
@@ -50,6 +54,11 @@ struct bondedParticleData {
               Type3_bonds[i][j] = -1;
           }
       }
+      for(int i=0; i<BP_NP4; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type4_bonds[i][j] = -1;
+          }
+      }
 
       // Particle type 1
       Type1_bonds[0][0] = 1;
@@ -64,16 +73,28 @@ struct bondedParticleData {
       Type2_bonds[4][0] = 3;
 
       // Particle type 3
-      Type3_bonds[0][0] = 1; Type3_bonds[0][1] = 3; Type3_bonds[0][2] = 4;
-      Type3_bonds[1][0] = 0; Type3_bonds[1][1] = 2; Type3_bonds[1][2] = 4; Type3_bonds[1][3] = 5;
-      Type3_bonds[2][0] = 1; Type3_bonds[2][1] = 5; Type3_bonds[2][2] = 6;
-      Type3_bonds[3][0] = 0; Type3_bonds[3][1] = 4; Type3_bonds[3][2] = 7;
-      Type3_bonds[4][0] = 0; Type3_bonds[4][1] = 1; Type3_bonds[4][2] = 3; Type3_bonds[4][3] = 5; Type3_bonds[4][4] = 7; Type3_bonds[4][5] = 8;
-      Type3_bonds[5][0] = 1; Type3_bonds[5][1] = 2; Type3_bonds[5][2] = 4; Type3_bonds[5][3] = 6; Type3_bonds[5][4] = 8; Type3_bonds[5][5] = 9;
-      Type3_bonds[6][0] = 2; Type3_bonds[6][1] = 5; Type3_bonds[6][2] = 9;
-      Type3_bonds[7][0] = 3; Type3_bonds[7][1] = 4; Type3_bonds[7][2] = 8;
-      Type3_bonds[8][0] = 4; Type3_bonds[8][1] = 5; Type3_bonds[8][2] = 7; Type3_bonds[8][3] = 9;
-      Type3_bonds[9][0] = 5; Type3_bonds[9][1] = 6; Type3_bonds[9][2] = 8;
+      Type3_bonds[0][0] = 1;
+      Type3_bonds[1][0] = 0; Type3_bonds[1][1] = 2;
+      Type3_bonds[2][0] = 1; Type3_bonds[2][1] = 3;
+      Type3_bonds[3][0] = 2; Type3_bonds[3][1] = 4;
+      Type3_bonds[4][0] = 3; Type3_bonds[4][1] = 5;
+      Type3_bonds[5][0] = 4; Type3_bonds[5][1] = 6;
+      Type3_bonds[6][0] = 5; Type3_bonds[6][1] = 7;
+      Type3_bonds[7][0] = 6; Type3_bonds[7][1] = 8;
+      Type3_bonds[8][0] = 7; Type3_bonds[8][1] = 9;
+      Type3_bonds[9][0] = 8;
+
+      // Particle type 4
+      Type4_bonds[0][0] = 1; Type4_bonds[0][1] = 3; Type4_bonds[0][2] = 4;
+      Type4_bonds[1][0] = 0; Type4_bonds[1][1] = 2; Type4_bonds[1][2] = 4; Type4_bonds[1][3] = 5;
+      Type4_bonds[2][0] = 1; Type4_bonds[2][1] = 5; Type4_bonds[2][2] = 6;
+      Type4_bonds[3][0] = 0; Type4_bonds[3][1] = 4; Type4_bonds[3][2] = 7;
+      Type4_bonds[4][0] = 0; Type4_bonds[4][1] = 1; Type4_bonds[4][2] = 3; Type4_bonds[4][3] = 5; Type4_bonds[4][4] = 7; Type4_bonds[4][5] = 8;
+      Type4_bonds[5][0] = 1; Type4_bonds[5][1] = 2; Type4_bonds[5][2] = 4; Type4_bonds[5][3] = 6; Type4_bonds[5][4] = 8; Type4_bonds[5][5] = 9;
+      Type4_bonds[6][0] = 2; Type4_bonds[6][1] = 5; Type4_bonds[6][2] = 9;
+      Type4_bonds[7][0] = 3; Type4_bonds[7][1] = 4; Type4_bonds[7][2] = 8;
+      Type4_bonds[8][0] = 4; Type4_bonds[8][1] = 5; Type4_bonds[8][2] = 7; Type4_bonds[8][3] = 9;
+      Type4_bonds[9][0] = 5; Type4_bonds[9][1] = 6; Type4_bonds[9][2] = 8;
   }
 };
 
@@ -107,6 +128,11 @@ void get_bonded_particle_pos(const bondedParticleData bp_data,
     posnorm[YDIR] = bp_data.Type3_positions[comp][1]; 
     posnorm[ZDIR] = bp_data.Type3_positions[comp][2]; 
   }
+  if(type == 4){
+    posnorm[XDIR] = bp_data.Type4_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type4_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type4_positions[comp][2]; 
+  }
 
   // Scale and translate particle position using radius and bp center
   // TODO: Use euler angle data to rotate bonded particles
@@ -127,6 +153,7 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.cpu() = ParallelDescriptor::MyProc();
   
   // Set particle quantities that are read in from particle file
+  p.idata(intData::phase) = phase;
   p.pos(0) = ppos[XDIR];
   p.pos(1) = ppos[YDIR];
   p.pos(2) = ppos[ZDIR];
@@ -173,6 +200,12 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::taux) = zero;
   p.rdata(realData::tauy) = zero;
   p.rdata(realData::tauz) = zero;  
+  p.rdata(realData::fx_bond) = zero;
+  p.rdata(realData::fy_bond) = zero;
+  p.rdata(realData::fz_bond) = zero;
+  p.rdata(realData::taux_bond) = zero;
+  p.rdata(realData::tauy_bond) = zero;
+  p.rdata(realData::tauz_bond) = zero;  
 
   // Set bridge indices to -1 to indicate no existing bridges
   for(int br=0; br<MAXBRIDGES; br++){
@@ -186,17 +219,18 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   // Fill in the particle each particle ID that p shares a bond with
   if(type == 0){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type0_bonds[comp][b] != -1) ? ids[bp_data.Type0_bonds[comp][b]]:0;
-      int pid = p.id();
   }
   if(type == 1){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type1_bonds[comp][b] != -1) ? ids[bp_data.Type1_bonds[comp][b]]:0;
   }
   if(type == 2){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type2_bonds[comp][b] != -1) ? ids[bp_data.Type2_bonds[comp][b]]:0;
-      int pid = p.id();
   }
   if(type == 3){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type3_bonds[comp][b] != -1) ? ids[bp_data.Type3_bonds[comp][b]]:0;
+  }
+  if(type == 4){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type4_bonds[comp][b] != -1) ? ids[bp_data.Type4_bonds[comp][b]]:0;
   }
   
   //FIXME: get chemistry data from inputs file

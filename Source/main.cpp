@@ -58,14 +58,14 @@ int main (int argc, char* argv[])
 
         EBtools::init_eb(geom,ba,dm); 
 
-        const int ng_cells = two;
+        const int ng_cells = one;
         BDEMParticleContainer bpc(geom, dm, ba, ng_cells,specs.chemptr);
         if(!specs.restartedcase)
         {
             if(specs.init_particles_using_file == 1)
             {
                 if(specs.bonded_sphere_particles){
-                    bpc.InitBondedParticles("particle_input.dat",specs.do_heat_transfer);
+                    bpc.InitBondedParticles("particle_input.dat",specs.do_heat_transfer, specs.cantilever_beam_test);
                 } else {
                     bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, specs.glued_sphere_particles, specs.temp_mean, specs.temp_stdev, specs.contact_law);
                 }
@@ -159,7 +159,9 @@ int main (int argc, char* argv[])
             output_timePrint += dt;
             particle_sourcing_time += dt;
         
+            Real cb_force = 0.0;
             if(steps>0) specs.init_force = 0.0;
+            if(specs.cantilever_beam_test) cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:specs.cb_force_max;
 
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
@@ -228,8 +230,9 @@ int main (int argc, char* argv[])
                                   specs.gravity,
                                   specs.glued_sphere_particles,
                                   specs.bonded_sphere_particles,
-                                  specs.liquid_bridging, specs.init_force,
-                                  specs.init_force_dir, specs.init_force_comp);
+                                  specs.liquid_bridging, 
+                                  specs.init_force, specs.init_force_dir, specs.init_force_comp,
+                                  cb_force, specs.cb_dir);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 

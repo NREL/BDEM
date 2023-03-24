@@ -37,7 +37,8 @@ public:
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
 
     void InitBondedParticles (const std::string & filename,
-                              bool &do_heat_transfer);
+                              bool &do_heat_transfer,
+                              int cantilever_beam_test);
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
 
@@ -52,8 +53,9 @@ public:
             RealVect &gravity,
             const int glued_sphere_particles=0,
             const int bonded_sphere_particles=0,
-            const int liquid_bridging=0, const Real init_force = 0.0,
-            const int init_force_dir = 0, const int init_force_comp = 0);
+            const int liquid_bridging=0, 
+            const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
+            const Real cb_force = 0.0, const int cb_dir = 0);
 
     Real compute_coll_timescale();
 

@@ -208,7 +208,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 }
 
 void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
-                                                 bool &do_heat_transfer)
+                                                 bool &do_heat_transfer,
+                                                 int cantilever_beam_test)
 {
 
     // only read the file on the IO proc
@@ -231,6 +232,10 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             Abort("\nCannot read number of particles from particle_input.dat: file is corrupt.\
                     \nPerhaps you forgot to specify the number of particles on the first line??? ");
         }
+        if(np != 1 && cantilever_beam_test)
+        {
+            Abort("\nOne particle must be specified for the cantilever beam test case!\n");
+        } 
 
         // we add all the particles to grid 0 and tile 0 and let
         // Redistribute() put them in the right places.
@@ -278,6 +283,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             // TODO: Find a way to do this without repeating code blocks
             Real pc_pos[THREEDIM];                    
             if(bp_type == 0){
+                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
                 int bp_ids[BP_NP0];
                 for(int j = 0; j<BP_NP0; j++) bp_ids[j] = ParticleType::NextID();
                 for(int j = 0; j<BP_NP0; j++){
@@ -291,6 +297,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 int bp_ids[BP_NP1];
                 for(int j = 0; j<BP_NP1; j++) bp_ids[j] = ParticleType::NextID();
                 for(int j = 0; j<BP_NP1; j++){
+                    if(cantilever_beam_test && j == BP_NP1-1) bp_phase = -1;    // Left-most particle is held inert
                     ParticleType p;
                     p.id() = bp_ids[j];
                     get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
@@ -301,23 +308,36 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 int bp_ids[BP_NP2];
                 for(int j = 0; j<BP_NP2; j++) bp_ids[j] = ParticleType::NextID();
                 for(int j = 0; j<BP_NP2; j++){
+                    if(cantilever_beam_test && j == BP_NP2-1) bp_phase = -1;    // Left-most particle is held inert
                     ParticleType p;
                     p.id() = bp_ids[j];
                     get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
                     bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
                     host_particles.push_back(p);
                 } 
-            }else if (bp_type == 3){
+            } else if (bp_type == 3){
                 int bp_ids[BP_NP3];
                 for(int j = 0; j<BP_NP3; j++) bp_ids[j] = ParticleType::NextID();
                 for(int j = 0; j<BP_NP3; j++){
+                    if(cantilever_beam_test && j == BP_NP3-1) bp_phase = -1;    // Left-most particle is held inert
                     ParticleType p;
                     p.id() = bp_ids[j];
                     get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
                     bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
                     host_particles.push_back(p);
                 } 
-            }else {
+            } else if (bp_type == 4){
+                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
+                int bp_ids[BP_NP4];
+                for(int j = 0; j<BP_NP4; j++) bp_ids[j] = ParticleType::NextID();
+                for(int j = 0; j<BP_NP4; j++){
+                    ParticleType p;
+                    p.id() = bp_ids[j];
+                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
+                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                    host_particles.push_back(p);
+                } 
+            } else {
                 Abort("\nBonded particle type not recognized!\n");
             }
 

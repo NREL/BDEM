@@ -46,8 +46,9 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             RealVect &gravity,
             const int glued_sphere_particles,
             const int bonded_sphere_particles,
-            const int liquid_bridging, const Real init_force,
-            const int init_force_dir, const int init_force_comp)
+            const int liquid_bridging, 
+            const Real init_force, const int init_force_dir, const int init_force_comp,
+            const Real cb_force, const int cb_dir)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -200,163 +201,163 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            Real pos_old[3];
-            Real pos_new[3];
-            Real rp = p.rdata(realData::radius);
+            if(p.idata(intData::phase) != -1){    // Particles with phase = -1 are inert and do not move
+              Real pos_old[3];
+              Real pos_new[3];
+              Real rp = p.rdata(realData::radius);
 
-            pos_old[0]=p.pos(0);
-            pos_old[1]=p.pos(1);
-            pos_old[2]=p.pos(2);
+              pos_old[0]=p.pos(0);
+              pos_old[1]=p.pos(1);
+              pos_old[2]=p.pos(2);
 
-            p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt;
-            p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt;
-            p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt;
+              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt;
+              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt;
+              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt;
 
-            p.pos(0) += p.rdata(realData::xvel) * dt;
-            p.pos(1) += p.rdata(realData::yvel) * dt;
-            p.pos(2) += p.rdata(realData::zvel) * dt;
+              p.pos(0) += p.rdata(realData::xvel) * dt;
+              p.pos(1) += p.rdata(realData::yvel) * dt;
+              p.pos(2) += p.rdata(realData::zvel) * dt;
 
-            if(glued_sphere_particles){
-                // Angular velocity is updated in body-fixed frame of reference so that diagonal inertia tensor can be used
-                // I d (w_body)/dt = -w_body x (w_body I) + R tau
+              if(glued_sphere_particles){
+                  // Angular velocity is updated in body-fixed frame of reference so that diagonal inertia tensor can be used
+                  // I d (w_body)/dt = -w_body x (w_body I) + R tau
   
-                // Calculate the body-fixed angular velocity
-                Real angvel_inert[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
-                Real angvel_body[THREEDIM];
-                rotate_vector_to_body(p, angvel_inert, angvel_body);
+                  // Calculate the body-fixed angular velocity
+                  Real angvel_inert[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
+                  Real angvel_body[THREEDIM];
+                  rotate_vector_to_body(p, angvel_inert, angvel_body);
 
-                // Calculate the cross product term
-                Real wI[THREEDIM];
-                Real cpdt[THREEDIM];
-                wI[XDIR] = angvel_body[XDIR] / p.rdata(realData::Ixinv);
-                wI[YDIR] = angvel_body[YDIR] / p.rdata(realData::Iyinv);
-                wI[ZDIR] = angvel_body[ZDIR] / p.rdata(realData::Izinv);
-                crosspdt(angvel_body, wI, cpdt);
+                  // Calculate the cross product term
+                  Real wI[THREEDIM];
+                  Real cpdt[THREEDIM];
+                  wI[XDIR] = angvel_body[XDIR] / p.rdata(realData::Ixinv);
+                  wI[YDIR] = angvel_body[YDIR] / p.rdata(realData::Iyinv);
+                  wI[ZDIR] = angvel_body[ZDIR] / p.rdata(realData::Izinv);
+                  crosspdt(angvel_body, wI, cpdt);
 
-                // Rotate the torque vector to body-fixed frame
-                Real tau_inert[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
-                Real tau_body[THREEDIM];
-                rotate_vector_to_body(p, tau_inert, tau_body);
+                  // Rotate the torque vector to body-fixed frame
+                  Real tau_inert[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
+                  Real tau_body[THREEDIM];
+                  rotate_vector_to_body(p, tau_inert, tau_body);
 
-                // Update the angular velocity in the body-fixed reference frame
-                angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt;
-                angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt;
-                angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
+                  // Update the angular velocity in the body-fixed reference frame
+                  angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt;
+                  angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt;
+                  angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
 
-                // Update the quaternion components with the updated angular velocity
-                Real q0 = p.rdata(realData::q0);
-                Real q1 = p.rdata(realData::q1);
-                Real q2 = p.rdata(realData::q2);
-                Real q3 = p.rdata(realData::q3);
+                  // Update the quaternion components with the updated angular velocity
+                  Real q0 = p.rdata(realData::q0);
+                  Real q1 = p.rdata(realData::q1);
+                  Real q2 = p.rdata(realData::q2);
+                  Real q3 = p.rdata(realData::q3);
 
-                Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
-                Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]);
-                Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]);
-                Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
+                  Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
+                  Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]);
+                  Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]);
+                  Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
 
-                q0 += dq0;
-                q1 += dq1;
-                q2 += dq2;
-                q3 += dq3;
+                  q0 += dq0;
+                  q1 += dq1;
+                  q2 += dq2;
+                  q3 += dq3;
 
-                // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
-                Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
-                if(qmag < 0.5) printf("WARNING: SMALL QUATERNION VALUES ENCOUNTERED (%.6e) FOR PARTICLE %i!\n", qmag, p.id());
-                if(qmag > 1.5) printf("WARNING: LARGE QUATERNION VALUES ENCOUNTERED (%.6e) FOR PARTICLE %i!\n", qmag, p.id());
-                
-                if(qmag > TINYVAL){
-                    p.rdata(realData::q0) = (q0 - amrex::Math::copysign(1.0,q0)*TINYVAL)/qmag;
-                    p.rdata(realData::q1) = (q1 - amrex::Math::copysign(1.0,q1)*TINYVAL)/qmag;
-                    p.rdata(realData::q2) = (q2 - amrex::Math::copysign(1.0,q2)*TINYVAL)/qmag;
-                    p.rdata(realData::q3) = (q3 - amrex::Math::copysign(1.0,q3)*TINYVAL)/qmag;
-                }
+                  // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
+                  Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
+                  
+                  if(qmag > TINYVAL){
+                      p.rdata(realData::q0) = (q0 - amrex::Math::copysign(1.0,q0)*TINYVAL)/qmag;
+                      p.rdata(realData::q1) = (q1 - amrex::Math::copysign(1.0,q1)*TINYVAL)/qmag;
+                      p.rdata(realData::q2) = (q2 - amrex::Math::copysign(1.0,q2)*TINYVAL)/qmag;
+                      p.rdata(realData::q3) = (q3 - amrex::Math::copysign(1.0,q3)*TINYVAL)/qmag;
+                  }
 
-                // Make sure single particles are not rotated
-                if(p.idata(intData::num_comp_sphere) == 1){
-                    p.rdata(realData::q0) = 1.0;
-                    p.rdata(realData::q1) = zero;
-                    p.rdata(realData::q2) = zero;
-                    p.rdata(realData::q3) = zero;
-                }
+                  // Make sure single particles are not rotated
+                  if(p.idata(intData::num_comp_sphere) == 1){
+                      p.rdata(realData::q0) = 1.0;
+                      p.rdata(realData::q1) = zero;
+                      p.rdata(realData::q2) = zero;
+                      p.rdata(realData::q3) = zero;
+                  }
 
-                // Rotate updated body-fixed angular velocity back to inertial frame
-                rotate_vector_to_inertial(p, angvel_body, angvel_inert);
-                p.rdata(realData::xangvel) = angvel_inert[XDIR];
-                p.rdata(realData::yangvel) = angvel_inert[YDIR];
-                p.rdata(realData::zangvel) = angvel_inert[ZDIR];
+                  // Rotate updated body-fixed angular velocity back to inertial frame
+                  rotate_vector_to_inertial(p, angvel_body, angvel_inert);
+                  p.rdata(realData::xangvel) = angvel_inert[XDIR];
+                  p.rdata(realData::yangvel) = angvel_inert[YDIR];
+                  p.rdata(realData::zangvel) = angvel_inert[ZDIR];
 
-                // Calculate principal axis components in inertial reference frame
-                Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
-                Real pa_inert[THREEDIM];
-                rotate_vector_to_inertial(p, pa_body, pa_inert);
-                p.rdata(realData::pax) = pa_inert[XDIR];
-                p.rdata(realData::pay) = pa_inert[YDIR];
-                p.rdata(realData::paz) = pa_inert[ZDIR];
-            } else{
-                p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
-                p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
-                p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
-            }
+                  // Calculate principal axis components in inertial reference frame
+                  Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
+                  Real pa_inert[THREEDIM];
+                  rotate_vector_to_inertial(p, pa_body, pa_inert);
+                  p.rdata(realData::pax) = pa_inert[XDIR];
+                  p.rdata(realData::pay) = pa_inert[YDIR];
+                  p.rdata(realData::paz) = pa_inert[ZDIR];
+              } else{
+                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
+                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
+                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+              }
 
-            if(do_chemistry)
-            {
-                Real wdot[MAXSPECIES+1]={0.0};
-                Real spec[MAXSPECIES]={0.0};
-                Real minrad=minradfrac*p.rdata(realData::radinit);
+              if(do_chemistry)
+              {
+                  Real wdot[MAXSPECIES+1]={0.0};
+                  Real spec[MAXSPECIES]={0.0};
+                  Real minrad=minradfrac*p.rdata(realData::radinit);
 
-                for(int sp=0;sp<nspecies;sp++)
-                {
-                    //conc in kg/m3
-                    spec[sp]=p.rdata(realData::firstspec+sp)*p.rdata(realData::density); 
-                }
+                  for(int sp=0;sp<nspecies;sp++)
+                  {
+                      //conc in kg/m3
+                      spec[sp]=p.rdata(realData::firstspec+sp)*p.rdata(realData::density); 
+                  }
 
-                getProductionRate(nspecies,nsolidspecs,nreac,spec,molwts,p.rdata(realData::density), 
-                                  p.rdata(realData::radius), p.rdata(realData::radinit), p.rdata(realData::temperature),
-                                  solidspec_ids, reactmatrix, arrh_A, arrh_Ea, wdot);
+                  getProductionRate(nspecies,nsolidspecs,nreac,spec,molwts,p.rdata(realData::density), 
+                                    p.rdata(realData::radius), p.rdata(realData::radinit), p.rdata(realData::temperature),
+                                    solidspec_ids, reactmatrix, arrh_A, arrh_Ea, wdot);
 
-                for(int sp=0;sp<nspecies;sp++)
-                {
-                    p.rdata(realData::firstspec+sp) += wdot[sp]*dt/p.rdata(realData::density);
-                }
-                p.rdata(realData::radius) += wdot[nspecies]*dt;
+                  for(int sp=0;sp<nspecies;sp++)
+                  {
+                      p.rdata(realData::firstspec+sp) += wdot[sp]*dt/p.rdata(realData::density);
+                  }
+                  p.rdata(realData::radius) += wdot[nspecies]*dt;
 
-                //reset radius
-                if(p.rdata(realData::radius)<minrad)
-                {
-                    p.rdata(realData::radius)=minrad;
-                }
-            }
+                  //reset radius
+                  if(p.rdata(realData::radius)<minrad)
+                  {
+                      p.rdata(realData::radius)=minrad;
+                  }
+              }
 
-            // FIXME: Update for glued sphere code
-            if (x_lo_bc==HARDWALL_BC and p.pos(0) < (plo[0]+rp))
-            {
-                p.pos(0) = two*(plo[0]+rp) - p.pos(0);
-                p.rdata(realData::xvel) = -p.rdata(realData::xvel);
-            }
-            if (x_hi_bc==HARDWALL_BC and p.pos(0) > (phi[0]-rp))
-            {
-                p.pos(0) = two*(phi[0]-rp) - p.pos(0);
-                p.rdata(realData::xvel) = -p.rdata(realData::xvel);
-            }
-            if (y_lo_bc==HARDWALL_BC and p.pos(1) < (plo[1]+rp))
-            {
-                p.pos(1) = two*(plo[1]+rp) - p.pos(1);
-                p.rdata(realData::yvel) = -p.rdata(realData::yvel);
-            }
-            if (y_hi_bc==HARDWALL_BC and p.pos(1) > (phi[1]-rp))
-            {
-                p.pos(1) = two*(phi[1]-rp) - p.pos(1);
-                p.rdata(realData::yvel) = -p.rdata(realData::yvel);
-            }
-            if (z_lo_bc==HARDWALL_BC and p.pos(2) < (plo[2]+rp))
-            {
-                p.pos(2) = two*(plo[2]+rp) - p.pos(2);
-                p.rdata(realData::zvel) = -p.rdata(realData::zvel);
-            }
-            if (z_hi_bc==HARDWALL_BC and p.pos(2) > (phi[2]-rp))
-            {
-                p.pos(2) = two*(phi[2]-rp) - p.pos(2);
-                p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+              // FIXME: Update for glued sphere code
+              if (x_lo_bc==HARDWALL_BC and p.pos(0) < (plo[0]+rp))
+              {
+                  p.pos(0) = two*(plo[0]+rp) - p.pos(0);
+                  p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+              }
+              if (x_hi_bc==HARDWALL_BC and p.pos(0) > (phi[0]-rp))
+              {
+                  p.pos(0) = two*(phi[0]-rp) - p.pos(0);
+                  p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+              }
+              if (y_lo_bc==HARDWALL_BC and p.pos(1) < (plo[1]+rp))
+              {
+                  p.pos(1) = two*(plo[1]+rp) - p.pos(1);
+                  p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+              }
+              if (y_hi_bc==HARDWALL_BC and p.pos(1) > (phi[1]-rp))
+              {
+                  p.pos(1) = two*(phi[1]-rp) - p.pos(1);
+                  p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+              }
+              if (z_lo_bc==HARDWALL_BC and p.pos(2) < (plo[2]+rp))
+              {
+                  p.pos(2) = two*(plo[2]+rp) - p.pos(2);
+                  p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+              }
+              if (z_hi_bc==HARDWALL_BC and p.pos(2) > (phi[2]-rp))
+              {
+                  p.pos(2) = two*(phi[2]-rp) - p.pos(2);
+                  p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+              }
             }
 
         });
