@@ -48,7 +48,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const int bonded_sphere_particles,
             const int liquid_bridging, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
-            const Real cb_force, const int cb_dir)
+            const Real cb_force, const Real cb_torq, const int cb_dir)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -296,6 +296,9 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
                   p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
                   p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+
+                  // Tracking change in theta_x for beam twisting testing
+                  p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
               }
 
               if(do_chemistry)
@@ -559,6 +562,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("taux_bond");
     real_data_names.push_back("tauy_bond");
     real_data_names.push_back("tauz_bond");
+    real_data_names.push_back("theta_x");
 
     // For debug
     // real_data_names.push_back("overlap_n");
@@ -627,6 +631,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     writeflags_real[realData::temperature]=1;
     writeflags_real[realData::liquid_volume]=1;
     writeflags_real[realData::total_bridge_volume]=1;
+    writeflags_real[realData::theta_x]=1;
 
     // for debug
     // writeflags_real[realData::overlap_n]=1;
@@ -745,6 +750,7 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::taux_bond) = p_in.rdata(realData::taux_bond);
                 pcomp.rdata(realData::tauy_bond) = p_in.rdata(realData::tauy_bond);
                 pcomp.rdata(realData::tauz_bond) = p_in.rdata(realData::tauz_bond);
+                pcomp.rdata(realData::theta_x) = p_in.rdata(realData::theta_x);
 
                 for(int br=0; br<MAXBRIDGES; br++){
                     pcomp.idata(intData::first_bridge+3*br) = -1;

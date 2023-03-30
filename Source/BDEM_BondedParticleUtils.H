@@ -206,6 +206,7 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::taux_bond) = zero;
   p.rdata(realData::tauy_bond) = zero;
   p.rdata(realData::tauz_bond) = zero;  
+  p.rdata(realData::theta_x) = zero;  
 
   // Set bridge indices to -1 to indicate no existing bridges
   for(int br=0; br<MAXBRIDGES; br++){

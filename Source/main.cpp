@@ -26,6 +26,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_bond  = zero;
 
 using namespace amrex;
 
@@ -160,8 +161,14 @@ int main (int argc, char* argv[])
             particle_sourcing_time += dt;
         
             Real cb_force = 0.0;
+            Real cb_torq = 0.0;
             if(steps>0) specs.init_force = 0.0;
-            if(specs.cantilever_beam_test) cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:specs.cb_force_max;
+            if(specs.cantilever_beam_test){ 
+                cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:
+                                                         (time < specs.cb_unload_time) ? specs.cb_force_max:0.0;
+                cb_torq = (time < specs.cb_load_time) ?  (time/specs.cb_load_time)*specs.cb_torq_max:
+                                                         (time < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
+            }
 
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
@@ -232,7 +239,7 @@ int main (int argc, char* argv[])
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, specs.cb_dir);
+                                  cb_force, cb_torq, specs.cb_dir);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 

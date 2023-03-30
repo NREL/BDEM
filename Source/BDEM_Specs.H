@@ -56,6 +56,7 @@ struct realData
     taux_bond,
     tauy_bond,
     tauz_bond,
+    theta_x,
     // for debug
     // overlap_n,
     // kn,
@@ -111,6 +112,7 @@ namespace DEM
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
 }
 
 class DEMspecs
@@ -222,12 +224,15 @@ class DEMspecs
         // Bonded sphere model variables
         int bonded_sphere_particles = 0;
         Real poisson_rat_bond = 0;
+        Real bond_damping_factor = 0.0;
 
         // Cantilever beam test case variables
         int cantilever_beam_test = 0;
         Real cb_force_max = 0.0;
+        Real cb_torq_max = 0.0;
         int cb_dir = 1;
         Real cb_load_time = 1.0;
+        Real cb_unload_time = 1e20;
 
         // Options for initializing particle temperatures according to normal dist.
         Real temp_mean = -1.0;
@@ -552,14 +557,17 @@ class DEMspecs
             if(bonded_sphere_particles){
                 pp.get("young_mod_bond", DEM::E_bond);
                 pp.get("poisson_rat_bond", poisson_rat_bond);
+                pp.query("bond_damping_factor", DEM::beta_bond);
                 DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
 
                 pp.query("cantilever_beam_test", cantilever_beam_test);
                 if(cantilever_beam_test){
                     if(restartedcase || !init_particles_using_file || particle_sourcing) Abort("\nCantilever beam test case not compatible with restart, autogen, or sourcing!\n"); 
-                    pp.get("cb_force_max", cb_force_max);
+                    pp.query("cb_force_max", cb_force_max);
+                    pp.query("cb_torq_max", cb_torq_max);
                     pp.get("cb_dir", cb_dir);
                     pp.get("cb_load_time", cb_load_time);
+                    pp.query("cb_unload_time", cb_unload_time);
                 }
             }
         

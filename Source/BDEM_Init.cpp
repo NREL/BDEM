@@ -167,6 +167,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             p.rdata(realData::taux_bond) = zero;
             p.rdata(realData::tauy_bond) = zero;
             p.rdata(realData::tauz_bond) = zero;
+            p.rdata(realData::theta_x) = zero;
 
             // Set bridge indices to -1 to indicate no existing bridges
             for(int br=0; br<MAXBRIDGES; br++){
@@ -812,6 +813,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::taux_bond) = zero;
     p.rdata(realData::tauy_bond) = zero;
     p.rdata(realData::tauz_bond) = zero;
+    p.rdata(realData::theta_x) = zero;
 
     p.idata(intData::num_comp_sphere) = num_sphere;
     p.rdata(realData::euler_angle_x) = amrex::Random()*PI/2.0;

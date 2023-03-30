@@ -40,12 +40,17 @@ amrex::ParallelFor(np,[=]
 
         // Code for cantilever beam test
         // Force is only applied to right-most particle (which generated first with id = 1)
-        if(cb_force != 0.0 && p1.id() == 1){
+        if((cb_force != 0.0 || cb_torq != 0) && p1.id() == 1){
             Real cb_force_vect[THREEDIM] = {0.0, 0.0, 0.0};
+            Real cb_torq_vect[THREEDIM] = {0.0, 0.0, 0.0};
             cb_force_vect[cb_dir] = cb_force;        
+            cb_torq_vect[cb_dir] = cb_torq;        
             p1.rdata(realData::fx) += cb_force_vect[XDIR];
             p1.rdata(realData::fy) += cb_force_vect[YDIR];
             p1.rdata(realData::fz) += cb_force_vect[ZDIR];
+            p1.rdata(realData::taux) += cb_torq_vect[XDIR];
+            p1.rdata(realData::tauy) += cb_torq_vect[YDIR];
+            p1.rdata(realData::tauz) += cb_torq_vect[ZDIR];
         }
 
         for (const auto& p2 : nbor_data.getNeighbors(i))
@@ -206,8 +211,9 @@ amrex::ParallelFor(np,[=]
                     // NOTE: Assumes bond radius = effective radius, and length = dist between particle centers
 
                     // Bond area and moments
-                    Real A_bond = PI * pow(Reff,two);
-                    Real I_bond = PI * pow(Reff,4) / 4.0;
+                    // FIXME: How to handle for polydisperse clustered particles?
+                    Real A_bond = PI * pow(rad1,two);
+                    Real I_bond = PI * pow(rad1,4) / 4.0;
                     Real I_p_bond = I_bond * 2.0;
 
                     // Calculate stiffnesses
@@ -243,29 +249,50 @@ amrex::ParallelFor(np,[=]
                     overlap_t[YDIR] = dt*vrel_t[YDIR];
                     overlap_t[ZDIR] = dt*vrel_t[ZDIR];
                     mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
-                    Real dtheta_bend = atan(mag_overlap_t / distmag);
+                    // Real dtheta_bend = atan(mag_overlap_t / distmag);
+                    Real dtheta_bend = atan(mag_overlap_t / (distmag/2.0));
 
                     // Calculate vector normal to tangential displacement 
                     Real normal_bend[THREEDIM];
                     crosspdt(normal, tangent, normal_bend);
+
+                    // Calculate the damping forces
+                    Real F_dn[THREEDIM];
+                    Real F_dt[THREEDIM];
+                    Real M_dn[THREEDIM];
+                    Real M_dt[THREEDIM];
+
+                    F_dn[XDIR] = DEM::beta_bond * pow(2.0*m1*k_n_bond,0.5) * vrel_n[XDIR];
+                    F_dn[YDIR] = DEM::beta_bond * pow(2.0*m1*k_n_bond,0.5) * vrel_n[YDIR];
+                    F_dn[ZDIR] = DEM::beta_bond * pow(2.0*m1*k_n_bond,0.5) * vrel_n[ZDIR];
+                    F_dt[XDIR] = DEM::beta_bond * pow(2.0*m1*k_t_bond,0.5) * vrel_t[XDIR];
+                    F_dt[YDIR] = DEM::beta_bond * pow(2.0*m1*k_t_bond,0.5) * vrel_t[YDIR];
+                    F_dt[ZDIR] = DEM::beta_bond * pow(2.0*m1*k_t_bond,0.5) * vrel_t[ZDIR];
                     
+                    M_dn[XDIR] = DEM::beta_bond * pow(2.0*k_tor_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_n[XDIR];
+                    M_dn[YDIR] = DEM::beta_bond * pow(2.0*k_tor_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_n[YDIR];
+                    M_dn[ZDIR] = DEM::beta_bond * pow(2.0*k_tor_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_n[ZDIR];
+                    M_dt[XDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[XDIR];
+                    M_dt[YDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[YDIR];
+                    M_dt[ZDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[ZDIR];
+
                     // Calculate the incremental change to forces and torques
                     p1.rdata(realData::fx_bond) -= (k_n_bond*vrel_n[XDIR] + k_t_bond*vrel_t[XDIR]) * dt;
                     p1.rdata(realData::fy_bond) -= (k_n_bond*vrel_n[YDIR] + k_t_bond*vrel_t[YDIR]) * dt;
                     p1.rdata(realData::fz_bond) -= (k_n_bond*vrel_n[ZDIR] + k_t_bond*vrel_t[ZDIR]) * dt;
 
-                    p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + k_ben_bond*dtheta_bend*normal_bend[XDIR] ;
-                    p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + k_ben_bond*dtheta_bend*normal_bend[YDIR] ;
-                    p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + k_ben_bond*dtheta_bend*normal_bend[ZDIR] ;
+                    p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + k_ben_bond*dtheta_bend*normal_bend[XDIR];
+                    p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + k_ben_bond*dtheta_bend*normal_bend[YDIR];
+                    p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + k_ben_bond*dtheta_bend*normal_bend[ZDIR];
 
                     // Total bond forces and torques are added to particle quantities
-                    p1.rdata(realData::fx) += p1.rdata(realData::fx_bond);
-                    p1.rdata(realData::fy) += p1.rdata(realData::fy_bond);
-                    p1.rdata(realData::fz) += p1.rdata(realData::fz_bond);
+                    p1.rdata(realData::fx) += p1.rdata(realData::fx_bond) - F_dn[XDIR] - F_dt[XDIR];
+                    p1.rdata(realData::fy) += p1.rdata(realData::fy_bond) - F_dn[YDIR] - F_dt[YDIR];
+                    p1.rdata(realData::fz) += p1.rdata(realData::fz_bond) - F_dn[ZDIR] - F_dt[ZDIR];
 
-                    p1.rdata(realData::taux) += p1.rdata(realData::taux_bond);
-                    p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond);
-                    p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond);
+                    p1.rdata(realData::taux) += p1.rdata(realData::taux_bond) - M_dn[XDIR] - M_dt[XDIR];
+                    p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond) - M_dn[YDIR] - M_dt[YDIR];
+                    p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond) - M_dn[ZDIR] - M_dt[ZDIR];
                 }
 
                 // Evaluate the contact force if p1 and p2 don't have a bond between them
