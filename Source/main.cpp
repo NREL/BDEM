@@ -80,7 +80,8 @@ int main (int argc, char* argv[])
                         specs.autogen_radius, specs.autogen_dens, specs.autogen_E, specs.autogen_nu, 
                         specs.autogen_temp,
                         specs.autogen_species_massfracs.data(),
-                        specs.autogen_multi_part_per_cell, specs.autogen_max_sphere);
+                        specs.autogen_multi_part_per_cell, 
+                        specs.autogen_min_sphere, specs.autogen_max_sphere);
             }
         }
         else
@@ -180,7 +181,8 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_E, specs.particle_sourcing_nu,
                                    specs.particle_sourcing_temp,
                                    specs.particle_sourcing_species_massfracs.data(),
-                                   specs.particle_sourcing_multi_part_per_cell, specs.particle_sourcing_max_sphere);
+                                   specs.particle_sourcing_multi_part_per_cell, 
+                                   specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere);
 
                 amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 //if(EBtools::using_levelset_geometry and !specs.restartedcase)

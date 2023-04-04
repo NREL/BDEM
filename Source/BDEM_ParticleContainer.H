@@ -34,7 +34,7 @@ public:
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
-        Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int max_sphere = 1);
+        Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], int do_multi_part_per_cell=0, int min_sphere = 1, int max_sphere = 1);
 
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer,

@@ -139,6 +139,7 @@ class DEMspecs
         Real autogen_nu;
         Real autogen_temp;
         int autogen_max_sphere = 1;
+        int autogen_min_sphere = 1;
         Vector<Real> autogen_species_massfracs;
 
         bool restartedcase=false;
@@ -170,6 +171,7 @@ class DEMspecs
         Real particle_sourcing_interval; 
         Vector<Real> particle_sourcing_species_massfracs;
         Real stop_sourcing_time; 
+        int particle_sourcing_min_sphere = 1;
         int particle_sourcing_max_sphere = 1;
 
         RealVect gravity;
@@ -378,6 +380,7 @@ class DEMspecs
                 autogen_species_massfracs[0]=1.0;
                 pp.queryarr("autogen_species_massfracs",species_massfracs,0,chemptr->nspecies);
                 pp.query("autogen_multiple_particles_per_cell",autogen_multi_part_per_cell);
+                pp.query("autogen_min_sphere", autogen_min_sphere);
                 pp.query("autogen_max_sphere", autogen_max_sphere);
             }
 
@@ -398,6 +401,7 @@ class DEMspecs
                 pp.query("particle_sourcing_multiple_particles_per_cell",particle_sourcing_multi_part_per_cell);
                 particle_sourcing_species_massfracs[0]=1.0;
                 pp.queryarr("particle_sourcing_species_massfracs",species_massfracs,0,chemptr->nspecies);
+                pp.query("particle_sourcing_min_sphere", particle_sourcing_min_sphere);
                 pp.query("particle_sourcing_max_sphere", particle_sourcing_max_sphere);
             }
 

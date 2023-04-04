@@ -18,6 +18,21 @@ void rotate_vector_to_inertial (const BDEMParticleContainer::ParticleType& p,
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void rotate_vector_to_inertial (amrex::Real quats[4], amrex::Real v_body[THREEDIM], amrex::Real v_inert[THREEDIM])
+{
+    // Rotates a vector from a particle's body-fixed reference frame to the inertial frame 
+
+    amrex::Real q0 = quats[0];
+    amrex::Real q1 = quats[1];
+    amrex::Real q2 = quats[2];
+    amrex::Real q3 = quats[3];
+     
+    v_inert[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_body[XDIR] + 2.0*(q1*q2  - q0*q3)*v_body[YDIR] + 2.0*(q1*q3 + q0*q2)*v_body[ZDIR];
+    v_inert[YDIR] = 2.0*(q1*q2 + q0*q3)*v_body[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_body[YDIR] + 2.0*(q2*q3 - q0*q1)*v_body[ZDIR];
+    v_inert[ZDIR] = 2.0*(q1*q3 - q0*q2)*v_body[XDIR] + 2.0*(q2*q3 + q0*q1)*v_body[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_body[ZDIR];
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p, 
                amrex::Real v_inert[THREEDIM], amrex::Real v_body[THREEDIM])
 {
