@@ -9,8 +9,7 @@ amrex::ParallelFor(np,[=]
 
     ParticleType& p = pstruct[i];
     for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
-        Real pos_body[THREEDIM];
-        get_inertial_body_fixed_pos(p, pc, pos, pos_body);
+        get_inertial_pos(p, p_data, pc, pos);
 
         for(int dim=0;dim<3;dim++)
         {

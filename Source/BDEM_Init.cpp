@@ -2,11 +2,12 @@
 #include <BDEM_Collide_Utils.H>
 #include <stl_tools/STLtools.H>
 #include <AMReX_Random.H>
-#include <BDEM_BondedParticleUtils.H>
+#include <BDEM_BondedParticles.H>
 
 void BDEMParticleContainer::InitParticles (const std::string& filename,
                                            bool &do_heat_transfer,
                                            int glued_sphere_particles, 
+                                           int glued_sphere_types,
                                            Real temp_mean, Real temp_stdev,
                                            int contact_law)
 {
@@ -88,7 +89,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             {
                 // Extracting number of component spheres and Euler angles for glued-sphere cylinders
                 // TODO: How do we make sure cylinders don't intersect upon initialization?
-                ifs >> p.idata(intData::num_comp_sphere);
+                if(!glued_sphere_types) ifs >> p.idata(intData::num_comp_sphere);
                 ifs >> p.rdata(realData::euler_angle_x);
                 ifs >> p.rdata(realData::euler_angle_y);
                 ifs >> p.rdata(realData::euler_angle_z);
@@ -109,6 +110,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                 p.rdata(realData::pax) = pa_inert[XDIR];
                 p.rdata(realData::pay) = pa_inert[YDIR];
                 p.rdata(realData::paz) = pa_inert[ZDIR];
+                if(glued_sphere_types) ifs >> p.idata(intData::type_id);
             } else{
                 p.idata(intData::num_comp_sphere) = 1;
                 p.rdata(realData::euler_angle_x) = zero;
@@ -121,6 +123,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                 p.rdata(realData::pax) = zero;
                 p.rdata(realData::pay) = zero;
                 p.rdata(realData::paz) = zero;
+                p.idata(intData::type_id) = 0;
             }
 
             //set initial radius
@@ -209,6 +212,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 }
 
 void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
+                                                 const ParticleTypeData bp_data,
                                                  bool &do_heat_transfer,
                                                  int cantilever_beam_test)
 {
@@ -248,7 +252,10 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
         
         auto& particle_tile = DefineAndReturnParticleTile(lev,grid,tile);
 
-        const bondedParticleData bp_data = bondedParticleData();
+        const ParticleTypeData bp_data = ParticleTypeData();
+        int bp_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
+        Real pc_pos[THREEDIM];                    
+        int bp_ids[200];
 
         for (int i = 0; i < np; i++) 
         {
@@ -257,7 +264,6 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             Real bp_pos[THREEDIM];
             Real bp_radius, bp_density, bp_temperature;
             Real bp_vel[THREEDIM];
-            Real bp_euler_angles[THREEDIM] = {0.0, 0.0, 0.0}; 
 
             ifs >> bp_phase;
             ifs >> bp_pos[XDIR];
@@ -273,141 +279,30 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             } else {
                 bp_temperature = NTP_TEMP;
             }
-            ifs >> bp_euler_angles[XDIR];
-            ifs >> bp_euler_angles[YDIR];
-            ifs >> bp_euler_angles[ZDIR];
+            amrex::Real eax, eay, eaz;
+            ifs >> eax;
+            ifs >> eay;
+            ifs >> eaz;
 
             // Last entry should be the bonded particle type
             int bp_type;
             ifs >> bp_type;
 
-            // TODO: Find a way to do this without repeating code blocks
-            Real pc_pos[THREEDIM];                    
-            if(bp_type == 0){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP0];
-                for(int j = 0; j<BP_NP0; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP0; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 1) {
-                int bp_ids[BP_NP1];
-                for(int j = 0; j<BP_NP1; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP1; j++){
-                    if(cantilever_beam_test && j == BP_NP1-1) bp_phase = -1;    // Left-most particle is held inert
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 2){
-                int bp_ids[BP_NP2];
-                for(int j = 0; j<BP_NP2; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP2; j++){
-                    if(cantilever_beam_test && j == BP_NP2-1) bp_phase = -1;    // Left-most particle is held inert
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 3){
-                int bp_ids[BP_NP3];
-                for(int j = 0; j<BP_NP3; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP3; j++){
-                    if(cantilever_beam_test && j == BP_NP3-1) bp_phase = -1;    // Left-most particle is held inert
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 4){
-                int bp_ids[BP_NP4];
-                for(int j = 0; j<BP_NP4; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP4; j++){
-                    if(cantilever_beam_test && j == BP_NP4-1) bp_phase = -1;    // Left-most particle is held inert
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 5){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP5];
-                for(int j = 0; j<BP_NP5; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP5; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 6){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP6];
-                for(int j = 0; j<BP_NP6; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP6; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 7){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP7];
-                for(int j = 0; j<BP_NP7; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP7; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 8){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP8];
-                for(int j = 0; j<BP_NP8; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP8; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 9){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP9];
-                for(int j = 0; j<BP_NP9; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP9; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else if (bp_type == 10){
-                if(cantilever_beam_test) Abort("\nA rod-like particle type must be specified for cantilever beam test!\n");
-                int bp_ids[BP_NP10];
-                for(int j = 0; j<BP_NP10; j++) bp_ids[j] = ParticleType::NextID();
-                for(int j = 0; j<BP_NP10; j++){
-                    ParticleType p;
-                    p.id() = bp_ids[j];
-                    get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_euler_angles, pc_pos);
-                    bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
-                    host_particles.push_back(p);
-                } 
-            } else {
-                Abort("\nBonded particle type not recognized!\n");
-            }
+            amrex::Real bp_q[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
+                                  -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                   cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                   sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
 
+            // TODO: checks: appropriate particle for cantilever, valid ID selected, max bonds is sufficient
+            for(int j = 0; j<bp_types[bp_type]; j++) bp_ids[j] = ParticleType::NextID();
+            for(int j = 0; j<bp_types[bp_type]; j++){
+                ParticleType p;
+                p.id() = bp_ids[j];
+                if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
+                get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
+                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                host_particles.push_back(p);
+            } 
             if (!ifs.good())
             {
                 amrex::Abort("Error initializing particles from Ascii file. \n");
@@ -521,7 +416,8 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
 
 void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfab,
         const EBFArrayBoxFactory *ebfactory,
-        const int ls_refinement)
+        const int ls_refinement,
+        const ParticleTypeData p_data)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -564,8 +460,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                 Real rp = p.rdata(realData::radius);
                 for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
                     Real ppos_inert[THREEDIM];
-                    Real ppos_body[THREEDIM];
-                    get_inertial_body_fixed_pos(p, pc, ppos_inert, ppos_body); 
+                    get_inertial_pos(p, p_data, pc, ppos_inert); 
                     Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
                     if(ls_value < 0.0)
                     {
@@ -578,7 +473,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -607,8 +502,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
             for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
   
                 Real ploc[THREEDIM];
-                Real ploc_body[THREEDIM];
-                get_inertial_body_fixed_pos(p, pc, ploc, ploc_body); 
+                get_inertial_pos(p, p_data, pc, ploc); 
                 Real ploc_t[3]={0.0};
                 Real t1[3],t2[3],t3[3];
                 Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
@@ -657,7 +551,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
     Redistribute();
 }
 
-void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
+void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -685,8 +579,7 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
             ParticleType& p = pstruct[i];
             for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
                 Real ploc[THREEDIM];
-                Real ploc_body[THREEDIM];
-                get_inertial_body_fixed_pos(p, pc, ploc, ploc_body); 
+                get_inertial_pos(p, p_data, pc, ploc); 
                 Real ploc_t[3]={0.0};
                 Real t1[3],t2[3],t3[3];
                 Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
@@ -744,8 +637,13 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
                                            Real E, Real nu, Real temp,
                                            Real spec[MAXSPECIES],
+                                           const ParticleTypeData p_data,
                                            int do_multi_part_per_cell, 
-                                           int min_sphere, int max_sphere)
+                                           int glued_sphere_particles,
+                                           int glued_sphere_types,
+                                           int bonded_sphere_particles,
+                                           int min_sphere, int max_sphere,
+                                           int p_type)
 {
     int lev = 0;
     Real x,y,z,x0,y0,z0;
@@ -758,6 +656,11 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
     std::mt19937 mt(0451);
     std::uniform_real_distribution<double> dist(0.4, 0.6);
 
+    int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
+    Real pc_pos[THREEDIM];                    
+    Real bp_pos[THREEDIM];
+    int bp_ids[200];
+    int bp_phase = 0;
 
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) 
     {
@@ -781,13 +684,46 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                    y>=mincoords[YDIR] && y<=maxcoords[YDIR] &&
                    z>=mincoords[ZDIR] && z<=maxcoords[ZDIR])
                 {
-                    ParticleType p = generate_particle(x,y,z,
-                                                       meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                       meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                       meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                       dens, rad, E, nu, 
-                                                       temp, spec,ceil(amrex::Random()*(max_sphere - min_sphere) + 1.0));
-                    host_particles.push_back(p);
+                    if(bonded_sphere_particles){
+                        int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                        bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
+                        Real eax = amrex::Random()*PI/2.0;
+                        Real eay = amrex::Random()*PI/2.0;
+                        Real eaz = amrex::Random()*PI/2.0;
+                        amrex::Real quats[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
+                                              -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                               cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                               sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
+                        Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                 meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                 meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
+                        for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
+                        for(int j = 0; j<p_types[type]; j++){
+                            ParticleType p;
+                            p.id() = bp_ids[j];
+                            get_bonded_particle_pos(p_data, type, j, rad, bp_pos, quats, pc_pos);
+                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
+                            host_particles.push_back(p);
+                        } 
+                    } else if(glued_sphere_particles){
+                        int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                        int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
+                        ParticleType p = generate_particle(x,y,z,
+                                                           meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                           meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                           meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                           dens, rad, E, nu, 
+                                                           temp, spec, ncs, type);
+                        host_particles.push_back(p);
+                    } else {
+                        ParticleType p = generate_particle(x,y,z,
+                                                           meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                           meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                           meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                           dens, rad, E, nu, 
+                                                           temp, spec);
+                        host_particles.push_back(p);
+                    }
                 }
             }
             else
@@ -813,13 +749,46 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                y>=mincoords[YDIR] and y<=maxcoords[YDIR] and
                                z>=mincoords[ZDIR] and z<=maxcoords[ZDIR])
                             {
-                                ParticleType p = generate_particle(x,y,z,
-                                                                   meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                                   meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                                   meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                                   dens, rad, E, nu, 
-                                                                   temp, spec,ceil(amrex::Random()*(max_sphere - min_sphere) + 1.0));
-                                host_particles.push_back(p);
+                                if(bonded_sphere_particles){
+                                    int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                                    bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
+                                    Real eax = amrex::Random()*PI/2.0;
+                                    Real eay = amrex::Random()*PI/2.0;
+                                    Real eaz = amrex::Random()*PI/2.0;
+                                    amrex::Real quats[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
+                                                          -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                                           cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                                           sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
+                                    Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                             meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                             meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
+                                    for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
+                                    for(int j = 0; j<p_types[type]; j++){
+                                        ParticleType p;
+                                        p.id() = bp_ids[j];
+                                        get_bonded_particle_pos(p_data, type, j, rad, bp_pos, quats, pc_pos);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
+                                        host_particles.push_back(p);
+                                    } 
+                                } else if(glued_sphere_particles){
+                                    int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                                    int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
+                                    ParticleType p = generate_particle(x,y,z,
+                                                                       meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                                       meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                                       meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                                       dens, rad, E, nu, 
+                                                                       temp, spec, ncs, type);
+                                    host_particles.push_back(p);
+                                } else {
+                                    ParticleType p = generate_particle(x,y,z,
+                                                                       meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                                       meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                                       meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                                       dens, rad, E, nu, 
+                                                                       temp, spec);
+                                    host_particles.push_back(p);
+                                }
                             }
                         }
                     } 
@@ -846,7 +815,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Real x,Real y,Real z,
                                                                              Real velx, Real vely, Real velz,
                                                                              Real dens, Real rad, Real E, Real nu,
-                                                                             Real temp, Real spec[MAXSPECIES], int num_sphere)
+                                                                             Real temp, Real spec[MAXSPECIES], 
+                                                                             int num_sphere, int p_type)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -901,6 +871,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::pax) = pa_inert[XDIR];
     p.rdata(realData::pay) = pa_inert[YDIR];
     p.rdata(realData::paz) = pa_inert[ZDIR];
+    p.idata(intData::type_id) = p_type;
 
     // Set other particle properties
     p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);

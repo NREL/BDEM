@@ -8,8 +8,7 @@ amrex::ParallelFor(np,[=]
         Real rp = p.rdata(realData::radius);
 
         Real ppos_inert[THREEDIM];
-        Real ppos_body[THREEDIM];
-        get_inertial_body_fixed_pos(p, pc, ppos_inert, ppos_body);
+        get_inertial_pos(p, p_data, pc, ppos_inert);
         Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
 
         if (ls_value < rp)

@@ -25,6 +25,18 @@
 #define BP_NP9 72
 #define BP_NP10 80
 
+#define BP_D0 2.0
+#define BP_D1 6.0
+#define BP_D2 8.0
+#define BP_D3 10.0
+#define BP_D4 20.0
+#define BP_D5 8.0
+#define BP_D6 16.0
+#define BP_D7 16.0
+#define BP_D8 24.0
+#define BP_D9 24.0
+#define BP_D10 24.0
+
 #define NTP_TEMP 293
 #define fourbythree 1.3333333333
 #define half 0.5

@@ -6,8 +6,7 @@ amrex::ParallelFor(np,[=]
         Real rp = p.rdata(realData::radius);
         
         Real pos[THREEDIM];
-        Real pos_body[THREEDIM];
-        get_inertial_body_fixed_pos(p, pc, pos, pos_body);
+        get_inertial_pos(p, p_data, pc, pos);
     
         bool collided=false;
         Real walldist=1e20;

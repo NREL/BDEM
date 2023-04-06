@@ -61,14 +61,17 @@ int main (int argc, char* argv[])
 
         const int ng_cells = one;
         BDEMParticleContainer bpc(geom, dm, ba, ng_cells,specs.chemptr);
+        const ParticleTypeData p_data = ParticleTypeData();
         if(!specs.restartedcase)
         {
             if(specs.init_particles_using_file == 1)
             {
                 if(specs.bonded_sphere_particles){
-                    bpc.InitBondedParticles("particle_input.dat",specs.do_heat_transfer, specs.cantilever_beam_test);
+                    bpc.InitBondedParticles("particle_input.dat", p_data, specs.do_heat_transfer, specs.cantilever_beam_test);
                 } else {
-                    bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, specs.glued_sphere_particles, specs.temp_mean, specs.temp_stdev, specs.contact_law);
+                    bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, 
+                                      specs.glued_sphere_particles, specs.glued_sphere_types, 
+                                      specs.temp_mean, specs.temp_stdev, specs.contact_law);
                 }
                 bpc.InitChemSpecies(specs.species_massfracs.data());
             }
@@ -79,9 +82,12 @@ int main (int argc, char* argv[])
                         specs.autogen_meanvel.data(),  specs.autogen_fluctuation.data(), 
                         specs.autogen_radius, specs.autogen_dens, specs.autogen_E, specs.autogen_nu, 
                         specs.autogen_temp,
-                        specs.autogen_species_massfracs.data(),
+                        specs.autogen_species_massfracs.data(), p_data,
                         specs.autogen_multi_part_per_cell, 
-                        specs.autogen_min_sphere, specs.autogen_max_sphere);
+                        specs.glued_sphere_particles, specs.glued_sphere_types,
+                        specs.bonded_sphere_particles,
+                        specs.autogen_min_sphere, specs.autogen_max_sphere,
+                        specs.autogen_bp_type);
             }
         }
         else
@@ -124,12 +130,12 @@ int main (int argc, char* argv[])
         if(EBtools::using_levelset_geometry)
         {
             bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                               EBtools::ebfactory,EBtools::ls_refinement);
+                                               EBtools::ebfactory,EBtools::ls_refinement, p_data);
         }
         amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
         if(specs.stl_geom_present)
         {
-            bpc.removeParticlesInsideSTL(specs.outside_point);
+            bpc.removeParticlesInsideSTL(specs.outside_point, p_data);
         }
         amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
@@ -138,10 +144,10 @@ int main (int argc, char* argv[])
             // If using glued sphere model, create new particle container to create particles for each 
             // component sphere (for visualization purposes)
             BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-            bpc_vis.createGluedSpheres(bpc);
-            bpc_vis.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles);
+            bpc_vis.createGluedSpheres(bpc, p_data);
+            bpc_vis.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
         } else {
-            bpc.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles);
+            bpc.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
         }
         if(specs.dynamicstl!=0)
         {
@@ -180,21 +186,24 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens,
                                    specs.particle_sourcing_E, specs.particle_sourcing_nu,
                                    specs.particle_sourcing_temp,
-                                   specs.particle_sourcing_species_massfracs.data(),
+                                   specs.particle_sourcing_species_massfracs.data(), p_data,
                                    specs.particle_sourcing_multi_part_per_cell, 
-                                   specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere);
+                                   specs.glued_sphere_particles, specs.glued_sphere_types,
+                                   specs.bonded_sphere_particles,
+                                   specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere,
+                                   specs.particle_sourcing_bp_type);
 
                 amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 //if(EBtools::using_levelset_geometry and !specs.restartedcase)
                 if(EBtools::using_levelset_geometry)
                 {
                     bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                                       EBtools::ebfactory,EBtools::ls_refinement);
+                                                       EBtools::ebfactory,EBtools::ls_refinement, p_data);
                 }
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 if(specs.stl_geom_present)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point);
+                    bpc.removeParticlesInsideSTL(specs.outside_point, p_data);
                 }
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
@@ -236,7 +245,7 @@ int main (int argc, char* argv[])
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present, specs.contact_law, steps,
-                                  specs.gravity,
+                                  specs.gravity, p_data,
                                   specs.glued_sphere_particles,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
@@ -301,10 +310,10 @@ int main (int argc, char* argv[])
                 output_it++;
                 if(specs.visualize_component_spheres && specs.glued_sphere_particles){
                     BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-                    bpc_vis.createGluedSpheres(bpc);
-                    bpc_vis.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles);
+                    bpc_vis.createGluedSpheres(bpc, p_data);
+                    bpc_vis.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
                 } else {
-                    bpc.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles);
+                    bpc.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
                 }
                 const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
                 bpc.Checkpoint(rstfile, "particles");
@@ -328,10 +337,10 @@ int main (int argc, char* argv[])
         bpc.redist_particles(0,specs.using_softwalls);
         if(specs.visualize_component_spheres && specs.glued_sphere_particles){
             BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-            bpc_vis.createGluedSpheres(bpc);
-            bpc_vis.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles);
+            bpc_vis.createGluedSpheres(bpc, p_data);
+            bpc_vis.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
         } else {
-            bpc.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles);
+            bpc.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
         }
         const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");

@@ -82,7 +82,8 @@ struct intData
     phase = 0,
     near_softwall = 1,
     num_comp_sphere = 2,
-    first_bridge = 3,
+    type_id = 3,
+    first_bridge = 4,
     first_bond = first_bridge + 3*MAXBRIDGES,
     count = first_bond + MAXBONDS
   };
@@ -141,6 +142,7 @@ class DEMspecs
         int autogen_max_sphere = 1;
         int autogen_min_sphere = 1;
         Vector<Real> autogen_species_massfracs;
+        int autogen_bp_type = 0;
 
         bool restartedcase=false;
         bool stl_geom_present=false;
@@ -173,6 +175,7 @@ class DEMspecs
         Real stop_sourcing_time; 
         int particle_sourcing_min_sphere = 1;
         int particle_sourcing_max_sphere = 1;
+        int particle_sourcing_bp_type = 0;
 
         RealVect gravity;
         int init_particles_using_file=1;
@@ -209,6 +212,7 @@ class DEMspecs
         // input options for glued sphere particles
         int glued_sphere_particles = 0;
         bool visualize_component_spheres = false;
+        int glued_sphere_types = 0;
 
         // Options for modeling liquid bridging
         int liquid_bridging = 0;
@@ -373,15 +377,15 @@ class DEMspecs
                 pp.getarr("fluctuation_autogen",autogen_fluctuation);
                 pp.get("radius_autogen",autogen_radius);
                 pp.get("dens_autogen",autogen_dens);
-                pp.get("E_autogen",autogen_E);
-                pp.get("nu_autogen",autogen_nu);
+                if(contact_law != 0){
+                    pp.get("E_autogen",autogen_E);
+                    pp.get("nu_autogen",autogen_nu);
+                }
                 autogen_temp=NTP_TEMP;
                 pp.query("temp_autogen",autogen_temp);
                 autogen_species_massfracs[0]=1.0;
                 pp.queryarr("autogen_species_massfracs",species_massfracs,0,chemptr->nspecies);
                 pp.query("autogen_multiple_particles_per_cell",autogen_multi_part_per_cell);
-                pp.query("autogen_min_sphere", autogen_min_sphere);
-                pp.query("autogen_max_sphere", autogen_max_sphere);
             }
 
             pp.query("particle_sourcing",particle_sourcing);
@@ -393,16 +397,16 @@ class DEMspecs
                 pp.getarr("fluctuation_particle_sourcing",particle_sourcing_fluctuation);
                 pp.get("radius_particle_sourcing",particle_sourcing_radius);
                 pp.get("dens_particle_sourcing",particle_sourcing_dens);
-                pp.get("dens_particle_sourcing",particle_sourcing_E);
-                pp.get("dens_particle_sourcing",particle_sourcing_nu);
+                if(contact_law != 0){
+                    pp.get("dens_particle_sourcing",particle_sourcing_E);
+                    pp.get("dens_particle_sourcing",particle_sourcing_nu);
+                }
                 pp.get("temp_particle_sourcing",particle_sourcing_temp);
                 pp.get("particle_sourcing_interval",particle_sourcing_interval);
                 pp.get("stop_sourcing_time",stop_sourcing_time);
                 pp.query("particle_sourcing_multiple_particles_per_cell",particle_sourcing_multi_part_per_cell);
                 particle_sourcing_species_massfracs[0]=1.0;
                 pp.queryarr("particle_sourcing_species_massfracs",species_massfracs,0,chemptr->nspecies);
-                pp.query("particle_sourcing_min_sphere", particle_sourcing_min_sphere);
-                pp.query("particle_sourcing_max_sphere", particle_sourcing_max_sphere);
             }
 
             pp.get("normal_spring_constant",DEM::k_n);
@@ -527,6 +531,11 @@ class DEMspecs
             if(glued_sphere_particles){
                 // Read in other glued sphere variables
                 pp.query("visualize_component_spheres", visualize_component_spheres);
+                pp.query("autogen_min_sphere", autogen_min_sphere);
+                pp.query("autogen_max_sphere", autogen_max_sphere);
+                pp.query("glued_sphere_types", glued_sphere_types);
+                pp.query("particle_sourcing_min_sphere", particle_sourcing_min_sphere);
+                pp.query("particle_sourcing_max_sphere", particle_sourcing_max_sphere);
             }
 
             pp.query("liquid_bridging", liquid_bridging);
@@ -574,7 +583,11 @@ class DEMspecs
                     pp.query("cb_unload_time", cb_unload_time);
                 }
             }
-        
+
+            if(bonded_sphere_particles || glued_sphere_types){
+                pp.query("autogen_bp_type", autogen_bp_type);
+                pp.query("particle_sourcing_bp_type", particle_sourcing_bp_type);
+            }
         }
         void clear()
         {

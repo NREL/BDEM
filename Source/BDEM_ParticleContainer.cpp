@@ -44,6 +44,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
             RealVect &gravity,
+            const ParticleTypeData p_data,
             const int glued_sphere_particles,
             const int bonded_sphere_particles,
             const int liquid_bridging, 
@@ -506,7 +507,7 @@ void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real c
     }
 }
 
-void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles)
+void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles, const int glued_sphere_types, const int bonded_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = amrex::Concatenate("plt", n, 5);
@@ -591,6 +592,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
     int_data_names.push_back("num_comp_sphere");
+    int_data_names.push_back("type_id");
 
     for(int i=0;i<MAXBRIDGES;i++)
     {
@@ -656,13 +658,16 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
         writeflags_real[realData::paz] = 1;
         writeflags_int[intData::num_comp_sphere] = 1;
     }
+    if(bonded_sphere_particles || glued_sphere_types){
+        writeflags_int[intData::type_id] = 1;
+    }
 
     WritePlotFile(pltfile, "particles",writeflags_real, 
             writeflags_int, real_data_names, int_data_names);
 
 }
 
-void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
+void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin, const ParticleTypeData p_data)
 {
     // Extract particle tile from input BPC
     const int lev = 0;
@@ -691,18 +696,14 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
 
                 // Calculate inertial frame position of each component sphere
                 Real ppos_inert[THREEDIM];
-                Real ppos_body[THREEDIM] = {p_in.rdata(realData::radius)*((p_in.idata(intData::num_comp_sphere) - 1) - 2.0*pc), 0.0, 0.0};
-                rotate_vector_to_inertial(p_in, ppos_body, ppos_inert);
-                Real pposx = p_in.pos(0) + ppos_inert[XDIR];
-                Real pposy = p_in.pos(1) + ppos_inert[YDIR];
-                Real pposz = p_in.pos(2) + ppos_inert[ZDIR];
+                get_inertial_pos(p_in, p_data, pc, ppos_inert);
 
                 pcomp.id()   = ParticleType::NextID();
                 pcomp.cpu()  = ParallelDescriptor::MyProc();
                 
-                pcomp.pos(0) = pposx;
-                pcomp.pos(1) = pposy;
-                pcomp.pos(2) = pposz;
+                pcomp.pos(0) = ppos_inert[XDIR];
+                pcomp.pos(1) = ppos_inert[YDIR];
+                pcomp.pos(2) = ppos_inert[ZDIR];
 
                 pcomp.rdata(realData::radius) = p_in.rdata(realData::radius);
                 pcomp.rdata(realData::radinit) = p_in.rdata(realData::radinit);
@@ -751,6 +752,7 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::tauy_bond) = p_in.rdata(realData::tauy_bond);
                 pcomp.rdata(realData::tauz_bond) = p_in.rdata(realData::tauz_bond);
                 pcomp.rdata(realData::theta_x) = p_in.rdata(realData::theta_x);
+                pcomp.idata(intData::type_id) = p_in.idata(intData::type_id);
 
                 for(int br=0; br<MAXBRIDGES; br++){
                     pcomp.idata(intData::first_bridge+3*br) = -1;

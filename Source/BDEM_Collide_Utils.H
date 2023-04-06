@@ -1,6 +1,5 @@
 #include <BDEM_ParticleContainer.H>
 
-
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void rotate_vector_to_inertial (const BDEMParticleContainer::ParticleType& p, 
                amrex::Real v_body[THREEDIM], amrex::Real v_inert[THREEDIM])
@@ -49,19 +48,106 @@ void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p,
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void get_inertial_body_fixed_pos(const BDEMParticleContainer::ParticleType& p, 
-               const int pc, amrex::Real p_inert[THREEDIM], amrex::Real p_body[THREEDIM])
+void get_bonded_particle_pos(const ParticleTypeData bp_data,
+                             int type, int comp, amrex::Real radius, 
+                             amrex::Real bp_pos[THREEDIM], 
+                             amrex::Real quats[4], 
+                             amrex::Real pc_pos[THREEDIM]){
+    
+  amrex::Real posnorm[THREEDIM];
+
+  // Get the nominal origin-centered particle positions
+  if(type == 0){
+    posnorm[XDIR] = bp_data.Type0_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type0_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type0_positions[comp][2]; 
+  } 
+  if(type == 1){
+    posnorm[XDIR] = bp_data.Type1_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type1_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type1_positions[comp][2]; 
+  }
+  if(type == 2){
+    posnorm[XDIR] = bp_data.Type2_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type2_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type2_positions[comp][2]; 
+  }
+  if(type == 3){
+    posnorm[XDIR] = bp_data.Type3_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type3_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type3_positions[comp][2]; 
+  }
+  if(type == 4){
+    posnorm[XDIR] = bp_data.Type4_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type4_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type4_positions[comp][2]; 
+  }
+  if(type == 5){
+    posnorm[XDIR] = bp_data.Type5_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type5_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type5_positions[comp][2]; 
+  }
+  if(type == 6){
+    posnorm[XDIR] = bp_data.Type6_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type6_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type6_positions[comp][2]; 
+  }
+  if(type == 7){
+    posnorm[XDIR] = bp_data.Type7_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type7_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type7_positions[comp][2]; 
+  }
+  if(type == 8){
+    posnorm[XDIR] = bp_data.Type8_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type8_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type8_positions[comp][2]; 
+  }
+  if(type == 9){
+    posnorm[XDIR] = bp_data.Type9_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type9_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type9_positions[comp][2]; 
+  }
+  if(type == 10){
+    posnorm[XDIR] = bp_data.Type10_positions[comp][0]; 
+    posnorm[YDIR] = bp_data.Type10_positions[comp][1]; 
+    posnorm[ZDIR] = bp_data.Type10_positions[comp][2]; 
+  }
+
+  // Calculate rotated particle position
+  rotate_vector_to_inertial(quats, posnorm, pc_pos);
+
+  // Scale and translate particle position using radius and bp center
+  pc_pos[XDIR] *= radius;
+  pc_pos[YDIR] *= radius;
+  pc_pos[ZDIR] *= radius;
+  pc_pos[XDIR] += bp_pos[XDIR];
+  pc_pos[YDIR] += bp_pos[YDIR];
+  pc_pos[ZDIR] += bp_pos[ZDIR];
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void get_inertial_pos(const BDEMParticleContainer::ParticleType& p, 
+                                 const ParticleTypeData p_data, const int pc, 
+                                 amrex::Real p_inert[THREEDIM])
 {
     // Return the position components of component sphere pc of particle p
     // for both body-fixed and inertial reference frame
 
-    p_body[XDIR] = p.rdata(realData::radius)*((p.idata(intData::num_comp_sphere) - 1) - 2.0*pc);
-    p_body[YDIR] = 0.0;
-    p_body[ZDIR] = 0.0;
-    rotate_vector_to_inertial(p, p_body, p_inert);
-    p_inert[XDIR] += p.pos(0);
-    p_inert[YDIR] += p.pos(1);
-    p_inert[ZDIR] += p.pos(2);
+    // Calculate inertial and body fixed positions for predefined clustered particle types
+    if(p.idata(intData::type_id) > 0){
+        amrex::Real com_pos[THREEDIM] = {p.pos(0), p.pos(1), p.pos(2)};
+        amrex::Real quats[4] = {p.rdata(realData::q0), p.rdata(realData::q1), p.rdata(realData::q2), p.rdata(realData::q3)};
+        get_bonded_particle_pos(p_data, p.idata(intData::type_id), pc, p.rdata(realData::radius), com_pos, quats, p_inert);
+    } else {  // Otherwise assume rod-like particle
+        amrex::Real p_body[THREEDIM];
+        p_body[XDIR] = p.rdata(realData::radius)*((p.idata(intData::num_comp_sphere) - 1) - 2.0*pc);
+        p_body[YDIR] = 0.0;
+        p_body[ZDIR] = 0.0;
+        rotate_vector_to_inertial(p, p_body, p_inert);
+        p_inert[XDIR] += p.pos(0);
+        p_inert[YDIR] += p.pos(1);
+        p_inert[ZDIR] += p.pos(2);
+    }
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE

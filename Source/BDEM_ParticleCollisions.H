@@ -9,8 +9,7 @@ amrex::ParallelFor(np,[=]
         //    - Adhoc position evaluation like this only an option for simple cases like rod-like glued sphere particle
         //    - For rod-like glued sphere particle, assumption is that spheres extend along the body-fixed x-axis
         Real p1pos_inert[THREEDIM];
-        Real p1pos_body[THREEDIM];
-        get_inertial_body_fixed_pos(p1, pc1, p1pos_inert, p1pos_body);
+        get_inertial_pos(p1, p_data, pc1, p1pos_inert);
 
         // Calculate the gravitational force and nonzero torque
         p1.rdata(realData::fx) += gravity[XDIR]*p1.rdata(realData::mass)/p1.idata(intData::num_comp_sphere);
@@ -64,8 +63,7 @@ amrex::ParallelFor(np,[=]
 
                 // Calculate positional quantities for p2
                 Real p2pos_inert[THREEDIM];
-                Real p2pos_body[THREEDIM];
-                get_inertial_body_fixed_pos(p2, pc2, p2pos_inert, p2pos_body);
+                get_inertial_pos(p2, p_data, pc2, p2pos_inert);
 
                 // Determine if there is any component sphere overlap
                 Real dist_x = p2pos_inert[XDIR] - p1pos_inert[XDIR];
@@ -249,8 +247,8 @@ amrex::ParallelFor(np,[=]
                     overlap_t[YDIR] = dt*vrel_t[YDIR];
                     overlap_t[ZDIR] = dt*vrel_t[ZDIR];
                     mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
-                    // Real dtheta_bend = atan(mag_overlap_t / distmag);
-                    Real dtheta_bend = atan(mag_overlap_t / (distmag/2.0));
+                    Real dtheta_bend = atan(mag_overlap_t / distmag);
+                    // Real dtheta_bend = atan(mag_overlap_t / (distmag/2.0));
 
                     // Calculate vector normal to tangential displacement 
                     Real normal_bend[THREEDIM];
