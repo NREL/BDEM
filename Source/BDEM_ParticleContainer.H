@@ -69,10 +69,10 @@ public:
     Real compute_coll_timescale();
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
-            const int ls_refinement, const ParticleTypeData p_data);
+            const int ls_refinement, const ParticleTypeData p_data, const int glued_sphere_particles);
     
-    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data);
-    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data);
+    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles);
+    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles);
 
     void moveParticles (const amrex::Real& dt, int do_chemistry=0,amrex::Real minradfrac=0.1, const int glued_sphere_particles=0);
 

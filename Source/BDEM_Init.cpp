@@ -417,7 +417,8 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
 void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfab,
         const EBFArrayBoxFactory *ebfactory,
         const int ls_refinement,
-        const ParticleTypeData p_data)
+        const ParticleTypeData p_data,
+        const int glued_sphere_particles)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -460,7 +461,13 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                 Real rp = p.rdata(realData::radius);
                 for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
                     Real ppos_inert[THREEDIM];
-                    get_inertial_pos(p, p_data, pc, ppos_inert); 
+                    if(glued_sphere_particles){
+                        get_inertial_pos(p, p_data, pc, ppos_inert); 
+                    } else {
+                        ppos_inert[XDIR] = p.pos(0);
+                        ppos_inert[YDIR] = p.pos(1);
+                        ppos_inert[ZDIR] = p.pos(2);
+                    }
                     Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
                     if(ls_value < 0.0)
                     {
@@ -473,7 +480,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -502,7 +509,13 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
             for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
   
                 Real ploc[THREEDIM];
-                get_inertial_pos(p, p_data, pc, ploc); 
+                if(glued_sphere_particles){
+                    get_inertial_pos(p, p_data, pc, ploc); 
+                } else {
+                    ploc[XDIR] = p.pos(0);
+                    ploc[XDIR] = p.pos(1);
+                    ploc[XDIR] = p.pos(2);
+                }
                 Real ploc_t[3]={0.0};
                 Real t1[3],t2[3],t3[3];
                 Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
@@ -551,7 +564,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
     Redistribute();
 }
 
-void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data)
+void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -579,7 +592,13 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
             ParticleType& p = pstruct[i];
             for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
                 Real ploc[THREEDIM];
-                get_inertial_pos(p, p_data, pc, ploc); 
+                if(glued_sphere_particles){
+                    get_inertial_pos(p, p_data, pc, ploc); 
+                } else {
+                    ploc[XDIR] = p.pos(0);
+                    ploc[XDIR] = p.pos(1);
+                    ploc[XDIR] = p.pos(2);
+                }
                 Real ploc_t[3]={0.0};
                 Real t1[3],t2[3],t3[3];
                 Real outp[]={po_arr[0],po_arr[1],po_arr[2]};

@@ -13,6 +13,7 @@ struct CheckPair
     bool operator()(const P& p1, const P& p2) const
     {
         bool not_pair = false;
+
         Real p_lengths[BP_TYPES] = {BP_D0, BP_D1, BP_D2, BP_D3, BP_D4, BP_D5, BP_D6, BP_D7, BP_D8, BP_D8, BP_D10};
         Real max_len; 
         if(p1.idata(intData::type_id) == -2){
@@ -25,8 +26,8 @@ struct CheckPair
         amrex::Real d0 = (p1.pos(0) - p2.pos(0));
         amrex::Real d1 = (p1.pos(1) - p2.pos(1));
         amrex::Real d2 = (p1.pos(2) - p2.pos(2));
-        amrex::Real dsquared = d0*d0 + d1*d1 + d2*d2;
-        return (dsquared <= 1.25*max_len);
+        amrex::Real d = sqrt(d0*d0 + d1*d1 + d2*d2);
+        return (d <= 1.25*max_len);
         // for(int pc1 = 0; pc1 < p1.idata(intData::num_comp_sphere); pc1++){
         //     for(int pc2 = 0; pc2 < p2.idata(intData::num_comp_sphere); pc2++){
         //         Real p1pos_inert[THREEDIM];

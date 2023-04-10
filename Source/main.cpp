@@ -130,12 +130,12 @@ int main (int argc, char* argv[])
         if(EBtools::using_levelset_geometry)
         {
             bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                               EBtools::ebfactory,EBtools::ls_refinement, p_data);
+                                               EBtools::ebfactory,EBtools::ls_refinement, p_data, specs.glued_sphere_particles);
         }
         amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
         if(specs.stl_geom_present)
         {
-            bpc.removeParticlesInsideSTL(specs.outside_point, p_data);
+            bpc.removeParticlesInsideSTL(specs.outside_point, p_data, specs.glued_sphere_particles);
         }
         amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
@@ -198,12 +198,12 @@ int main (int argc, char* argv[])
                 if(EBtools::using_levelset_geometry)
                 {
                     bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                                       EBtools::ebfactory,EBtools::ls_refinement, p_data);
+                                                       EBtools::ebfactory,EBtools::ls_refinement, p_data, specs.glued_sphere_particles);
                 }
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 if(specs.stl_geom_present)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point, p_data);
+                    bpc.removeParticlesInsideSTL(specs.outside_point, p_data, specs.glued_sphere_particles);
                 }
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 

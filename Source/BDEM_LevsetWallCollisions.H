@@ -8,7 +8,13 @@ amrex::ParallelFor(np,[=]
         Real rp = p.rdata(realData::radius);
 
         Real ppos_inert[THREEDIM];
-        get_inertial_pos(p, p_data, pc, ppos_inert);
+        if(glued_sphere_particles){
+            get_inertial_pos(p, p_data, pc, ppos_inert);
+        } else {
+            ppos_inert[XDIR] = p.pos(0);
+            ppos_inert[YDIR] = p.pos(1);
+            ppos_inert[ZDIR] = p.pos(2);
+        }
         Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
 
         if (ls_value < rp)

@@ -9,7 +9,13 @@ amrex::ParallelFor(np,[=]
         //    - Adhoc position evaluation like this only an option for simple cases like rod-like glued sphere particle
         //    - For rod-like glued sphere particle, assumption is that spheres extend along the body-fixed x-axis
         Real p1pos_inert[THREEDIM];
-        get_inertial_pos(p1, p_data, pc1, p1pos_inert);
+        if(glued_sphere_particles){
+            get_inertial_pos(p1, p_data, pc1, p1pos_inert);
+        } else {
+            p1pos_inert[XDIR] = p1.pos(0);
+            p1pos_inert[YDIR] = p1.pos(1);
+            p1pos_inert[ZDIR] = p1.pos(2);
+        }
 
         // Calculate the gravitational force and nonzero torque
         p1.rdata(realData::fx) += gravity[XDIR]*p1.rdata(realData::mass)/p1.idata(intData::num_comp_sphere);
@@ -63,7 +69,13 @@ amrex::ParallelFor(np,[=]
 
                 // Calculate positional quantities for p2
                 Real p2pos_inert[THREEDIM];
-                get_inertial_pos(p2, p_data, pc2, p2pos_inert);
+                if(glued_sphere_particles){
+                    get_inertial_pos(p2, p_data, pc2, p2pos_inert);
+                } else {
+                    p2pos_inert[XDIR] = p2.pos(0);
+                    p2pos_inert[YDIR] = p2.pos(1);
+                    p2pos_inert[ZDIR] = p2.pos(2);
+                }
 
                 // Determine if there is any component sphere overlap
                 Real dist_x = p2pos_inert[XDIR] - p1pos_inert[XDIR];
