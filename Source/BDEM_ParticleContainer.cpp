@@ -44,7 +44,6 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
             RealVect &gravity,
-            const ParticleTypeData p_data,
             const int glued_sphere_particles,
             const int bonded_sphere_particles,
             const int liquid_bridging, 
@@ -667,7 +666,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
 
 }
 
-void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin, const ParticleTypeData p_data)
+void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
 {
     // Extract particle tile from input BPC
     const int lev = 0;
@@ -696,7 +695,7 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin, const
 
                 // Calculate inertial frame position of each component sphere
                 Real ppos_inert[THREEDIM];
-                get_inertial_pos(p_in, p_data, pc, ppos_inert);
+                get_inertial_pos(p_in, pc, ppos_inert);
 
                 pcomp.id()   = ParticleType::NextID();
                 pcomp.cpu()  = ParallelDescriptor::MyProc();

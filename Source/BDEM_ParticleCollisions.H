@@ -10,7 +10,7 @@ amrex::ParallelFor(np,[=]
         //    - For rod-like glued sphere particle, assumption is that spheres extend along the body-fixed x-axis
         Real p1pos_inert[THREEDIM];
         if(glued_sphere_particles){
-            get_inertial_pos(p1, p_data, pc1, p1pos_inert);
+            get_inertial_pos(p1, pc1, p1pos_inert);
         } else {
             p1pos_inert[XDIR] = p1.pos(0);
             p1pos_inert[YDIR] = p1.pos(1);
@@ -70,7 +70,7 @@ amrex::ParallelFor(np,[=]
                 // Calculate positional quantities for p2
                 Real p2pos_inert[THREEDIM];
                 if(glued_sphere_particles){
-                    get_inertial_pos(p2, p_data, pc2, p2pos_inert);
+                    get_inertial_pos(p2, pc2, p2pos_inert);
                 } else {
                     p2pos_inert[XDIR] = p2.pos(0);
                     p2pos_inert[YDIR] = p2.pos(1);

@@ -37,14 +37,12 @@ public:
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], 
-        const ParticleTypeData p_data,
         int do_multi_part_per_cell=0, 
         int glued_sphere_particles=0, int glued_sphere_types=0,
         int bonded_sphere_particles=0,
         int min_sphere = 1, int max_sphere = 1, int p_type = 0);
 
     void InitBondedParticles (const std::string & filename,
-                              const ParticleTypeData bp_data,
                               bool &do_heat_transfer,
                               int cantilever_beam_test);
 
@@ -59,7 +57,6 @@ public:
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
             RealVect &gravity,
-            const ParticleTypeData p_data,
             const int glued_sphere_particles=0,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
@@ -69,10 +66,10 @@ public:
     Real compute_coll_timescale();
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
-            const int ls_refinement, const ParticleTypeData p_data, const int glued_sphere_particles);
+            const int ls_refinement, const int glued_sphere_particles);
     
-    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles);
-    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles);
+    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
+    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
 
     void moveParticles (const amrex::Real& dt, int do_chemistry=0,amrex::Real minradfrac=0.1, const int glued_sphere_particles=0);
 
@@ -83,7 +80,7 @@ public:
                 Real dens, Real E, Real nu, Real rad, Real temp,Real spec[MAXSPECIES], 
                 int num_sphere=1, int p_type=0);
 
-    void createGluedSpheres(BDEMParticleContainer& pin, const ParticleTypeData p_data);
+    void createGluedSpheres(BDEMParticleContainer& pin);
 
     void redist_particles(const int local,bool using_softwalls)
     {

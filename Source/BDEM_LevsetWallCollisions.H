@@ -9,7 +9,7 @@ amrex::ParallelFor(np,[=]
 
         Real ppos_inert[THREEDIM];
         if(glued_sphere_particles){
-            get_inertial_pos(p, p_data, pc, ppos_inert);
+            get_inertial_pos(p, pc, ppos_inert);
         } else {
             ppos_inert[XDIR] = p.pos(0);
             ppos_inert[YDIR] = p.pos(1);

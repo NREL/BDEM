@@ -47,9 +47,79 @@ void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p,
     v_body[ZDIR] = 2.0*(q1*q3 + q0*q2)*v_inert[XDIR] + 2.0*(q2*q3 - q0*q1)*v_inert[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_inert[ZDIR];
 }
 
+
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void get_bonded_particle_pos(const ParticleTypeData bp_data,
-                             int type, int comp, amrex::Real radius, 
+void getType0_positions(amrex::Real pos[THREEDIM], int j){
+  pos[XDIR] = 0.0; pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType1_positions(amrex::Real pos[THREEDIM], int j){
+  pos[XDIR] = 2.0*(1.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType2_positions(amrex::Real pos[THREEDIM], int j){
+  pos[XDIR] = 2.0*(1.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType3_positions(amrex::Real pos[THREEDIM], int j){
+  pos[XDIR] = 2.0*(2.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType4_positions(amrex::Real pos[THREEDIM], int j){
+  pos[XDIR] = 2.0*(4.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType5_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<3) ? 2.0*(1.0-j):(j<7) ? 2.0*(4.5-j):2.0*(8.0-j);
+  amrex::Real yval = (j<3) ?     sqthree:(j<7) ?         0.0:-sqthree;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType6_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<8) ? 2.0*(3.5-j):2.0*(11.5-j);
+  amrex::Real yval = (j<8) ? 1.0:-1.0;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType7_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):2.0*(27.5-j);
+  amrex::Real yval = (j<8 || (j>15 && j<24)) ? 1.0:-1.0;
+  amrex::Real zval = (j<16) ? 1.0:-1.0;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType8_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):2.0*(29.5-j);
+  amrex::Real yval = (j<12) ? 2.0:(j<24) ? 0.0:-2.0;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType9_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):(j<36) ? 2.0*(29.5-j):(j<48) ? 2.0*(41.5-j):(j<60) ? 2.0*(53.5-j):2.0*(65.5-j);
+  amrex::Real yval = (j<12 || (j>35 && j<48)) ? 2.0:(j<24 || (j>47 && j<60)) ? 0.0:-2.0;
+  amrex::Real zval = (j<36) ? 1.0:-1.0;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void getType10_positions(amrex::Real pos[THREEDIM], int j){
+  amrex::Real xval = (j<11) ? 2.0*(5.0-j):(j<22) ? 2.0*(16.0-j):(j<34) ? 2.0*(27.5-j):(j<46) ? 2.0*(39.5-j):(j<58) ? 2.0*(51.5-j):(j<69) ? 2.0*(63.0-j):2.0*(74.0-j);
+  amrex::Real yval = (j<11 || (j>57 && j<69)) ? 1.0:(j<22 || j>68) ? -1.0:(j<34) ? 2.0:(j<46) ? 0.0:-2.0;
+  amrex::Real zval = (j<22) ? sqtwo:(j<58) ? 0.0:-sqtwo;
+  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void get_bonded_particle_pos(int type, int comp, amrex::Real radius, 
                              amrex::Real bp_pos[THREEDIM], 
                              amrex::Real quats[4], 
                              amrex::Real pc_pos[THREEDIM]){
@@ -58,59 +128,37 @@ void get_bonded_particle_pos(const ParticleTypeData bp_data,
 
   // Get the nominal origin-centered particle positions
   if(type == 0){
-    posnorm[XDIR] = bp_data.Type0_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type0_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type0_positions[comp][2]; 
+    getType0_positions(posnorm, comp);
   } 
   if(type == 1){
-    posnorm[XDIR] = bp_data.Type1_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type1_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type1_positions[comp][2]; 
+    getType1_positions(posnorm, comp);
   }
   if(type == 2){
-    posnorm[XDIR] = bp_data.Type2_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type2_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type2_positions[comp][2]; 
+    getType2_positions(posnorm, comp);
   }
   if(type == 3){
-    posnorm[XDIR] = bp_data.Type3_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type3_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type3_positions[comp][2]; 
+    getType3_positions(posnorm, comp);
   }
   if(type == 4){
-    posnorm[XDIR] = bp_data.Type4_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type4_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type4_positions[comp][2]; 
+    getType4_positions(posnorm, comp);
   }
   if(type == 5){
-    posnorm[XDIR] = bp_data.Type5_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type5_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type5_positions[comp][2]; 
+    getType5_positions(posnorm, comp);
   }
   if(type == 6){
-    posnorm[XDIR] = bp_data.Type6_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type6_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type6_positions[comp][2]; 
+    getType6_positions(posnorm, comp);
   }
   if(type == 7){
-    posnorm[XDIR] = bp_data.Type7_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type7_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type7_positions[comp][2]; 
+    getType7_positions(posnorm, comp);
   }
   if(type == 8){
-    posnorm[XDIR] = bp_data.Type8_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type8_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type8_positions[comp][2]; 
+    getType8_positions(posnorm, comp);
   }
   if(type == 9){
-    posnorm[XDIR] = bp_data.Type9_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type9_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type9_positions[comp][2]; 
+    getType9_positions(posnorm, comp);
   }
   if(type == 10){
-    posnorm[XDIR] = bp_data.Type10_positions[comp][0]; 
-    posnorm[YDIR] = bp_data.Type10_positions[comp][1]; 
-    posnorm[ZDIR] = bp_data.Type10_positions[comp][2]; 
+    getType10_positions(posnorm, comp);
   }
 
   // Calculate rotated particle position
@@ -127,7 +175,7 @@ void get_bonded_particle_pos(const ParticleTypeData bp_data,
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void get_inertial_pos(const BDEMParticleContainer::ParticleType& p, 
-                                 const ParticleTypeData p_data, const int pc, 
+                                 const int pc, 
                                  amrex::Real p_inert[THREEDIM])
 {
     // Return the position components of component sphere pc of particle p
@@ -137,7 +185,7 @@ void get_inertial_pos(const BDEMParticleContainer::ParticleType& p,
     if(p.idata(intData::type_id) > 0){
         amrex::Real com_pos[THREEDIM] = {p.pos(0), p.pos(1), p.pos(2)};
         amrex::Real quats[4] = {p.rdata(realData::q0), p.rdata(realData::q1), p.rdata(realData::q2), p.rdata(realData::q3)};
-        get_bonded_particle_pos(p_data, p.idata(intData::type_id), pc, p.rdata(realData::radius), com_pos, quats, p_inert);
+        get_bonded_particle_pos(p.idata(intData::type_id), pc, p.rdata(realData::radius), com_pos, quats, p_inert);
     } else {  // Otherwise assume rod-like particle
         amrex::Real p_body[THREEDIM];
         p_body[XDIR] = p.rdata(realData::radius)*((p.idata(intData::num_comp_sphere) - 1) - 2.0*pc);

@@ -10,7 +10,7 @@ amrex::ParallelFor(np,[=]
     ParticleType& p = pstruct[i];
     for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
         if(glued_sphere_particles){
-            get_inertial_pos(p, p_data, pc, pos);
+            get_inertial_pos(p, pc, pos);
         } else{
             pos[XDIR] = p.pos(0);
             pos[YDIR] = p.pos(1);

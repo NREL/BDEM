@@ -1,7 +1,7 @@
 #include <BDEM_ParticleContainer.H>
 
 void bp_init(BDEMParticleContainer::ParticleType& p,
-             const ParticleTypeData bp_data, 
+             const ParticleBondData bp_data, 
              int phase, amrex::Real ppos[THREEDIM],
              amrex::Real radius, amrex::Real density, 
              amrex::Real vel[THREEDIM], amrex::Real temperature,

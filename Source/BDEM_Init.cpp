@@ -212,7 +212,6 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 }
 
 void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
-                                                 const ParticleTypeData bp_data,
                                                  bool &do_heat_transfer,
                                                  int cantilever_beam_test)
 {
@@ -252,7 +251,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
         
         auto& particle_tile = DefineAndReturnParticleTile(lev,grid,tile);
 
-        const ParticleTypeData bp_data = ParticleTypeData();
+        const ParticleBondData bp_data = ParticleBondData();
         int bp_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
         Real pc_pos[THREEDIM];                    
         int bp_ids[200];
@@ -299,7 +298,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 ParticleType p;
                 p.id() = bp_ids[j];
                 if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
-                get_bonded_particle_pos(bp_data, bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
+                get_bonded_particle_pos(bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
                 bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
                 host_particles.push_back(p);
             } 
@@ -417,7 +416,6 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
 void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfab,
         const EBFArrayBoxFactory *ebfactory,
         const int ls_refinement,
-        const ParticleTypeData p_data,
         const int glued_sphere_particles)
 {
     const int lev = 0;
@@ -462,7 +460,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                 for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
                     Real ppos_inert[THREEDIM];
                     if(glued_sphere_particles){
-                        get_inertial_pos(p, p_data, pc, ppos_inert); 
+                        get_inertial_pos(p, pc, ppos_inert); 
                     } else {
                         ppos_inert[XDIR] = p.pos(0);
                         ppos_inert[YDIR] = p.pos(1);
@@ -480,7 +478,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const int glued_sphere_particles)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -510,7 +508,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
   
                 Real ploc[THREEDIM];
                 if(glued_sphere_particles){
-                    get_inertial_pos(p, p_data, pc, ploc); 
+                    get_inertial_pos(p, pc, ploc); 
                 } else {
                     ploc[XDIR] = p.pos(0);
                     ploc[XDIR] = p.pos(1);
@@ -564,7 +562,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
     Redistribute();
 }
 
-void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const ParticleTypeData p_data, const int glued_sphere_particles)
+void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const int glued_sphere_particles)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -593,7 +591,7 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
             for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
                 Real ploc[THREEDIM];
                 if(glued_sphere_particles){
-                    get_inertial_pos(p, p_data, pc, ploc); 
+                    get_inertial_pos(p, pc, ploc); 
                 } else {
                     ploc[XDIR] = p.pos(0);
                     ploc[XDIR] = p.pos(1);
@@ -656,7 +654,6 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
                                            Real E, Real nu, Real temp,
                                            Real spec[MAXSPECIES],
-                                           const ParticleTypeData p_data,
                                            int do_multi_part_per_cell, 
                                            int glued_sphere_particles,
                                            int glued_sphere_types,
@@ -675,6 +672,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
     std::mt19937 mt(0451);
     std::uniform_real_distribution<double> dist(0.4, 0.6);
 
+    const ParticleBondData p_data = ParticleBondData();
     int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
     Real pc_pos[THREEDIM];                    
     Real bp_pos[THREEDIM];
@@ -720,7 +718,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                         for(int j = 0; j<p_types[type]; j++){
                             ParticleType p;
                             p.id() = bp_ids[j];
-                            get_bonded_particle_pos(p_data, type, j, rad, bp_pos, quats, pc_pos);
+                            get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
                             bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
                             host_particles.push_back(p);
                         } 
@@ -785,7 +783,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                     for(int j = 0; j<p_types[type]; j++){
                                         ParticleType p;
                                         p.id() = bp_ids[j];
-                                        get_bonded_particle_pos(p_data, type, j, rad, bp_pos, quats, pc_pos);
+                                        get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
                                         bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
                                         host_particles.push_back(p);
                                     } 
