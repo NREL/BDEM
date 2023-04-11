@@ -118,7 +118,7 @@ int main (int argc, char* argv[])
         int steps=0;
         Real time=zero;
         Real output_time=zero;
-        Real particle_sourcing_time=zero;
+        Real particle_sourcing_time=(specs.particle_sourcing_interval>0) ? std::fmod(specs.timeoffset, specs.particle_sourcing_interval):zero;
         Real output_timeMass=zero;
         Real output_timePrint=zero;
         int output_it=0;
@@ -159,7 +159,7 @@ int main (int argc, char* argv[])
         // Calculate the moisture content for each particle
         if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
 
-        while((steps < specs.maxsteps) and (time < specs.final_time))
+        while((steps+specs.stepoffset < specs.maxsteps) and (time+specs.timeoffset < specs.final_time))
         {
             time += dt;
             output_time += dt;
@@ -171,15 +171,15 @@ int main (int argc, char* argv[])
             Real cb_torq = 0.0;
             if(steps>0) specs.init_force = 0.0;
             if(specs.cantilever_beam_test){ 
-                cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:
-                                                         (time < specs.cb_unload_time) ? specs.cb_force_max:0.0;
-                cb_torq = (time < specs.cb_load_time) ?  (time/specs.cb_load_time)*specs.cb_torq_max:
-                                                         (time < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
+                cb_force = (time+specs.timeoffset < specs.cb_load_time) ? (time+specs.timeoffset/specs.cb_load_time)*specs.cb_force_max:
+                                                         (time+specs.timeoffset < specs.cb_unload_time) ? specs.cb_force_max:0.0;
+                cb_torq = (time+specs.timeoffset < specs.cb_load_time) ?  (time+specs.timeoffset/specs.cb_load_time)*specs.cb_torq_max:
+                                                         (time+specs.timeoffset < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
             }
 
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
-               && time < specs.stop_sourcing_time)
+               && time+specs.timeoffset < specs.stop_sourcing_time)
             {
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 

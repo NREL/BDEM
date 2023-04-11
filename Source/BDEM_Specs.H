@@ -170,7 +170,7 @@ class DEMspecs
         Real particle_sourcing_E;
         Real particle_sourcing_nu;
         Real particle_sourcing_temp;
-        Real particle_sourcing_interval; 
+        Real particle_sourcing_interval=1.0; 
         Vector<Real> particle_sourcing_species_massfracs;
         Real stop_sourcing_time; 
         int particle_sourcing_min_sphere = 1;
@@ -191,6 +191,7 @@ class DEMspecs
         Real final_time=100.0;
         int num_redist=25;
         int stepoffset=0;
+        Real timeoffset=0.0;
         std::string restartfilename {""};
         std::string stlfilename {""};
 
@@ -309,6 +310,7 @@ class DEMspecs
             pp.query("contact_law", contact_law);
         
             pp.query("stepoffset",stepoffset);
+            pp.query("timeoffset",timeoffset);
 
             pp.get("max_steps", maxsteps);
             pp.get("final_time",final_time);
