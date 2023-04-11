@@ -11,15 +11,15 @@ bdem.bc_lower = 0 0 0
 bdem.bc_upper = 0 0 0
 
 #timestepping
-bdem.final_time=5000.0
-bdem.max_steps=100000000
-bdem.write_output_time=50.0
+bdem.final_time=500000.0
+bdem.max_steps=1000000000
+bdem.write_output_time=5000.0
 bdem.num_redist = 25
 bdem.cfl = 0.02
 bdem.init_particles_using_file = 1
 
 #particle intrinsics
-bdem.normal_spring_constant = 5.0e4
+bdem.normal_spring_constant = 1.0
 bdem.normal_restitution_coefficient = 0.8
 bdem.friction_coefficient = 0.0
 bdem.tangential_spring_constant = 0.0
@@ -28,13 +28,13 @@ bdem.rolling_friction_coefficient = 0.0
 bdem.do_heat_transfer = false
 
 bdem.bonded_sphere_particles = 1
-bdem.young_mod_bond = 5.0e4
+bdem.young_mod_bond = 1.0
 bdem.poisson_rat_bond = 0.3
-bdem.bond_damping_factor = 0.05
+bdem.bond_damping_factor = 0.25
 bdem.cantilever_beam_test = 1
-bdem.cb_force_max = -0.5
+bdem.cb_force_max = -0.000005
 bdem.cb_dir = 1
-bdem.cb_load_time = 4500.0
+bdem.cb_load_time = 200000.0
 
 bdem.gravity = 0.0 0.0 0.0
 

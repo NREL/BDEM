@@ -252,20 +252,6 @@ amrex::ParallelFor(np,[=]
                     angvel_rel_t[YDIR] = angvel_rel[YDIR] - angvel_rel_n[YDIR];
                     angvel_rel_t[ZDIR] = angvel_rel[ZDIR] - angvel_rel_n[ZDIR];
 
-                    // Calculate bending d theta due to tangential displacement
-                    Real overlap_t[THREEDIM];
-                    Real mag_overlap_t;
-                    overlap_t[XDIR] = dt*vrel_t[XDIR];
-                    overlap_t[YDIR] = dt*vrel_t[YDIR];
-                    overlap_t[ZDIR] = dt*vrel_t[ZDIR];
-                    mag_overlap_t = sqrt(dotpdt(overlap_t, overlap_t));
-                    Real dtheta_bend = atan(mag_overlap_t / distmag);
-                    // Real dtheta_bend = atan(mag_overlap_t / (distmag/2.0));
-
-                    // Calculate vector normal to tangential displacement 
-                    Real normal_bend[THREEDIM];
-                    crosspdt(normal, tangent, normal_bend);
-
                     // Calculate the damping forces
                     Real F_dn[THREEDIM];
                     Real F_dt[THREEDIM];
@@ -287,13 +273,19 @@ amrex::ParallelFor(np,[=]
                     M_dt[ZDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[ZDIR];
 
                     // Calculate the incremental change to forces and torques
-                    p1.rdata(realData::fx_bond) -= (k_n_bond*vrel_n[XDIR] + k_t_bond*vrel_t[XDIR]) * dt;
-                    p1.rdata(realData::fy_bond) -= (k_n_bond*vrel_n[YDIR] + k_t_bond*vrel_t[YDIR]) * dt;
-                    p1.rdata(realData::fz_bond) -= (k_n_bond*vrel_n[ZDIR] + k_t_bond*vrel_t[ZDIR]) * dt;
+                    Real bond_tan_f[THREEDIM];
+                    bond_tan_f[XDIR] = k_t_bond*vrel_t[XDIR]*dt;
+                    bond_tan_f[YDIR] = k_t_bond*vrel_t[YDIR]*dt;
+                    bond_tan_f[ZDIR] = k_t_bond*vrel_t[ZDIR]*dt;
+                    p1.rdata(realData::fx_bond) -= k_n_bond*vrel_n[XDIR]*dt + bond_tan_f[XDIR];
+                    p1.rdata(realData::fy_bond) -= k_n_bond*vrel_n[YDIR]*dt + bond_tan_f[YDIR];
+                    p1.rdata(realData::fz_bond) -= k_n_bond*vrel_n[ZDIR]*dt + bond_tan_f[ZDIR];
 
-                    p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + k_ben_bond*dtheta_bend*normal_bend[XDIR];
-                    p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + k_ben_bond*dtheta_bend*normal_bend[YDIR];
-                    p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + k_ben_bond*dtheta_bend*normal_bend[ZDIR];
+                    Real bond_tan_torq[THREEDIM];
+                    crosspdt(contact_vect1, bond_tan_f, bond_tan_torq);
+                    p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + bond_tan_torq[XDIR];
+                    p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + bond_tan_torq[YDIR];
+                    p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + bond_tan_torq[ZDIR];
 
                     // Total bond forces and torques are added to particle quantities
                     p1.rdata(realData::fx) += p1.rdata(realData::fx_bond) - F_dn[XDIR] - F_dt[XDIR];
@@ -306,7 +298,7 @@ amrex::ParallelFor(np,[=]
                 }
 
                 // Evaluate the contact force if p1 and p2 don't have a bond between them
-                if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) and (!bond_exists))
+                if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()))
                 {
                     Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
                     if (contact_law == CONTACT_HERTZ)
