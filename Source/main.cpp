@@ -164,7 +164,7 @@ int main (int argc, char* argv[])
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
 
         // Calculate the moisture content for each particle
-        // if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
+        if(specs.liquid_bridging && specs.recalculate_MC) bpc.computeMoistureContent(specs.moisture_content, specs.moisture_content_stdev, specs.liquid_density, specs.FSP);
 
         while((steps+specs.stepoffset < specs.maxsteps) and (time+specs.timeoffset < specs.final_time))
         {
@@ -223,8 +223,6 @@ int main (int argc, char* argv[])
                 }
                 amrex::Print() << "Num particles after sourcing " << bpc.TotalNumberOfParticles() << "\n";
                 particle_sourcing_time=zero;
-        
-                // if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
             }
 
             if (steps % specs.num_redist == 0)

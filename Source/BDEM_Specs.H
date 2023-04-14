@@ -225,6 +225,7 @@ class DEMspecs
         Real liquid_viscosity = 0.0;
         Real surface_tension = 0.0;
         Real liquid_density = 1000.0;   // Assume water density by default
+        int recalculate_MC = 0;
 
         Real init_force = 0.0;
         int init_force_dir = 0;
@@ -552,6 +553,7 @@ class DEMspecs
                 pp.query("liquid_density", liquid_density);
                 pp.query("liquid_viscosity", DEM::mu_liq);
                 pp.query("surface_tension", DEM::gamma);
+                pp.query("recalculate_MC", recalculate_MC);
 
                 // Convert contact angle to rad
                 DEM::contact_angle *= PI/180.0;

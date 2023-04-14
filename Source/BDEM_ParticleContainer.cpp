@@ -473,12 +473,9 @@ void BDEMParticleContainer::reassignParticles_softwall()
     }
 }
 
-void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real contact_angle, Real liquid_density, Real fiber_sat_pt)
+void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP)
 {
     BL_PROFILE("BDEMParticleContainer::computeMoistureContent");
-
-    Real MC = moisture_content/100.0;
-    Real FSP = fiber_sat_pt/100.0;
 
     const int lev = 0;
     auto& plev = GetParticles(lev);
@@ -500,8 +497,10 @@ void BDEMParticleContainer::computeMoistureContent(Real moisture_content, Real c
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
+            Real MC = (MC_stdev > 0.0) ? std::min(std::max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
             p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
             p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
+            p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
         });
     }
 }

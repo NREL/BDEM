@@ -123,7 +123,7 @@ public:
     void saveParticles_softwall();
     void reassignParticles_softwall(); 
 
-    void computeMoistureContent(Real moisture_content, Real contact_angle, Real liquid_density, Real fiber_sat_pt);
+    void computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP);
 
 private:
 

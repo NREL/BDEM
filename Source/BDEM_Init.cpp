@@ -692,6 +692,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
     std::mt19937 mt(0451);
     std::uniform_real_distribution<double> dist(0.4, 0.6);
+    std::uniform_real_distribution<double> dist1(0.15, 0.35);
+    std::uniform_real_distribution<double> dist2(0.65, 0.85);
 
     const ParticleBondData p_data = ParticleBondData();
     int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
@@ -781,9 +783,12 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             //x = x0 + (i+dist(mt))*half*dx;
                             //y = y0 + (j+dist(mt))*half*dy;
                             //z = z0 + (k+dist(mt))*half*dz;
-                            x = x0 + (i+half)*half*dx;
-                            y = y0 + (j+half)*half*dy;
-                            z = z0 + (k+half)*half*dz;
+                            // x = x0 + (i+half)*half*dx;
+                            // y = y0 + (j+half)*half*dy;
+                            // z = z0 + (k+half)*half*dz;
+                            x = (i == 0) ? x0 + dist1(mt)*dx : x0 + dist2(mt)*dx;
+                            y = (j == 0) ? y0 + dist1(mt)*dy : y0 + dist2(mt)*dy;
+                            z = (k == 0) ? z0 + dist1(mt)*dz : z0 + dist2(mt)*dz;
 
                             if(x>=mincoords[XDIR] and x<=maxcoords[XDIR] and 
                                y>=mincoords[YDIR] and y<=maxcoords[YDIR] and
