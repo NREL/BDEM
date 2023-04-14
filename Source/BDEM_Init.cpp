@@ -9,7 +9,9 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                                            int glued_sphere_particles, 
                                            int glued_sphere_types,
                                            Real temp_mean, Real temp_stdev,
-                                           int contact_law)
+                                           int contact_law, int liquid_bridging,
+                                           Real liquid_density, Real MC_avg, 
+                                           Real MC_stdev, Real FSP)
 {
 
     // only read the file on the IO proc
@@ -75,7 +77,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 
                 // Overwrite temperature in file if a valid mean temperature and temp stdev are specified
                 if(temp_mean > 0.0 && temp_stdev > 0.0){
-                    p.rdata(realData::temperature) = amrex::RandomNormal(temp_mean, temp_stdev);
+                    p.rdata(realData::temperature) = max(amrex::RandomNormal(temp_mean, temp_stdev),1.0);
                 }
             }
             else
@@ -178,7 +180,18 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                 p.idata(intData::first_bridge+3*br+1) = -1;
                 p.idata(intData::first_bridge+3*br+2) = -1;
             }
-            p.rdata(realData::liquid_volume) = zero;
+
+            // If using liquid bridging, calculate particle liquid and recalculate particle mass and density
+            if(liquid_bridging){
+                Real MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
+                p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
+                p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
+                p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+            } else {
+                p.rdata(realData::liquid_volume) = zero;
+            }
+
+            // Keep track of how much particle liquid volume is already used to form bridges
             p.rdata(realData::total_bridge_volume) = zero;
 
             for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
@@ -213,7 +226,9 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 
 void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                                                  bool &do_heat_transfer,
-                                                 int cantilever_beam_test)
+                                                 int cantilever_beam_test,
+                                                 int liquid_bridging, Real liquid_density,
+                                                 Real MC_avg, Real MC_stdev, Real FSP)
 {
 
     // only read the file on the IO proc
@@ -292,6 +307,10 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                                    cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
                                    sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
 
+            // Use the same moisture content percentage for each component particle
+            Real MC = 0.0;
+            if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
+
             // TODO: checks: appropriate particle for cantilever, valid ID selected, max bonds is sufficient
             for(int j = 0; j<bp_types[bp_type]; j++) bp_ids[j] = ParticleType::NextID();
             for(int j = 0; j<bp_types[bp_type]; j++){
@@ -299,7 +318,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 p.id() = bp_ids[j];
                 if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
                 get_bonded_particle_pos(bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
-                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids);
+                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids, liquid_density, MC, FSP);
                 host_particles.push_back(p);
             } 
             if (!ifs.good())
@@ -659,7 +678,9 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            int glued_sphere_types,
                                            int bonded_sphere_particles,
                                            int min_sphere, int max_sphere,
-                                           int p_type)
+                                           int p_type, int liquid_bridging,
+                                           Real liquid_density, Real MC_avg, 
+                                           Real MC_stdev, Real FSP)
 {
     int lev = 0;
     Real x,y,z,x0,y0,z0;
@@ -701,6 +722,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                    y>=mincoords[YDIR] && y<=maxcoords[YDIR] &&
                    z>=mincoords[ZDIR] && z<=maxcoords[ZDIR])
                 {
+                    Real MC = 0.0;
+                    if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
                     if(bonded_sphere_particles){
                         int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                         bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
@@ -719,7 +742,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             ParticleType p;
                             p.id() = bp_ids[j];
                             get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
+                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP);
                             host_particles.push_back(p);
                         } 
                     } else if(glued_sphere_particles){
@@ -730,7 +753,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                            meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                            meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                            dens, rad, E, nu, 
-                                                           temp, spec, ncs, type);
+                                                           temp, spec, liquid_density, MC, FSP, ncs, type);
                         host_particles.push_back(p);
                     } else {
                         ParticleType p = generate_particle(x,y,z,
@@ -738,7 +761,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                            meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                            meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                            dens, rad, E, nu, 
-                                                           temp, spec);
+                                                           temp, spec, liquid_density, MC, FSP);
                         host_particles.push_back(p);
                     }
                 }
@@ -766,6 +789,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                y>=mincoords[YDIR] and y<=maxcoords[YDIR] and
                                z>=mincoords[ZDIR] and z<=maxcoords[ZDIR])
                             {
+                                Real MC = 0.0;
+                                if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
                                 if(bonded_sphere_particles){
                                     int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                                     bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
@@ -784,7 +809,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                         ParticleType p;
                                         p.id() = bp_ids[j];
                                         get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP);
                                         host_particles.push_back(p);
                                     } 
                                 } else if(glued_sphere_particles){
@@ -795,7 +820,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                        dens, rad, E, nu, 
-                                                                       temp, spec, ncs, type);
+                                                                       temp, spec, liquid_density, MC, FSP, ncs, type);
                                     host_particles.push_back(p);
                                 } else {
                                     ParticleType p = generate_particle(x,y,z,
@@ -803,7 +828,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                        dens, rad, E, nu, 
-                                                                       temp, spec);
+                                                                       temp, spec, liquid_density, MC, FSP);
                                     host_particles.push_back(p);
                                 }
                             }
@@ -833,6 +858,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
                                                                              Real velx, Real vely, Real velz,
                                                                              Real dens, Real rad, Real E, Real nu,
                                                                              Real temp, Real spec[MAXSPECIES], 
+                                                                             Real liquid_density, Real MC, Real FSP,
                                                                              int num_sphere, int p_type)
 {
     ParticleType p;
@@ -906,7 +932,15 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
         p.idata(intData::first_bridge+3*br+1) = -1;
         p.idata(intData::first_bridge+3*br+2) = -1;
     }
-    p.rdata(realData::liquid_volume) = zero;
+
+    // If nonzero MC passed in, calculate liquid volume
+    if(MC > 0.0){
+        p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
+        p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
+        p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+    } else {
+        p.rdata(realData::liquid_volume) = zero;
+    }
     p.rdata(realData::total_bridge_volume) = zero;
 
     for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;

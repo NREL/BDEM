@@ -27,6 +27,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_bond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::global_damping  = zero;
 
 using namespace amrex;
 
@@ -66,11 +67,16 @@ int main (int argc, char* argv[])
             if(specs.init_particles_using_file == 1)
             {
                 if(specs.bonded_sphere_particles){
-                    bpc.InitBondedParticles("particle_input.dat", specs.do_heat_transfer, specs.cantilever_beam_test);
+                    bpc.InitBondedParticles("particle_input.dat", specs.do_heat_transfer, 
+                                            specs.cantilever_beam_test, specs.liquid_bridging,
+                                            specs.liquid_density, specs.moisture_content, 
+                                            specs.moisture_content_stdev,specs.FSP);
                 } else {
                     bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, 
                                       specs.glued_sphere_particles, specs.glued_sphere_types, 
-                                      specs.temp_mean, specs.temp_stdev, specs.contact_law);
+                                      specs.temp_mean, specs.temp_stdev, specs.contact_law,
+                                      specs.liquid_bridging, specs.liquid_density, 
+                                      specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
                 }
                 bpc.InitChemSpecies(specs.species_massfracs.data());
             }
@@ -86,7 +92,9 @@ int main (int argc, char* argv[])
                         specs.glued_sphere_particles, specs.glued_sphere_types,
                         specs.bonded_sphere_particles,
                         specs.autogen_min_sphere, specs.autogen_max_sphere,
-                        specs.autogen_bp_type);
+                        specs.autogen_bp_type, specs.liquid_bridging,
+                        specs.liquid_density, specs.moisture_content,
+                        specs.moisture_content_stdev, specs.FSP);
             }
         }
         else
@@ -156,7 +164,7 @@ int main (int argc, char* argv[])
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
 
         // Calculate the moisture content for each particle
-        if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
+        // if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
 
         while((steps+specs.stepoffset < specs.maxsteps) and (time+specs.timeoffset < specs.final_time))
         {
@@ -190,7 +198,8 @@ int main (int argc, char* argv[])
                                    specs.glued_sphere_particles, specs.glued_sphere_types,
                                    specs.bonded_sphere_particles,
                                    specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere,
-                                   specs.particle_sourcing_bp_type);
+                                   specs.particle_sourcing_bp_type, specs.liquid_bridging, specs.liquid_density,
+                                   specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
 
                 amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 //if(EBtools::using_levelset_geometry and !specs.restartedcase)
@@ -215,8 +224,7 @@ int main (int argc, char* argv[])
                 amrex::Print() << "Num particles after sourcing " << bpc.TotalNumberOfParticles() << "\n";
                 particle_sourcing_time=zero;
         
-                // FIXME: Just calculating moisture for all particles, but should only be for newly sourced particles
-                if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
+                // if(specs.liquid_bridging) bpc.computeMoistureContent(specs.moisture_content, specs.contact_angle, specs.liquid_density, specs.FSP);
             }
 
             if (steps % specs.num_redist == 0)

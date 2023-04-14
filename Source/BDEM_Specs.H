@@ -106,6 +106,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real global_damping;
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
@@ -218,6 +219,7 @@ class DEMspecs
         // Options for modeling liquid bridging
         int liquid_bridging = 0;
         Real moisture_content = 0.0;
+        Real moisture_content_stdev = 0.0;
         Real FSP = 23.0;     // Fiber saturation point of pine chips by default
         Real contact_angle = 0.0;
         Real liquid_viscosity = 0.0;
@@ -544,6 +546,7 @@ class DEMspecs
             if(liquid_bridging){
                 // Read in liquid bridging variables
                 pp.query("moisture_content", moisture_content); // Moisture content using Green (or wet) basis
+                pp.query("moisture_content_stdev", moisture_content_stdev); // Set to zero if since MC value desired
                 pp.query("contact_angle", DEM::contact_angle);
                 pp.query("FSP", FSP);
                 pp.query("liquid_density", liquid_density);
@@ -552,6 +555,11 @@ class DEMspecs
 
                 // Convert contact angle to rad
                 DEM::contact_angle *= PI/180.0;
+
+                // Convert MC and FSP from percentages
+                FSP /= 100.0; 
+                moisture_content /= 100.0;
+                moisture_content_stdev /= 100.0;
 
                 // TODO: add more input checks
                 if(moisture_content < 0.0 || moisture_content > 100.0) Abort("\nMoisture content should be a percentage between 0 and 100.\n");
@@ -590,6 +598,8 @@ class DEMspecs
                 pp.query("autogen_bp_type", autogen_bp_type);
                 pp.query("particle_sourcing_bp_type", particle_sourcing_bp_type);
             }
+
+            pp.query("global_damping", DEM::global_damping);
         }
         void clear()
         {

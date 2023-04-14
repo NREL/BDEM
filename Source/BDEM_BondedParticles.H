@@ -5,7 +5,8 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
              int phase, amrex::Real ppos[THREEDIM],
              amrex::Real radius, amrex::Real density, 
              amrex::Real vel[THREEDIM], amrex::Real temperature,
-             int comp, int type, int* ids){
+             int comp, int type, int* ids, 
+             Real liquid_density, Real MC, Real FSP){
 
   // Set unique ID and assign CPU
   p.cpu() = ParallelDescriptor::MyProc();
@@ -73,7 +74,15 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
       p.idata(intData::first_bridge+3*br+1) = -1;
       p.idata(intData::first_bridge+3*br+2) = -1;
   }
-  p.rdata(realData::liquid_volume) = zero;
+
+  // If nonzero MC passed in, calculate liquid volume
+  if(MC > 0.0){
+      p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
+      p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
+      p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+  } else {
+      p.rdata(realData::liquid_volume) = zero;
+  }
   p.rdata(realData::total_bridge_volume) = zero;
 
   // Fill in the particle each particle ID that p shares a bond with

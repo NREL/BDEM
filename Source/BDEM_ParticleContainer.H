@@ -32,7 +32,9 @@ public:
                         int glued_sphere_particles, 
                         int glued_sphere_types, 
                         Real temp_mean, Real temp_stdev,
-                        int contact_law);
+                        int contact_law, int liquid_bridging,
+                        Real liquid_density, Real MC_avg, 
+                        Real MC_stdev, Real FSP);
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
@@ -40,11 +42,16 @@ public:
         int do_multi_part_per_cell=0, 
         int glued_sphere_particles=0, int glued_sphere_types=0,
         int bonded_sphere_particles=0,
-        int min_sphere = 1, int max_sphere = 1, int p_type = 0);
+        int min_sphere = 1, int max_sphere = 1, int p_type = 0,
+        int liquid_bridging = 0, Real liquid_density = 1000.0, 
+        Real MC_avg = 0.0, Real MC_stdev = 0.0, Real FSP = 0.0);
 
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer,
-                              int cantilever_beam_test);
+                              int cantilever_beam_test,
+                              int liquid_bridging,
+                              Real liquid_density, Real MC_avg, 
+                              Real MC_stdev, Real FSP);
 
     void InitChemSpecies(amrex::Real Yis[MAXSPECIES]);
 
@@ -78,7 +85,7 @@ public:
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
                 Real dens, Real E, Real nu, Real rad, Real temp,Real spec[MAXSPECIES], 
-                int num_sphere=1, int p_type=0);
+                Real liquid_density, Real MC, Real FSP, int num_sphere=1, int p_type=0);
 
     void createGluedSpheres(BDEMParticleContainer& pin);
 

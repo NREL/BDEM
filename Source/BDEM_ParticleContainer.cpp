@@ -210,9 +210,9 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
               pos_old[1]=p.pos(1);
               pos_old[2]=p.pos(2);
 
-              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt;
-              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt;
-              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt;
+              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt - DEM::global_damping*p.rdata(realData::xvel);
+              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt - DEM::global_damping*p.rdata(realData::yvel);
+              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt - DEM::global_damping*p.rdata(realData::zvel);
 
               p.pos(0) += p.rdata(realData::xvel) * dt;
               p.pos(1) += p.rdata(realData::yvel) * dt;
@@ -281,9 +281,9 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
 
                   // Rotate updated body-fixed angular velocity back to inertial frame
                   rotate_vector_to_inertial(p, angvel_body, angvel_inert);
-                  p.rdata(realData::xangvel) = angvel_inert[XDIR];
-                  p.rdata(realData::yangvel) = angvel_inert[YDIR];
-                  p.rdata(realData::zangvel) = angvel_inert[ZDIR];
+                  p.rdata(realData::xangvel) = angvel_inert[XDIR] - DEM::global_damping*p.rdata(realData::xangvel);
+                  p.rdata(realData::yangvel) = angvel_inert[YDIR] - DEM::global_damping*p.rdata(realData::yangvel);
+                  p.rdata(realData::zangvel) = angvel_inert[ZDIR] - DEM::global_damping*p.rdata(realData::zangvel);
 
                   // Calculate principal axis components in inertial reference frame
                   Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
@@ -293,9 +293,9 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.rdata(realData::pay) = pa_inert[YDIR];
                   p.rdata(realData::paz) = pa_inert[ZDIR];
               } else{
-                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
-                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
-                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt - DEM::global_damping*p.rdata(realData::xangvel);
+                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt - DEM::global_damping*p.rdata(realData::yangvel);
+                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt - DEM::global_damping*p.rdata(realData::zangvel);
 
                   // Tracking change in theta_x for beam twisting testing
                   p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;

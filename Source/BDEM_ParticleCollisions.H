@@ -299,6 +299,7 @@ amrex::ParallelFor(np,[=]
 
                 // Evaluate the contact force if p1 and p2 don't have a bond between them
                 if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()))
+                // if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) && !bond_exists)
                 {
                     Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
                     if (contact_law == CONTACT_HERTZ)
@@ -453,16 +454,18 @@ amrex::ParallelFor(np,[=]
                         Real ccoef = 0.0018*log(Vtot/pow(rad2,3.0)) + 0.078;
 
                         // Calculate the normal capillary force and normal/tangential viscous forces 
-                        Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
+                        // Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
+                        // Real Fcap = (Sdist > 0.0) ? PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef)):0.0;
+                        Real Fcap = (Sdist > 0.0) ? PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef)) * 0.5*(tanh(5000.0*(Sdist - Drupt/10.0)) + 1.0):0.0;
                         
                         Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
                         Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
 
                         Real bridge_force[THREEDIM];
                         Real torq[THREEDIM];
-                        bridge_force[XDIR] = (Fcap + Fvisc_n)*normal[XDIR] + Fvisc_t*tangent[XDIR];
-                        bridge_force[YDIR] = (Fcap + Fvisc_n)*normal[YDIR] + Fvisc_t*tangent[YDIR];
-                        bridge_force[ZDIR] = (Fcap + Fvisc_n)*normal[ZDIR] + Fvisc_t*tangent[ZDIR];
+                        bridge_force[XDIR] = (Fcap - Fvisc_n)*normal[XDIR] - Fvisc_t*tangent[XDIR];
+                        bridge_force[YDIR] = (Fcap - Fvisc_n)*normal[YDIR] - Fvisc_t*tangent[YDIR];
+                        bridge_force[ZDIR] = (Fcap - Fvisc_n)*normal[ZDIR] - Fvisc_t*tangent[ZDIR];
 
                         p1.rdata(realData::fx) += bridge_force[XDIR];
                         p1.rdata(realData::fy) += bridge_force[YDIR];
