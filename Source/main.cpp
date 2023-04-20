@@ -28,6 +28,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::global_damping  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond  = zero;
 
 using namespace amrex;
 
@@ -67,7 +68,7 @@ int main (int argc, char* argv[])
             if(specs.init_particles_using_file == 1)
             {
                 if(specs.bonded_sphere_particles){
-                    bpc.InitBondedParticles("particle_input.dat", specs.do_heat_transfer, 
+                    bpc.InitBondedParticles("particle_input.dat", specs.do_heat_transfer, specs.contact_law, 
                                             specs.cantilever_beam_test, specs.liquid_bridging,
                                             specs.liquid_density, specs.moisture_content, 
                                             specs.moisture_content_stdev,specs.FSP);
@@ -118,14 +119,14 @@ int main (int argc, char* argv[])
         }
 
         //compute tcoll here over all particles
-        DEM::tcoll=bpc.compute_coll_timescale();
+        DEM::tcoll=bpc.compute_coll_timescale(specs.bonded_sphere_particles);
         Print()<<"tcoll:"<<DEM::tcoll<<"\n";
 
-        Real dt = specs.cfl*DEM::tcoll;
+        Real dt = (specs.constant_dt > 0.0) ? specs.constant_dt:specs.cfl*DEM::tcoll;
         int steps=0;
         Real time=zero;
         Real output_time=zero;
-        Real particle_sourcing_time=(specs.particle_sourcing_interval>0) ? std::fmod(specs.timeoffset, specs.particle_sourcing_interval):zero;
+        Real particle_sourcing_time=zero;
         Real output_timeMass=zero;
         Real output_timePrint=zero;
         int output_it=0;
@@ -166,7 +167,7 @@ int main (int argc, char* argv[])
         // Calculate the moisture content for each particle
         if(specs.liquid_bridging && specs.recalculate_MC) bpc.computeMoistureContent(specs.moisture_content, specs.moisture_content_stdev, specs.liquid_density, specs.FSP);
 
-        while((steps+specs.stepoffset < specs.maxsteps) and (time+specs.timeoffset < specs.final_time))
+        while((steps < specs.maxsteps) and (time < specs.final_time))
         {
             time += dt;
             output_time += dt;
@@ -178,15 +179,16 @@ int main (int argc, char* argv[])
             Real cb_torq = 0.0;
             if(steps>0) specs.init_force = 0.0;
             if(specs.cantilever_beam_test){ 
-                cb_force = (time+specs.timeoffset < specs.cb_load_time) ? (time+specs.timeoffset/specs.cb_load_time)*specs.cb_force_max:
-                                                         (time+specs.timeoffset < specs.cb_unload_time) ? specs.cb_force_max:0.0;
-                cb_torq = (time+specs.timeoffset < specs.cb_load_time) ?  (time+specs.timeoffset/specs.cb_load_time)*specs.cb_torq_max:
-                                                         (time+specs.timeoffset < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
+                cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:
+                                                         (time < specs.cb_unload_time) ? specs.cb_force_max:0.0;
+                cb_torq = (time < specs.cb_load_time) ?  (time/specs.cb_load_time)*specs.cb_torq_max:
+                                                         (time < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
             }
 
             if(specs.particle_sourcing==1 && 
                particle_sourcing_time > specs.particle_sourcing_interval
-               && time+specs.timeoffset < specs.stop_sourcing_time)
+               && time < specs.stop_sourcing_time)
+
             {
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 

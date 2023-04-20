@@ -115,6 +115,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_bond;
 }
 
 class DEMspecs
@@ -137,8 +138,8 @@ class DEMspecs
         int autogen_multi_part_per_cell=0;
         Real autogen_radius; 
         Real autogen_dens;
-        Real autogen_E;
-        Real autogen_nu;
+        Real autogen_E = 100.0;
+        Real autogen_nu = 0.3;
         Real autogen_temp;
         int autogen_max_sphere = 1;
         int autogen_min_sphere = 1;
@@ -168,8 +169,8 @@ class DEMspecs
         int particle_sourcing_multi_part_per_cell=0;
         Real particle_sourcing_radius; 
         Real particle_sourcing_dens;
-        Real particle_sourcing_E;
-        Real particle_sourcing_nu;
+        Real particle_sourcing_E = 100.0;
+        Real particle_sourcing_nu = 0.3;
         Real particle_sourcing_temp;
         Real particle_sourcing_interval=1.0; 
         Vector<Real> particle_sourcing_species_massfracs;
@@ -181,6 +182,8 @@ class DEMspecs
         RealVect gravity;
         int init_particles_using_file=1;
         Real cfl=0.02;
+        Real constant_dt = 0.0;
+        int verlet_scheme = 0;
 
         int mass_flow=0;
 
@@ -192,7 +195,6 @@ class DEMspecs
         Real final_time=100.0;
         int num_redist=25;
         int stepoffset=0;
-        Real timeoffset=0.0;
         std::string restartfilename {""};
         std::string stlfilename {""};
 
@@ -313,7 +315,6 @@ class DEMspecs
             pp.query("contact_law", contact_law);
         
             pp.query("stepoffset",stepoffset);
-            pp.query("timeoffset",timeoffset);
 
             pp.get("max_steps", maxsteps);
             pp.get("final_time",final_time);
@@ -333,6 +334,8 @@ class DEMspecs
 
             pp.query("num_redist", num_redist);
             pp.query("cfl", cfl);
+            pp.query("constant_dt", constant_dt);
+            pp.query("verlet_scheme", verlet_scheme);
             pp.query("init_particles_using_file",init_particles_using_file);
             
             chemistry="nullchem";
@@ -403,8 +406,8 @@ class DEMspecs
                 pp.get("radius_particle_sourcing",particle_sourcing_radius);
                 pp.get("dens_particle_sourcing",particle_sourcing_dens);
                 if(contact_law != 0){
-                    pp.get("dens_particle_sourcing",particle_sourcing_E);
-                    pp.get("dens_particle_sourcing",particle_sourcing_nu);
+                    pp.get("E_particle_sourcing",particle_sourcing_E);
+                    pp.get("nu_particle_sourcing",particle_sourcing_nu);
                 }
                 pp.get("temp_particle_sourcing",particle_sourcing_temp);
                 pp.get("particle_sourcing_interval",particle_sourcing_interval);
@@ -581,7 +584,7 @@ class DEMspecs
             if(glued_sphere_particles && bonded_sphere_particles) Abort("\nGlued sphere and bonded sphere models are not compatible, only one may be chosen!\n");
             if(bonded_sphere_particles){
                 pp.get("young_mod_bond", DEM::E_bond);
-                pp.get("poisson_rat_bond", poisson_rat_bond);
+                pp.get("poisson_rat_bond", DEM::nu_bond);
                 pp.query("bond_damping_factor", DEM::beta_bond);
                 DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
 

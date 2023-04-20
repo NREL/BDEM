@@ -226,6 +226,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 
 void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                                                  bool &do_heat_transfer,
+                                                 int contact_law,
                                                  int cantilever_beam_test,
                                                  int liquid_bridging, Real liquid_density,
                                                  Real MC_avg, Real MC_stdev, Real FSP)
@@ -276,7 +277,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             // Read in standard particle properties
             int bp_phase;
             Real bp_pos[THREEDIM];
-            Real bp_radius, bp_density, bp_temperature;
+            Real bp_radius, bp_density, bp_temperature, bp_E, bp_nu;
             Real bp_vel[THREEDIM];
 
             ifs >> bp_phase;
@@ -285,6 +286,13 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             ifs >> bp_pos[ZDIR];
             ifs >> bp_radius;
             ifs >> bp_density;
+            if(contact_law == 1){
+                ifs >> bp_E;
+                ifs >> bp_nu;
+            } else {
+                bp_E = 100.0;
+                bp_nu = 0.3;
+            }
             ifs >> bp_vel[XDIR];
             ifs >> bp_vel[YDIR];
             ifs >> bp_vel[ZDIR];
@@ -318,7 +326,7 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 p.id() = bp_ids[j];
                 if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
                 get_bonded_particle_pos(bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
-                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids, liquid_density, MC, FSP);
+                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids, liquid_density, MC, FSP, bp_E, bp_nu);
                 host_particles.push_back(p);
             } 
             if (!ifs.good())
@@ -744,7 +752,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             ParticleType p;
                             p.id() = bp_ids[j];
                             get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP);
+                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
                             host_particles.push_back(p);
                         } 
                     } else if(glued_sphere_particles){
@@ -814,7 +822,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                         ParticleType p;
                                         p.id() = bp_ids[j];
                                         get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
                                         host_particles.push_back(p);
                                     } 
                                 } else if(glued_sphere_particles){

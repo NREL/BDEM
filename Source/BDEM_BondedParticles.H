@@ -6,7 +6,8 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
              amrex::Real radius, amrex::Real density, 
              amrex::Real vel[THREEDIM], amrex::Real temperature,
              int comp, int type, int* ids, 
-             Real liquid_density, Real MC, Real FSP){
+             Real liquid_density, Real MC, Real FSP,
+             amrex::Real Emod, amrex::Real nu){
 
   // Set unique ID and assign CPU
   p.cpu() = ParallelDescriptor::MyProc();
@@ -23,6 +24,8 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::yvel) = vel[YDIR];
   p.rdata(realData::zvel) = vel[ZDIR];
   p.rdata(realData::temperature) = temperature; 
+  p.rdata(realData::E) = Emod;
+  p.rdata(realData::nu) = nu;
 
   // Set rotation-related quantities to zero
   p.idata(intData::num_comp_sphere) = 1;
