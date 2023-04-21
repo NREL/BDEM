@@ -325,15 +325,6 @@ amrex::ParallelFor(np,[=]
                     p1.rdata(realData::tauy_bond) -= (dMx*normal[YDIR] + dMy*basis1[YDIR] + dMz*basis2[YDIR]);
                     p1.rdata(realData::tauz_bond) -= (dMx*normal[ZDIR] + dMy*basis1[ZDIR] + dMz*basis2[ZDIR]);
 
-                    // Total bond forces and torques are added to particle quantities
-                    p1.rdata(realData::fx) += p1.rdata(realData::fx_bond);
-                    p1.rdata(realData::fy) += p1.rdata(realData::fy_bond);
-                    p1.rdata(realData::fz) += p1.rdata(realData::fz_bond);
-
-                    p1.rdata(realData::taux) += p1.rdata(realData::taux_bond);
-                    p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond);
-                    p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond);
-
                     /* --------  OLD BERNOULLI BEAM MODEL CODE -------- */
                     // // Calculate the incremental change to forces and torques
                     // Real bond_tan_f[THREEDIM];
