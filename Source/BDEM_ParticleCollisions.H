@@ -369,8 +369,8 @@ amrex::ParallelFor(np,[=]
                         Real temp1 = sqrt(Reff*overlap_n);
                         kn_dem = 4.0/3.0*E_eff*temp1;
                         kt_dem = 8.0*G_eff*temp1;
-                        eta_n_dem = 2.0*sqrt(5.0/3.0)*beta*sqrt(meff*E_eff)*sqrt(temp1);
-                        eta_t_dem = 4.0*sqrt(5.0/3.0)*beta*sqrt(meff*G_eff)*sqrt(temp1);
+                        eta_n_dem = -2.0*sqrt(5.0/3.0)*beta*sqrt(meff*E_eff)*sqrt(temp1);
+                        eta_t_dem = -4.0*sqrt(5.0/3.0)*beta*sqrt(meff*G_eff)*sqrt(temp1);
                     }
                     else
                     {            

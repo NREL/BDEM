@@ -79,7 +79,7 @@ public:
     void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
     void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
 
-    void moveParticles (const amrex::Real& dt, int do_chemistry=0,amrex::Real minradfrac=0.1, const int glued_sphere_particles=0);
+    void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0, const int glued_sphere_particles=0);
 
     void writeParticles (const int n, const int glued_sphere_particles, const int glued_sphere_types, const int bonded_sphere_particles);   
 

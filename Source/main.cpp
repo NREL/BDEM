@@ -246,6 +246,13 @@ int main (int argc, char* argv[])
               bpc.checkParticlesInsideSTL(specs.outside_point);
               }*/
 
+            if(specs.verlet_scheme){
+                BL_PROFILE_VAR("MOVE_PART",movepart);
+                specs.verlet_scheme = 1;
+                bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme,specs.glued_sphere_particles);
+                BL_PROFILE_VAR_STOP(movepart);
+            }
+
             BL_PROFILE_VAR("FORCE_CALC",forceCalc);
             {
                 bpc.computeForces(dt,EBtools::ebfactory,EBtools::lsphi,
@@ -262,7 +269,8 @@ int main (int argc, char* argv[])
             BL_PROFILE_VAR_STOP(forceCalc);
 
             BL_PROFILE_VAR("MOVE_PART",movepart);
-            bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.glued_sphere_particles);
+            if(specs.verlet_scheme) specs.verlet_scheme = 2;
+            bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme,specs.glued_sphere_particles);
             BL_PROFILE_VAR_STOP(movepart);
 
             if(specs.dynamicstl!=0)

@@ -159,7 +159,8 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
 
 void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
-        int do_chemistry,Real minradfrac, const int glued_sphere_particles)
+        int do_chemistry,Real minradfrac, int verlet_scheme, 
+        const int glued_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::moveParticles");
 
@@ -212,18 +213,22 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
               pos_old[1]=p.pos(1);
               pos_old[2]=p.pos(2);
 
+              Real verlet_factor = (verlet_scheme) ? 0.5:1.0;
+
               // Global damping of particle forces
               p.rdata(realData::fx) -= DEM::global_damping * p.rdata(realData::xvel);
               p.rdata(realData::fy) -= DEM::global_damping * p.rdata(realData::yvel);
               p.rdata(realData::fz) -= DEM::global_damping * p.rdata(realData::zvel);
 
-              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt;
-              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt;
-              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt;
+              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt * verlet_factor;
+              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt * verlet_factor;
+              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt * verlet_factor;
 
-              p.pos(0) += p.rdata(realData::xvel) * dt;
-              p.pos(1) += p.rdata(realData::yvel) * dt;
-              p.pos(2) += p.rdata(realData::zvel) * dt;
+              if(verlet_scheme != 2){
+                  p.pos(0) += p.rdata(realData::xvel) * dt;
+                  p.pos(1) += p.rdata(realData::yvel) * dt;
+                  p.pos(2) += p.rdata(realData::zvel) * dt;
+              }
 
               if(glued_sphere_particles){
                   // Angular velocity is updated in body-fixed frame of reference so that diagonal inertia tensor can be used
@@ -253,9 +258,9 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   rotate_vector_to_body(p, tau_inert, tau_body);
 
                   // Update the angular velocity in the body-fixed reference frame
-                  angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt;
-                  angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt;
-                  angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt;
+                  angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt * verlet_factor;
+                  angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt * verlet_factor;
+                  angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt * verlet_factor;
 
                   // Update the quaternion components with the updated angular velocity
                   Real q0 = p.rdata(realData::q0);
@@ -263,10 +268,11 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   Real q2 = p.rdata(realData::q2);
                   Real q3 = p.rdata(realData::q3);
 
-                  Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]);
-                  Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]);
-                  Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]);
-                  Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]);
+                  // TODO: Should we modify quaternion update using verlet factor?
+                  Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]) * verlet_factor;
+                  Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]) * verlet_factor;
+                  Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]) * verlet_factor;
+                  Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]) * verlet_factor;
 
                   q0 += dq0;
                   q1 += dq1;
@@ -310,14 +316,15 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
                   p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
 
-                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) *dt;
-                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) *dt;
-                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) *dt;
+                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor;
+                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor;
+                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor;
 
                   // Tracking change in theta_x for beam twisting testing
-                  p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
+                  if(verlet_scheme != 2) p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
               }
 
+              // FIXME: Chemistry should be compatible w Verlet scheme
               if(do_chemistry)
               {
                   Real wdot[MAXSPECIES+1]={0.0};

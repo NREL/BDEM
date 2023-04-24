@@ -409,7 +409,8 @@ class DEMspecs
                     pp.get("E_particle_sourcing",particle_sourcing_E);
                     pp.get("nu_particle_sourcing",particle_sourcing_nu);
                 }
-                pp.get("temp_particle_sourcing",particle_sourcing_temp);
+                particle_sourcing_temp=NTP_TEMP;
+                pp.query("temp_particle_sourcing",particle_sourcing_temp);
                 pp.get("particle_sourcing_interval",particle_sourcing_interval);
                 pp.get("stop_sourcing_time",stop_sourcing_time);
                 pp.query("particle_sourcing_multiple_particles_per_cell",particle_sourcing_multi_part_per_cell);
