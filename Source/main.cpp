@@ -61,7 +61,7 @@ int main (int argc, char* argv[])
 
         EBtools::init_eb(geom,ba,dm); 
 
-        const int ng_cells = one;
+        const int ng_cells = specs.ng_cells;
         BDEMParticleContainer bpc(geom, dm, ba, ng_cells,specs.chemptr);
         if(!specs.restartedcase)
         {
@@ -146,6 +146,8 @@ int main (int argc, char* argv[])
             bpc.removeParticlesInsideSTL(specs.outside_point, specs.glued_sphere_particles);
         }
         amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+        if(specs.clip_particles) bpc.clipParticles(specs.clip_particle_dir, specs.clip_particle_val, specs.glued_sphere_particles);
+        amrex::Print() << "Num particles after clipping " << bpc.TotalNumberOfParticles() << "\n";
 
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
         if(specs.visualize_component_spheres && specs.glued_sphere_particles){

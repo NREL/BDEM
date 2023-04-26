@@ -239,9 +239,17 @@ amrex::ParallelFor(np,[=]
                     Real k6 = DEM::E_bond*I_bond / rad_sum * ((2.0-phi_bond)/(1.0+phi_bond));
 
                     // Calculate orthonormal basis vectors
-                    Real s_vect[THREEDIM] = {amrex::Random(), amrex::Random(), amrex::Random()};
-                    Real sdotn = dotpdt(normal, s_vect);
-                    Real temp1[THREEDIM] = {s_vect[XDIR] - sdotn*normal[XDIR], s_vect[YDIR] - sdotn*normal[YDIR], s_vect[ZDIR] - sdotn*normal[ZDIR]};
+                    Real sdotn;
+                    Real checkpar[THREEDIM];
+                    Real temp1[THREEDIM];
+                    crosspdt(normal, s_vect, checkpar);
+                    if(sqrt(dotpdt(checkpar,checkpar)) > 1.0e-5){
+                        sdotn = dotpdt(normal, s_vect);
+                        temp1[XDIR] = s_vect[XDIR] - sdotn*normal[XDIR]; temp1[YDIR] = s_vect[YDIR] - sdotn*normal[YDIR]; temp1[ZDIR] = s_vect[ZDIR] - sdotn*normal[ZDIR];
+                    } else {
+                        sdotn = dotpdt(normal, s_vect2);
+                        temp1[XDIR] = s_vect2[XDIR] - sdotn*normal[XDIR]; temp1[YDIR] = s_vect2[YDIR] - sdotn*normal[YDIR]; temp1[ZDIR] = s_vect2[ZDIR] - sdotn*normal[ZDIR];
+                    }
                     Real temp_mag = sqrt(dotpdt(temp1, temp1));
                     Real basis1[THREEDIM] = {temp1[XDIR]/temp_mag, temp1[YDIR]/temp_mag, temp1[ZDIR]/temp_mag};
                     Real temp2[THREEDIM];

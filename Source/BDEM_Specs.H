@@ -130,6 +130,7 @@ class DEMspecs
         Vector<int> bclo;
         Vector<int> bchi;
         int contact_law = 0;
+        int ng_cells = one;
 
         Vector<Real> autogen_mincoords; 
         Vector<Real> autogen_maxcoords; 
@@ -250,6 +251,11 @@ class DEMspecs
         Real temp_mean = -1.0;
         Real temp_stdev = -1.0;
 
+        // Options for clipping particles
+        int clip_particles = 0;
+        int clip_particle_dir;
+        Real clip_particle_val;
+
         void read_dem_specs()
         {
             plo.resize(AMREX_SPACEDIM);
@@ -284,6 +290,7 @@ class DEMspecs
             pp.getarr("ncells", ncells);
             pp.getarr("is_it_periodic",periodic);
             pp.get("max_grid_size", max_grid_size);
+            pp.query("ng_cells", ng_cells);
 
             //outside_point for stl stuff
             Real fac=3.0;
@@ -606,6 +613,12 @@ class DEMspecs
             }
 
             pp.query("global_damping", DEM::global_damping);
+
+            pp.query("clip_particles", clip_particles);
+            if(clip_particles){
+              pp.get("clip_particle_dir", clip_particle_dir);
+              pp.get("clip_particle_val", clip_particle_val);
+            }
         }
         void clear()
         {

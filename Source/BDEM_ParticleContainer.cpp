@@ -67,6 +67,10 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
     
     std::map<PairIndex, bool> particle_tile_has_walls;
 
+    // Putting random vectors for bond orthonormal basis calculations here to avoid GPU issues
+    Real s_vect[THREEDIM] = {amrex::Random(), amrex::Random(), amrex::Random()};
+    Real s_vect2[THREEDIM] = {amrex::Random(), amrex::Random(), amrex::Random()};
+
     if(resolve_levset_wall_collisions)
     {
         const FabArray<EBCellFlagFab>* flags = &(eb_factory->getMultiEBCellFlagFab());
@@ -392,6 +396,48 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
     }
 }
 
+
+void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_particle_val, int glued_sphere_particles)
+{
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+
+        ParticleType* pstruct = aos().dataPtr();
+        const Box & bx = mfi.tilebox();
+        amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
+            ParticleType& p = pstruct[i];
+            for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
+                Real ppos_inert[THREEDIM];
+                if(glued_sphere_particles){
+                    get_inertial_pos(p, pc, ppos_inert);
+                } else {
+                    ppos_inert[XDIR] = p.pos(0);
+                    ppos_inert[YDIR] = p.pos(1);
+                    ppos_inert[ZDIR] = p.pos(2);
+                }
+                if(ppos_inert[clip_particle_dir] > clip_particle_val)
+                {
+                    p.id()=-1;
+                }
+            }
+        });
+    }
+    Redistribute();
+}
+
+
+
+
 void BDEMParticleContainer::saveParticles_softwall()
 {
     BL_PROFILE("BDEMParticleContainer::saveParticles_softwall");
@@ -516,16 +562,14 @@ void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, R
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
 
-        // now we move the particles
-        amrex::ParallelFor(np,[=]
-        AMREX_GPU_DEVICE (int i) noexcept
+        for (int i = 0; i < np; i++)
         {
             ParticleType& p = pstruct[i];
             Real MC = (MC_stdev > 0.0) ? std::min(std::max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
             p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
             p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
             p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
-        });
+        }
     }
 }
 

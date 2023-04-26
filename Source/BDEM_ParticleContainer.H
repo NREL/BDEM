@@ -126,6 +126,8 @@ public:
 
     void computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP);
 
+    void clipParticles(int clip_particle_dir, Real clip_particle_val, int glued_sphere_particles);
+
 private:
 
     int domain_bc[6]={0};
