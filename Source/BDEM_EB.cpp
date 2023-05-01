@@ -324,6 +324,7 @@ namespace EBtools
         amrex::FillSignedDistance (*lsphi,lslev,*ebfactory,ls_ref);
 
     }
+
     void make_silo_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm)
     {
         int ls_ref = ls_refinement;
@@ -423,6 +424,88 @@ namespace EBtools
         amrex::FillSignedDistance (*lsphi,lslev,*ebfactory,ls_ref);
     }
 
+    void make_ring_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm)
+    {
+        int ls_ref = ls_refinement;
+
+        // Define nGrow of level-set and EB
+        int nghost = 1;
+
+        bool inside        = true;
+        amrex::Real radius_inner, radius_outer;
+        amrex::Real height = -1.;
+        int direction      = 0;
+        Vector<amrex::Real> centervec(3);
+        Vector<amrex::Real> blovec(3);
+        Vector<amrex::Real> bhivec(3);
+
+        amrex::ParmParse pp("ring");
+        pp.get("radius_inner", radius_inner);
+        pp.get("radius_outer", radius_outer);
+        pp.get("height", height);
+        pp.get("direction", direction);
+        pp.getarr("center", centervec,  0, 3);
+        Array<amrex::Real,3> center={centervec[0], centervec[1], centervec[2]};
+
+        /****************************************************************************
+         *                                                                          *
+         * Build standard EB Factories                                              *
+         *                                                                          *
+         ***************************************************************************/
+
+        amrex::Print() << " " << std::endl;
+        amrex::Print() << " Internal Flow: " << inside << std::endl;
+        amrex::Print() << " Inner Radius:    " << radius_inner    << std::endl;
+        amrex::Print() << " Outer Radius:    " << radius_outer    << std::endl;
+        amrex::Print() << " Height:    " << height    << std::endl;
+        amrex::Print() << " Direction: " << direction << std::endl;
+        amrex::Print() << " Center:    " << center[0] << ", "
+        << center[1] << ", "
+        << center[2] << std::endl;
+
+        //Define EB
+        EB2::CylinderIF cylinder1(radius_outer, height, direction, center, true);
+        EB2::CylinderIF cylinder2(radius_inner, height, direction, center, false);
+        // auto ring = EB2::makeComplement(EB2::makeUnion(cylinder1, cylinder2));
+        auto ring = EB2::makeUnion(cylinder1, cylinder2);
+        auto ring_gshop = EB2::makeShop(ring);
+
+        //make domain finer for levelset
+        Box dom_ls = geom.Domain();
+        dom_ls.refine(ls_ref);
+        Geometry geom_ls(dom_ls);
+
+        int required_coarsening_level = 0;
+        int max_coarsening_level=10;
+        if (ls_refinement > 1) 
+        {
+            int tmp = ls_refinement;
+            while (tmp >>= 1) ++required_coarsening_level;
+        }
+
+        // Build EB
+        EB2::Build(ring_gshop, geom_ls, required_coarsening_level, max_coarsening_level);
+
+        const EB2::IndexSpace & ebis   = EB2::IndexSpace::top();
+        const EB2::Level &      eblev  = ebis.getLevel(geom);
+        //create lslev
+        const EB2::Level & lslev = ebis.getLevel(geom_ls);
+
+        //build factory
+        ebfactory = new EBFArrayBoxFactory(eblev, geom, ba, dm,
+                                           {nghost, nghost,
+                                               nghost}, EBSupport::full);
+
+        //create nodal multifab with level-set refinement
+        BoxArray ls_ba = amrex::convert(ba, IntVect::TheNodeVector());
+        ls_ba.refine(ls_ref);
+        lsphi = new MultiFab;
+        lsphi->define(ls_ba, dm, 1, nghost);
+
+        //call signed distance
+        amrex::FillSignedDistance (*lsphi,lslev,*ebfactory,ls_ref);
+    }
+
     void init_eb(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm)
     {
         std::string geom_kind="all_regular"; 
@@ -457,6 +540,11 @@ namespace EBtools
             {
                 using_levelset_geometry=true;
                 make_conecup_levelset(geom, ba, dm);
+            }
+            else if(geom_kind=="ring")
+            {
+                using_levelset_geometry=true;
+                make_ring_levelset(geom, ba, dm);
             }
             else if(geom_kind=="eb2")
             {

@@ -31,5 +31,6 @@ namespace EBtools
     void make_hopper_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm);
     void init_eb(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm);
     void make_wedge_hopper_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm);
+    void make_ring_levelset(const Geometry &geom,const BoxArray &ba,const DistributionMapping &dm);
 }
 
