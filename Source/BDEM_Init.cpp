@@ -691,7 +691,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            int glued_sphere_types,
                                            int bonded_sphere_particles,
                                            int min_sphere, int max_sphere,
-                                           int p_type, int liquid_bridging,
+                                           int p_type, Vector<int> type_list,
+                                           int liquid_bridging,
                                            Real liquid_density, Real MC_avg, 
                                            Real MC_stdev, Real FSP)
 {
@@ -750,6 +751,10 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                         if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
                         if(bonded_sphere_particles){
                             int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                            if(type_list.size() > 0){
+                                type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
+                            }
                             bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
                             // Real eax = amrex::Random()*PI/2.0;
                             // Real eay = amrex::Random()*PI/2.0;
@@ -774,6 +779,10 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             } 
                         } else if(glued_sphere_particles){
                             int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                            if(type_list.size() > 0){
+                                type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
+                            }
                             int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
                             ParticleType p = generate_particle(x,y,z,
                                                                meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
@@ -824,6 +833,10 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                 if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
                                 if(bonded_sphere_particles){
                                     int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                                    if(type_list.size() > 0){
+                                        type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
+                                    }
                                     bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
                                     Real eax = amrex::Random()*PI/2.0;
                                     Real eay = amrex::Random()*PI/2.0;
@@ -845,6 +858,10 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                     } 
                                 } else if(glued_sphere_particles){
                                     int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                                    if(type_list.size() > 0){
+                                        type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
+                                    }
                                     int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
                                     ParticleType p = generate_particle(x,y,z,
                                                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),

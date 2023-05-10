@@ -39,12 +39,11 @@ public:
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], 
-        int do_multi_part_per_cell=0, int layer_particles=0,
-        int glued_sphere_particles=0, int glued_sphere_types=0,
-        int bonded_sphere_particles=0,
-        int min_sphere = 1, int max_sphere = 1, int p_type = 0,
-        int liquid_bridging = 0, Real liquid_density = 1000.0, 
-        Real MC_avg = 0.0, Real MC_stdev = 0.0, Real FSP = 0.0);
+        int do_multi_part_per_cell, int layer_particles,
+        int glued_sphere_particles, int glued_sphere_types,
+        int bonded_sphere_particles, int min_sphere, int max_sphere, 
+        int p_type, Vector<int> type_list, int liquid_bridging, Real liquid_density, 
+        Real MC_avg, Real MC_stdev, Real FSP);
 
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer,

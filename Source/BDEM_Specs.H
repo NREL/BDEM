@@ -220,10 +220,14 @@ class DEMspecs
         Vector<Real> strat_maxcoords;
         Vector<Real> strat_spec_massfracs; 
 
-        // input options for glued sphere particles
+        // input options for glued and bonded sphere particles
         int glued_sphere_particles = 0;
         bool visualize_component_spheres = false;
         int glued_sphere_types = 0;
+        int bonded_sphere_particles = 0;
+        Real poisson_rat_bond = 0;
+        Real bond_damping_factor = 0.0;
+        Vector<int> particle_type_list;  // Generate particles by randomly sampling from user-specified list
 
         // Options for modeling liquid bridging
         int liquid_bridging = 0;
@@ -239,11 +243,6 @@ class DEMspecs
         Real init_force = 0.0;
         int init_force_dir = 0;
         int init_force_comp = 0;
-
-        // Bonded sphere model variables
-        int bonded_sphere_particles = 0;
-        Real poisson_rat_bond = 0;
-        Real bond_damping_factor = 0.0;
 
         // Cantilever beam test case variables
         int cantilever_beam_test = 0;
@@ -620,6 +619,11 @@ class DEMspecs
             if(bonded_sphere_particles || glued_sphere_types){
                 pp.query("autogen_bp_type", autogen_bp_type);
                 pp.query("particle_sourcing_bp_type", particle_sourcing_bp_type);
+                if (pp.contains("particle_type_list")){
+                    int num_types = pp.countval("particle_type_list");
+                    particle_type_list.resize(num_types);
+                    pp.getarr("particle_type_list", particle_type_list);
+                }
             }
 
             pp.query("global_damping", DEM::global_damping);
