@@ -224,6 +224,17 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
               p.rdata(realData::fy) -= DEM::global_damping * p.rdata(realData::yvel);
               p.rdata(realData::fz) -= DEM::global_damping * p.rdata(realData::zvel);
 
+              // Force-based damping
+              Real vel_vect[THREEDIM] = {p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel)};
+              Real f_vect[THREEDIM] = {p.rdata(realData::fx), p.rdata(realData::fy), p.rdata(realData::fz)};
+              Real vmag = sqrt(dotpdt(vel_vect, vel_vect));
+              Real fmag = sqrt(dotpdt(f_vect, f_vect));
+              if(vmag > TINYVAL){
+                  p.rdata(realData::fx) -= DEM::force_damping * fmag * (p.rdata(realData::xvel)/vmag);
+                  p.rdata(realData::fy) -= DEM::force_damping * fmag * (p.rdata(realData::yvel)/vmag);
+                  p.rdata(realData::fz) -= DEM::force_damping * fmag * (p.rdata(realData::zvel)/vmag);
+              }
+
               p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt * verlet_factor;
               p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt * verlet_factor;
               p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt * verlet_factor;
@@ -320,9 +331,20 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
                   p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
 
-                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor;
-                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor;
-                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor;
+                  // Torque-based damping
+                  Real angvel_vect[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
+                  Real tau_vect[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
+                  Real angvmag = sqrt(dotpdt(angvel_vect, angvel_vect));
+                  Real tmag = sqrt(dotpdt(tau_vect, tau_vect));
+                  if(angvmag > TINYVAL){
+                      p.rdata(realData::taux) -= DEM::force_damping * tmag * (p.rdata(realData::xangvel)/angvmag);
+                      p.rdata(realData::tauy) -= DEM::force_damping * tmag * (p.rdata(realData::yangvel)/angvmag);
+                      p.rdata(realData::tauz) -= DEM::force_damping * tmag * (p.rdata(realData::zangvel)/angvmag);
+                  }
+
+                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::xangvel);
+                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::yangvel);
+                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::zangvel);
 
                   // Tracking change in theta_x for beam twisting testing
                   if(verlet_scheme != 2) p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
@@ -844,6 +866,76 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                   host_particles.end(),
                   ptile_out.GetArrayOfStructs().begin() + old_size);
     }
+}
+
+void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, int glued_sphere_particles,
+                                                     const MultiFab *lsmfab, const int ls_refinement){
+  // This function removes particles that have gotten "wedged" in corners of an EB
+  // boundary (where forces are not calculated correctly, and particles may stick out of the boundary)
+
+
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    auto& plev  = GetParticles(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+    const auto phi = Geom(lev).ProbHiArray();
+
+    bool resolve_levset_wall_collisions=(eb_factory != NULL);
+    
+    std::map<PairIndex, bool> particle_tile_has_walls;
+
+    if(resolve_levset_wall_collisions)
+    {
+        const FabArray<EBCellFlagFab>* flags = &(eb_factory->getMultiEBCellFlagFab());
+
+        for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+        {
+            int gid = mfi.index();
+            int tid = mfi.LocalTileIndex();
+            auto index = std::make_pair(gid, tid);
+            const Box& bx = mfi.tilebox();
+
+            Box phibx = convert(bx, {0,0,0});
+            phibx.refine(ls_refinement);
+            phibx.surroundingNodes();
+
+            bool has_wall = false;
+            if ((*flags)[mfi].getType(amrex::grow(bx,1)) == FabType::singlevalued)
+            {
+                auto& ptile = plev[index];
+                auto& aos   = ptile.GetArrayOfStructs();
+                const size_t np = aos.numParticles();
+
+                ParticleType* pstruct = aos().dataPtr();
+                const Box & bx = mfi.tilebox();
+
+                const auto phiarr = lsmfab->array(mfi);
+
+                amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
+                    ParticleType& p = pstruct[i];
+                    for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
+                        Real ppos_inert[THREEDIM];
+                        if(glued_sphere_particles){
+                            get_inertial_pos(p, pc, ppos_inert);
+                        } else {
+                            ppos_inert[XDIR] = p.pos(0);
+                            ppos_inert[YDIR] = p.pos(1);
+                            ppos_inert[ZDIR] = p.pos(2);
+                        }
+                        Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+
+                        if (ls_value < p.rdata(realData::radius)*0.95)
+                        {
+                            p.id() = -1;
+                        }
+                    }
+                });
+            }
+        }
+    }
+    Redistribute();
 }
 
 

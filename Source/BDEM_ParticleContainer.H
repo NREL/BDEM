@@ -39,7 +39,7 @@ public:
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], 
-        int do_multi_part_per_cell=0, 
+        int do_multi_part_per_cell=0, int layer_particles=0,
         int glued_sphere_particles=0, int glued_sphere_types=0,
         int bonded_sphere_particles=0,
         int min_sphere = 1, int max_sphere = 1, int p_type = 0,
@@ -127,6 +127,9 @@ public:
     void computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP);
 
     void clipParticles(int clip_particle_dir, Real clip_particle_val, int glued_sphere_particles);
+    
+    void removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, int glued_sphere_particles, 
+                                  const MultiFab *lsmfab, const int ls_refinement);
 
 private:
 

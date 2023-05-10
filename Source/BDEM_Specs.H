@@ -107,6 +107,8 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real e_t_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real muR_wall;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real global_damping;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real force_damping;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real angv_damping;
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
@@ -137,6 +139,7 @@ class DEMspecs
         Vector<Real> autogen_meanvel; 
         Vector<Real> autogen_fluctuation; 
         int autogen_multi_part_per_cell=0;
+        int autogen_layer_particles=0;
         Real autogen_radius; 
         Real autogen_dens;
         Real autogen_E = 100.0;
@@ -151,6 +154,7 @@ class DEMspecs
         bool stl_geom_present=false;
         bool do_heat_transfer=false;
         bool using_softwalls=false;
+        bool remove_eb_overlaps=false;
 
         Vector<Real> walltemp_polynomial;
         int walltemp_vardir=0;
@@ -161,6 +165,7 @@ class DEMspecs
         int dynstl_rot_dir=0;
         Vector<Real> dynstl_center;
         Real dynstl_rot_vel=0.0;
+        int sum_stl_forces=0;
 
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
@@ -168,6 +173,7 @@ class DEMspecs
         Vector<Real> particle_sourcing_meanvel; 
         Vector<Real> particle_sourcing_fluctuation; 
         int particle_sourcing_multi_part_per_cell=0;
+        int particle_sourcing_layer_particles=0;
         Real particle_sourcing_radius; 
         Real particle_sourcing_dens;
         Real particle_sourcing_E = 100.0;
@@ -318,6 +324,8 @@ class DEMspecs
                 using_softwalls=true;
             }
 
+            pp.query("remove_eb_overlaps", remove_eb_overlaps);
+
             // Contact law
             pp.query("contact_law", contact_law);
         
@@ -401,6 +409,7 @@ class DEMspecs
                 autogen_species_massfracs[0]=1.0;
                 pp.queryarr("autogen_species_massfracs",species_massfracs,0,chemptr->nspecies);
                 pp.query("autogen_multiple_particles_per_cell",autogen_multi_part_per_cell);
+                pp.query("autogen_layer_particles",autogen_layer_particles);
             }
 
             pp.query("particle_sourcing",particle_sourcing);
@@ -421,6 +430,7 @@ class DEMspecs
                 pp.get("particle_sourcing_interval",particle_sourcing_interval);
                 pp.get("stop_sourcing_time",stop_sourcing_time);
                 pp.query("particle_sourcing_multiple_particles_per_cell",particle_sourcing_multi_part_per_cell);
+                pp.query("particle_sourcing_layer_particles",particle_sourcing_layer_particles);
                 particle_sourcing_species_massfracs[0]=1.0;
                 pp.queryarr("particle_sourcing_species_massfracs",species_massfracs,0,chemptr->nspecies);
             }
@@ -613,6 +623,8 @@ class DEMspecs
             }
 
             pp.query("global_damping", DEM::global_damping);
+            pp.query("force_damping", DEM::force_damping);
+            pp.query("angv_damping", DEM::angv_damping);
 
             pp.query("clip_particles", clip_particles);
             if(clip_particles){

@@ -268,7 +268,11 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
         auto& particle_tile = DefineAndReturnParticleTile(lev,grid,tile);
 
         const ParticleBondData bp_data = ParticleBondData();
-        int bp_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
+        int bp_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, 
+                                  BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
+                                  BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
+                                  BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
+
         Real pc_pos[THREEDIM];                    
         int bp_ids[200];
 
@@ -682,6 +686,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            Real E, Real nu, Real temp,
                                            Real spec[MAXSPECIES],
                                            int do_multi_part_per_cell, 
+                                           int layer_particles,
                                            int glued_sphere_particles,
                                            int glued_sphere_types,
                                            int bonded_sphere_particles,
@@ -704,7 +709,11 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
     std::uniform_real_distribution<double> dist2(0.65, 0.85);
 
     const ParticleBondData p_data = ParticleBondData();
-    int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, BP_NP10};
+    int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, 
+                             BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
+                             BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
+                             BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
+
     Real pc_pos[THREEDIM];                    
     Real bp_pos[THREEDIM];
     int bp_ids[200];
@@ -722,57 +731,66 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
         for (IntVect iv = tile_box.smallEnd(); iv <= tile_box.bigEnd(); tile_box.next(iv)) 
         {
-            if(do_multi_part_per_cell == 0)
+            if(do_multi_part_per_cell == 0 || layer_particles > 0)
             {
-                x = plo[XDIR] + (iv[XDIR] + dist(mt))*dx;
-                y = plo[YDIR] + (iv[YDIR] + dist(mt))*dy;
-                z = plo[ZDIR] + (iv[ZDIR] + dist(mt))*dz;
+                int layers = (layer_particles > 1) ? layer_particles:1;
 
-                if(x>=mincoords[XDIR] && x<=maxcoords[XDIR] &&
-                   y>=mincoords[YDIR] && y<=maxcoords[YDIR] &&
-                   z>=mincoords[ZDIR] && z<=maxcoords[ZDIR])
-                {
-                    Real MC = 0.0;
-                    if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
-                    if(bonded_sphere_particles){
-                        int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
-                        bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
-                        Real eax = amrex::Random()*PI/2.0;
-                        Real eay = amrex::Random()*PI/2.0;
-                        Real eaz = amrex::Random()*PI/2.0;
-                        amrex::Real quats[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
-                                              -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
-                                               cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
-                                               sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
-                        Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                 meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                 meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
-                        for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
-                        for(int j = 0; j<p_types[type]; j++){
-                            ParticleType p;
-                            p.id() = bp_ids[j];
-                            get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                            bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
+                for(int pl=0; pl<layers; pl++){
+
+                    // Particles layered in the y-direction
+                    x = plo[XDIR] + (iv[XDIR] + dist(mt))*dx;
+                    y = (layers > 1) ? plo[YDIR] + (iv[YDIR] + ((1.0+pl)/(1.0+layers)))*dy:plo[YDIR] + (iv[YDIR] + dist(mt))*dy;
+                    z = plo[ZDIR] + (iv[ZDIR] + dist(mt))*dz;
+
+                    if(x>=mincoords[XDIR] && x<=maxcoords[XDIR] &&
+                       y>=mincoords[YDIR] && y<=maxcoords[YDIR] &&
+                       z>=mincoords[ZDIR] && z<=maxcoords[ZDIR])
+                    {
+                        Real MC = 0.0;
+                        if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
+                        if(bonded_sphere_particles){
+                            int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                            bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
+                            // Real eax = amrex::Random()*PI/2.0;
+                            // Real eay = amrex::Random()*PI/2.0;
+                            // Real eaz = amrex::Random()*PI/2.0;
+                            Real eax = PI/2.0;
+                            Real eay = amrex::Random()*PI/20.0;
+                            Real eaz = amrex::Random()*PI/20.0;
+                            amrex::Real quats[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
+                                                  -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                                   cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
+                                                   sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0)};
+                            Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                     meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                     meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
+                            for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
+                            for(int j = 0; j<p_types[type]; j++){
+                                ParticleType p;
+                                p.id() = bp_ids[j];
+                                get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
+                                bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
+                                host_particles.push_back(p);
+                            } 
+                        } else if(glued_sphere_particles){
+                            int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
+                            int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
+                            ParticleType p = generate_particle(x,y,z,
+                                                               meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                               meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                               meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                               dens, rad, E, nu, 
+                                                               temp, spec, liquid_density, MC, FSP, ncs, type);
                             host_particles.push_back(p);
-                        } 
-                    } else if(glued_sphere_particles){
-                        int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
-                        int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
-                        ParticleType p = generate_particle(x,y,z,
-                                                           meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                           meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                           meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                           dens, rad, E, nu, 
-                                                           temp, spec, liquid_density, MC, FSP, ncs, type);
-                        host_particles.push_back(p);
-                    } else {
-                        ParticleType p = generate_particle(x,y,z,
-                                                           meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                           meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                           meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                           dens, rad, E, nu, 
-                                                           temp, spec, liquid_density, MC, FSP);
-                        host_particles.push_back(p);
+                        } else {
+                            ParticleType p = generate_particle(x,y,z,
+                                                               meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
+                                                               meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
+                                                               meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
+                                                               dens, rad, E, nu, 
+                                                               temp, spec, liquid_density, MC, FSP);
+                            host_particles.push_back(p);
+                        }
                     }
                 }
             }
@@ -909,9 +927,9 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::theta_x) = zero;
 
     p.idata(intData::num_comp_sphere) = num_sphere;
-    p.rdata(realData::euler_angle_x) = amrex::Random()*PI/2.0;
-    p.rdata(realData::euler_angle_y) = amrex::Random()*PI/2.0;
-    p.rdata(realData::euler_angle_z) = amrex::Random()*PI/2.0;
+    p.rdata(realData::euler_angle_x) = PI/2.0;                 
+    p.rdata(realData::euler_angle_y) = amrex::Random()*PI/20.0;
+    p.rdata(realData::euler_angle_z) = amrex::Random()*PI/20.0;
 
     Real eax = p.rdata(realData::euler_angle_x);
     Real eay = p.rdata(realData::euler_angle_y);

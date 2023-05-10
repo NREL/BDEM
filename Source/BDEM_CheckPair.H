@@ -14,20 +14,28 @@ struct CheckPair
     {
         bool not_pair = false;
 
-        Real p_lengths[BP_TYPES] = {BP_D0, BP_D1, BP_D2, BP_D3, BP_D4, BP_D5, BP_D6, BP_D7, BP_D8, BP_D8, BP_D10};
+        Real p_lengths[BP_TYPES] = {BP_R0, BP_R1, BP_R2, BP_R3, BP_R4, BP_R5, 
+                                    BP_R6, BP_R7, BP_R8, BP_R9, BP_R10, BP_R11,
+                                    BP_R12, BP_R13, BP_R14, BP_R15, BP_R16, BP_R17,
+                                    BP_R18, BP_R19, BP_R20};
         Real max_len; 
         if(p1.idata(intData::type_id) == -2){
-            max_len = max(p1.rdata(realData::radius)*p1.idata(intData::num_comp_sphere)*2.0,
-                          p2.rdata(realData::radius)*p2.idata(intData::num_comp_sphere)*2.0);
+            max_len = p1.rdata(realData::radius)*p1.idata(intData::num_comp_sphere) + p2.rdata(realData::radius)*p2.idata(intData::num_comp_sphere);
         } else{
-            max_len = max(p1.rdata(realData::radius)*p_lengths[p1.idata(intData::type_id)], 
-                           p2.rdata(realData::radius)*p_lengths[p2.idata(intData::type_id)]);
+            max_len = p1.rdata(realData::radius)*p_lengths[p1.idata(intData::type_id)] + p2.rdata(realData::radius)*p_lengths[p2.idata(intData::type_id)];
         }
         amrex::Real d0 = (p1.pos(0) - p2.pos(0));
         amrex::Real d1 = (p1.pos(1) - p2.pos(1));
         amrex::Real d2 = (p1.pos(2) - p2.pos(2));
         amrex::Real d = sqrt(d0*d0 + d1*d1 + d2*d2);
         return (d <= 1.25*max_len);
+
+        // amrex::Real d0 = (p1.pos(0) - p2.pos(0));
+        // amrex::Real d1 = (p1.pos(1) - p2.pos(1));
+        // amrex::Real d2 = (p1.pos(2) - p2.pos(2));
+        // amrex::Real d = sqrt(d0*d0 + d1*d1 + d2*d2);
+        // return (d <= 2.0*(p1.rdata(realData::radius) + p2.rdata(realData::radius)));
+
         // for(int pc1 = 0; pc1 < p1.idata(intData::num_comp_sphere); pc1++){
         //     for(int pc2 = 0; pc2 < p2.idata(intData::num_comp_sphere); pc2++){
         //         Real p1pos_inert[THREEDIM];

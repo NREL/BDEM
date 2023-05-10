@@ -466,7 +466,6 @@ namespace EBtools
         //Define EB
         EB2::CylinderIF cylinder1(radius_outer, height, direction, center, true);
         EB2::CylinderIF cylinder2(radius_inner, height, direction, center, false);
-        // auto ring = EB2::makeComplement(EB2::makeUnion(cylinder1, cylinder2));
         auto ring = EB2::makeUnion(cylinder1, cylinder2);
         auto ring_gshop = EB2::makeShop(ring);
 

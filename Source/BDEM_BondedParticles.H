@@ -122,6 +122,36 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   if(type == 10){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type10_bonds[comp][b] != -1) ? ids[bp_data.Type10_bonds[comp][b]]:0;
   }
+  if(type == 11){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type11_bonds[comp][b] != -1) ? ids[bp_data.Type11_bonds[comp][b]]:0;
+  }
+  if(type == 12){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type12_bonds[comp][b] != -1) ? ids[bp_data.Type12_bonds[comp][b]]:0;
+  }
+  if(type == 13){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type13_bonds[comp][b] != -1) ? ids[bp_data.Type13_bonds[comp][b]]:0;
+  }
+  if(type == 14){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type14_bonds[comp][b] != -1) ? ids[bp_data.Type14_bonds[comp][b]]:0;
+  }
+  if(type == 15){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type15_bonds[comp][b] != -1) ? ids[bp_data.Type15_bonds[comp][b]]:0;
+  }
+  if(type == 16){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type16_bonds[comp][b] != -1) ? ids[bp_data.Type16_bonds[comp][b]]:0;
+  }
+  if(type == 17){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type17_bonds[comp][b] != -1) ? ids[bp_data.Type17_bonds[comp][b]]:0;
+  }
+  if(type == 18){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type18_bonds[comp][b] != -1) ? ids[bp_data.Type18_bonds[comp][b]]:0;
+  }
+  if(type == 19){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type19_bonds[comp][b] != -1) ? ids[bp_data.Type19_bonds[comp][b]]:0;
+  }
+  if(type == 20){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type20_bonds[comp][b] != -1) ? ids[bp_data.Type20_bonds[comp][b]]:0;
+  }
   
   //FIXME: get chemistry data from inputs file
   for(int sp=0;sp<MAXSPECIES;sp++)
