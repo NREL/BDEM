@@ -691,6 +691,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            int glued_sphere_types,
                                            int bonded_sphere_particles,
                                            int min_sphere, int max_sphere,
+                                           Real min_rad, Real max_rad, 
                                            int p_type, Vector<int> type_list,
                                            int liquid_bridging,
                                            Real liquid_density, Real MC_avg, 
@@ -792,11 +793,14 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                temp, spec, liquid_density, MC, FSP, ncs, type);
                             host_particles.push_back(p);
                         } else {
+                            // Calculate radius using random distribution if min and max values are specified
+                            Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
+
                             ParticleType p = generate_particle(x,y,z,
                                                                meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                               dens, rad, E, nu, 
+                                                               dens, p_rad, E, nu, 
                                                                temp, spec, liquid_density, MC, FSP);
                             host_particles.push_back(p);
                         }
@@ -871,11 +875,14 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                                                        temp, spec, liquid_density, MC, FSP, ncs, type);
                                     host_particles.push_back(p);
                                 } else {
+                                    // Calculate radius using random distribution if min and max values are specified
+                                    Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
+
                                     ParticleType p = generate_particle(x,y,z,
                                                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                                       dens, rad, E, nu, 
+                                                                       dens, p_rad, E, nu, 
                                                                        temp, spec, liquid_density, MC, FSP);
                                     host_particles.push_back(p);
                                 }

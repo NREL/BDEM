@@ -118,6 +118,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_bond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real bond_radius_factor;
 }
 
 class DEMspecs
@@ -147,6 +148,8 @@ class DEMspecs
         Real autogen_temp;
         int autogen_max_sphere = 1;
         int autogen_min_sphere = 1;
+        Real autogen_min_radius = -1.0;
+        Real autogen_max_radius = -1.0;
         Vector<Real> autogen_species_massfracs;
         int autogen_bp_type = 0;
 
@@ -184,6 +187,8 @@ class DEMspecs
         Real stop_sourcing_time; 
         int particle_sourcing_min_sphere = 1;
         int particle_sourcing_max_sphere = 1;
+        Real particle_sourcing_min_radius = -1.0;
+        Real particle_sourcing_max_radius = -1.0;
         int particle_sourcing_bp_type = 0;
 
         RealVect gravity;
@@ -223,7 +228,7 @@ class DEMspecs
         // input options for glued and bonded sphere particles
         int glued_sphere_particles = 0;
         bool visualize_component_spheres = false;
-        int glued_sphere_types = 0;
+        int glued_sphere_types = 1;
         int bonded_sphere_particles = 0;
         Real poisson_rat_bond = 0;
         Real bond_damping_factor = 0.0;
@@ -409,6 +414,8 @@ class DEMspecs
                 pp.queryarr("autogen_species_massfracs",species_massfracs,0,chemptr->nspecies);
                 pp.query("autogen_multiple_particles_per_cell",autogen_multi_part_per_cell);
                 pp.query("autogen_layer_particles",autogen_layer_particles);
+                pp.query("min_radius_autogen",autogen_min_radius);
+                pp.query("max_radius_autogen",autogen_max_radius);
             }
 
             pp.query("particle_sourcing",particle_sourcing);
@@ -432,6 +439,8 @@ class DEMspecs
                 pp.query("particle_sourcing_layer_particles",particle_sourcing_layer_particles);
                 particle_sourcing_species_massfracs[0]=1.0;
                 pp.queryarr("particle_sourcing_species_massfracs",species_massfracs,0,chemptr->nspecies);
+                pp.query("min_radius_particle_sourcing",particle_sourcing_min_radius);
+                pp.query("max_radius_particle_sourcing",particle_sourcing_max_radius);
             }
 
             pp.get("normal_spring_constant",DEM::k_n);
@@ -603,6 +612,7 @@ class DEMspecs
                 pp.get("young_mod_bond", DEM::E_bond);
                 pp.get("poisson_rat_bond", DEM::nu_bond);
                 pp.query("bond_damping_factor", DEM::beta_bond);
+                pp.query("bond_radius_factor", DEM::bond_radius_factor);
                 DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
 
                 pp.query("cantilever_beam_test", cantilever_beam_test);

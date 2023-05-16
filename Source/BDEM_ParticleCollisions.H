@@ -218,7 +218,7 @@ amrex::ParallelFor(np,[=]
                 if(bond_exists)
                 {
                     // Bond area and moments
-                    Real bond_rad = std::min(rad1, rad2);
+                    Real bond_rad = std::min(rad1, rad2) * DEM::bond_radius_factor;
                     Real A_bond = PI * pow(bond_rad,two);
                     Real I_bond = PI * pow(bond_rad,4) / 4.0;
                     Real I_p_bond = I_bond * 2.0;

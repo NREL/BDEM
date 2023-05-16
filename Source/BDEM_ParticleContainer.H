@@ -41,9 +41,9 @@ public:
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], 
         int do_multi_part_per_cell, int layer_particles,
         int glued_sphere_particles, int glued_sphere_types,
-        int bonded_sphere_particles, int min_sphere, int max_sphere, 
-        int p_type, Vector<int> type_list, int liquid_bridging, Real liquid_density, 
-        Real MC_avg, Real MC_stdev, Real FSP);
+        int bonded_sphere_particles, int min_sphere, int max_sphere,
+        Real min_rad, Real max_rad,  int p_type, Vector<int> type_list, 
+        int liquid_bridging, Real liquid_density, Real MC_avg, Real MC_stdev, Real FSP);
 
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer,

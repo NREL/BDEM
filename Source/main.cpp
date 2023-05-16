@@ -31,6 +31,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::global_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::force_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::angv_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::bond_radius_factor  = one;
 
 using namespace amrex;
 
@@ -95,6 +96,7 @@ int main (int argc, char* argv[])
                         specs.glued_sphere_particles, specs.glued_sphere_types,
                         specs.bonded_sphere_particles,
                         specs.autogen_min_sphere, specs.autogen_max_sphere,
+                        specs.autogen_min_radius, specs.autogen_max_radius,
                         specs.autogen_bp_type, specs.particle_type_list, 
                         specs.liquid_bridging,
                         specs.liquid_density, specs.moisture_content,
@@ -212,6 +214,7 @@ int main (int argc, char* argv[])
                                    specs.glued_sphere_particles, specs.glued_sphere_types,
                                    specs.bonded_sphere_particles,
                                    specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere,
+                                   specs.particle_sourcing_min_radius, specs.particle_sourcing_max_radius,
                                    specs.particle_sourcing_bp_type, specs.particle_type_list, 
                                    specs.liquid_bridging, specs.liquid_density,
                                    specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
