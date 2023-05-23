@@ -47,212 +47,107 @@ void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p,
     v_body[ZDIR] = 2.0*(q1*q3 + q0*q2)*v_inert[XDIR] + 2.0*(q2*q3 - q0*q1)*v_inert[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_inert[ZDIR];
 }
 
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType0_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 0.0; pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType1_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(0.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType2_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(1.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType3_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(1.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType4_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(2.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType5_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(2.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType6_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(3.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType7_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(3.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType8_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(4.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType9_positions(amrex::Real pos[THREEDIM], int j){
-  pos[XDIR] = 2.0*(4.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType10_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<3) ? 2.0*(1.0-j):(j<7) ? 2.0*(4.5-j):2.0*(8.0-j);
-  amrex::Real yval = (j<3) ?     sqthree:(j<7) ?         0.0:-sqthree;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType11_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<8) ? 2.0*(3.5-j):2.0*(11.5-j);
-  amrex::Real yval = (j<8) ? 1.0:-1.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType12_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):2.0*(27.5-j);
-  amrex::Real yval = (j<8 || (j>15 && j<24)) ? 1.0:-1.0;
-  amrex::Real zval = (j<16) ? 1.0:-1.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType13_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):2.0*(29.5-j);
-  amrex::Real yval = (j<12) ? 2.0:(j<24) ? 0.0:-2.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType14_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):(j<36) ? 2.0*(29.5-j):(j<48) ? 2.0*(41.5-j):(j<60) ? 2.0*(53.5-j):2.0*(65.5-j);
-  amrex::Real yval = (j<12 || (j>35 && j<48)) ? 2.0:(j<24 || (j>47 && j<60)) ? 0.0:-2.0;
-  amrex::Real zval = (j<36) ? 1.0:-1.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType15_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<11) ? 2.0*(5.0-j):(j<22) ? 2.0*(16.0-j):(j<34) ? 2.0*(27.5-j):(j<46) ? 2.0*(39.5-j):(j<58) ? 2.0*(51.5-j):(j<69) ? 2.0*(63.0-j):2.0*(74.0-j);
-  amrex::Real yval = (j<11 || (j>57 && j<69)) ? 1.0:(j<22 || j>68) ? -1.0:(j<34) ? 2.0:(j<46) ? 0.0:-2.0;
-  amrex::Real zval = (j<22) ? sqtwo:(j<58) ? 0.0:-sqtwo;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType16_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<4) ? 2.0*(1.5-j):2.0*(5.5-j);
-  amrex::Real yval = (j<4) ? 1.0:-1.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType17_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<4) ? 2.0*(1.5-j):(j<8) ? 2.0*(5.5-j):2.0*(9.5-j);
-  amrex::Real yval = (j<4) ? 2.0:(j<8) ? 0:-2.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType18_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<6) ? 2.0*(2.5-j):2.0*(8.5-j);
-  amrex::Real yval = (j<6) ? 1.0:-1.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType19_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):2.0*(27.5-j);
-  amrex::Real yval = (j<8) ? 3.0:(j<16) ? 1.0:(j<24) ? -1.0:-3.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void getType20_positions(amrex::Real pos[THREEDIM], int j){
-  amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):(j<32) ? 2.0*(27.5-j):2.0*(35.5-j);
-  amrex::Real yval = (j<8) ? 4.0:(j<16) ? 2.0:(j<24) ? 0.0:(j<32) ? -2.0:-4.0;
-  pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
-}
-
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void get_bonded_particle_pos(int type, int comp, amrex::Real radius, 
                              amrex::Real bp_pos[THREEDIM], 
                              amrex::Real quats[4], 
                              amrex::Real pc_pos[THREEDIM]){
     
-  amrex::Real posnorm[THREEDIM];
+  amrex::Real pos[THREEDIM];
+  int j = comp;
 
   // Get the nominal origin-centered particle positions
   if(type == 0){
-    getType0_positions(posnorm, comp);
+    pos[XDIR] = 0.0; pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   } 
   if(type == 1){
-    getType1_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(0.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 2){
-    getType2_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(1.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 3){
-    getType3_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(1.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 4){
-    getType4_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(2.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 5){
-    getType5_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(2.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 6){
-    getType6_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(3.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 7){
-    getType7_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(3.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 8){
-    getType8_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(4.0 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 9){
-    getType9_positions(posnorm, comp);
+    pos[XDIR] = 2.0*(4.5 - j); pos[YDIR] = 0.0; pos[ZDIR] = 0.0;
   }
   if(type == 10){
-    getType10_positions(posnorm, comp);
+    amrex::Real xval = (j<3) ? 2.0*(1.0-j):(j<7) ? 2.0*(4.5-j):2.0*(8.0-j);
+    amrex::Real yval = (j<3) ?     sqthree:(j<7) ?         0.0:-sqthree;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 11){
-    getType11_positions(posnorm, comp);
+    amrex::Real xval = (j<8) ? 2.0*(3.5-j):2.0*(11.5-j);
+    amrex::Real yval = (j<8) ? 1.0:-1.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 12){
-    getType12_positions(posnorm, comp);
+    amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):2.0*(27.5-j);
+    amrex::Real yval = (j<8 || (j>15 && j<24)) ? 1.0:-1.0;
+    amrex::Real zval = (j<16) ? 1.0:-1.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
   }
   if(type == 13){
-    getType13_positions(posnorm, comp);
+    amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):2.0*(29.5-j);
+    amrex::Real yval = (j<12) ? 2.0:(j<24) ? 0.0:-2.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 14){
-    getType14_positions(posnorm, comp);
+    amrex::Real xval = (j<12) ? 2.0*(5.5-j):(j<24) ? 2.0*(17.5-j):(j<36) ? 2.0*(29.5-j):(j<48) ? 2.0*(41.5-j):(j<60) ? 2.0*(53.5-j):2.0*(65.5-j);
+    amrex::Real yval = (j<12 || (j>35 && j<48)) ? 2.0:(j<24 || (j>47 && j<60)) ? 0.0:-2.0;
+    amrex::Real zval = (j<36) ? 1.0:-1.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
   }
   if(type == 15){
-    getType15_positions(posnorm, comp);
+    amrex::Real xval = (j<11) ? 2.0*(5.0-j):(j<22) ? 2.0*(16.0-j):(j<34) ? 2.0*(27.5-j):(j<46) ? 2.0*(39.5-j):(j<58) ? 2.0*(51.5-j):(j<69) ? 2.0*(63.0-j):2.0*(74.0-j);
+    amrex::Real yval = (j<11 || (j>57 && j<69)) ? 1.0:(j<22 || j>68) ? -1.0:(j<34) ? 2.0:(j<46) ? 0.0:-2.0;
+    amrex::Real zval = (j<22) ? sqtwo:(j<58) ? 0.0:-sqtwo;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = zval;
   }
   if(type == 16){
-    getType16_positions(posnorm, comp);
+    amrex::Real xval = (j<4) ? 2.0*(1.5-j):2.0*(5.5-j);
+    amrex::Real yval = (j<4) ? 1.0:-1.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 17){
-    getType17_positions(posnorm, comp);
+    amrex::Real xval = (j<4) ? 2.0*(1.5-j):(j<8) ? 2.0*(5.5-j):2.0*(9.5-j);
+    amrex::Real yval = (j<4) ? 2.0:(j<8) ? 0:-2.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 18){
-    getType18_positions(posnorm, comp);
+    amrex::Real xval = (j<6) ? 2.0*(2.5-j):2.0*(8.5-j);
+    amrex::Real yval = (j<6) ? 1.0:-1.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 19){
-    getType19_positions(posnorm, comp);
+    amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):2.0*(27.5-j);
+    amrex::Real yval = (j<8) ? 3.0:(j<16) ? 1.0:(j<24) ? -1.0:-3.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
   if(type == 20){
-    getType20_positions(posnorm, comp);
+    amrex::Real xval = (j<8) ? 2.0*(3.5-j):(j<16) ? 2.0*(11.5-j):(j<24) ? 2.0*(19.5-j):(j<32) ? 2.0*(27.5-j):2.0*(35.5-j);
+    amrex::Real yval = (j<8) ? 4.0:(j<16) ? 2.0:(j<24) ? 0.0:(j<32) ? -2.0:-4.0;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
 
   // Calculate rotated particle position
-  rotate_vector_to_inertial(quats, posnorm, pc_pos);
+  rotate_vector_to_inertial(quats, pos, pc_pos);
 
   // Scale and translate particle position using radius and bp center
   pc_pos[XDIR] *= radius;

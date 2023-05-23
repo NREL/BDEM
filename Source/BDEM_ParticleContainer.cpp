@@ -648,9 +648,12 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("fx_bond");
     real_data_names.push_back("fy_bond");
     real_data_names.push_back("fz_bond");
-    real_data_names.push_back("taux_bond");
-    real_data_names.push_back("tauy_bond");
-    real_data_names.push_back("tauz_bond");
+    real_data_names.push_back("taux_bond_n");
+    real_data_names.push_back("tauy_bond_n");
+    real_data_names.push_back("tauz_bond_n");
+    real_data_names.push_back("taux_bond_t");
+    real_data_names.push_back("tauy_bond_t");
+    real_data_names.push_back("tauz_bond_t");
     real_data_names.push_back("theta_x");
 
     // For debug
@@ -836,9 +839,12 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::fx_bond) = p_in.rdata(realData::fx_bond);
                 pcomp.rdata(realData::fy_bond) = p_in.rdata(realData::fy_bond);
                 pcomp.rdata(realData::fz_bond) = p_in.rdata(realData::fz_bond);
-                pcomp.rdata(realData::taux_bond) = p_in.rdata(realData::taux_bond);
-                pcomp.rdata(realData::tauy_bond) = p_in.rdata(realData::tauy_bond);
-                pcomp.rdata(realData::tauz_bond) = p_in.rdata(realData::tauz_bond);
+                pcomp.rdata(realData::taux_bond_n) = p_in.rdata(realData::taux_bond_n);
+                pcomp.rdata(realData::tauy_bond_n) = p_in.rdata(realData::tauy_bond_n);
+                pcomp.rdata(realData::tauz_bond_n) = p_in.rdata(realData::tauz_bond_n);
+                pcomp.rdata(realData::taux_bond_t) = p_in.rdata(realData::taux_bond_t);
+                pcomp.rdata(realData::tauy_bond_t) = p_in.rdata(realData::tauy_bond_t);
+                pcomp.rdata(realData::tauz_bond_t) = p_in.rdata(realData::tauz_bond_t);
                 pcomp.rdata(realData::theta_x) = p_in.rdata(realData::theta_x);
                 pcomp.idata(intData::type_id) = p_in.idata(intData::type_id);
 

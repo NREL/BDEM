@@ -324,14 +324,131 @@ amrex::ParallelFor(np,[=]
                     M_dt[YDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[YDIR];
                     M_dt[ZDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[ZDIR];
 
-                    // Calculate bond and particle forces/torques in inertial reference frame
-                    p1.rdata(realData::fx_bond) -= (dFx*normal[XDIR] + dFy*basis1[XDIR] + dFz*basis2[XDIR]);
-                    p1.rdata(realData::fy_bond) -= (dFx*normal[YDIR] + dFy*basis1[YDIR] + dFz*basis2[YDIR]);
-                    p1.rdata(realData::fz_bond) -= (dFx*normal[ZDIR] + dFy*basis1[ZDIR] + dFz*basis2[ZDIR]);
+                    // LIGGGHTS BOND MODEL
+                    Real vr[THREEDIM] = {p1.rdata(realData::xvel) - p2.rdata(realData::xvel), 
+                                         p1.rdata(realData::yvel) - p2.rdata(realData::yvel), 
+                                         p1.rdata(realData::zvel) - p2.rdata(realData::zvel)};
 
-                    p1.rdata(realData::taux_bond) -= (dMx*normal[XDIR] + dMy*basis1[XDIR] + dMz*basis2[XDIR]);
-                    p1.rdata(realData::tauy_bond) -= (dMx*normal[YDIR] + dMy*basis1[YDIR] + dMz*basis2[YDIR]);
-                    p1.rdata(realData::tauz_bond) -= (dMx*normal[ZDIR] + dMy*basis1[ZDIR] + dMz*basis2[ZDIR]);
+                    Real vdp = dotpdt(vr, normal);
+                    Real vn[THREEDIM] = {vdp*normal[XDIR], vdp*normal[YDIR], vdp*normal[ZDIR]};
+                    Real vt[THREEDIM] = {vr[XDIR] - vn[XDIR], vr[YDIR] - vn[YDIR], vr[ZDIR] - vn[ZDIR]};
+
+                    Real radsuminv = 1.0 / (rad1 + rad2);
+                    Real vtr[THREEDIM] = {vrel_t[XDIR], vrel_t[YDIR], vrel_t[ZDIR]};
+
+                    Real wr[THREEDIM] = {p1.rdata(realData::xangvel) - p2.rdata(realData::xangvel), 
+                                         p1.rdata(realData::yangvel) - p2.rdata(realData::yangvel), 
+                                         p1.rdata(realData::zangvel) - p2.rdata(realData::zangvel)}; 
+
+                    Real wdp = dotpdt(wr, normal);
+                    Real wn[THREEDIM] = {wdp*normal[XDIR], wdp*normal[YDIR], wdp*normal[ZDIR]};
+                    Real wt[THREEDIM] = {wr[XDIR] - wn[XDIR], wr[YDIR] - wn[YDIR], wr[ZDIR] - wn[ZDIR]};
+
+                    /* ------- Normal bond force ------- */
+                    Real nforce[THREEDIM];
+                    nforce[XDIR] = -k_n_bond*overlap_n*normal[XDIR];
+                    nforce[YDIR] = -k_n_bond*overlap_n*normal[YDIR];
+                    nforce[ZDIR] = -k_n_bond*overlap_n*normal[ZDIR];
+
+                    Real minvel = 1e-5 * std::min(rad1,rad2) /dt;
+                    Real dvX = 0.01*nforce[XDIR]*dt;
+                    Real dvY = 0.01*nforce[YDIR]*dt;
+                    Real dvZ = 0.01*nforce[ZDIR]*dt;
+                    Real multiplierX = std::min(1.0, std::max(-1.0, vn[0]/std::max(minvel, dvX)));
+                    Real multiplierY = std::min(1.0, std::max(-1.0, vn[1]/std::max(minvel, dvY)));
+                    Real multiplierZ = std::min(1.0, std::max(-1.0, vn[2]/std::max(minvel, dvZ)));
+                    nforce[0] -= DEM::beta_bond*fabs(nforce[0])*multiplierX;
+                    nforce[1] -= DEM::beta_bond*fabs(nforce[1])*multiplierY;
+                    nforce[2] -= DEM::beta_bond*fabs(nforce[2])*multiplierZ;
+
+                    /* ------- Tangent bond force ------- */
+                    Real force_tang[THREEDIM] = {p1.rdata(realData::fx_bond), p1.rdata(realData::fy_bond), p1.rdata(realData::fz_bond)};
+                    Real fdp = dotpdt(force_tang, normal);
+                    Real force_norm[THREEDIM] = {fdp*normal[XDIR], fdp*normal[YDIR], fdp*normal[ZDIR]};
+                    force_tang[XDIR] -= force_norm[XDIR];
+                    force_tang[YDIR] -= force_norm[YDIR];
+                    force_tang[ZDIR] -= force_norm[ZDIR];
+
+                    Real dtforce[THREEDIM] = {-vtr[XDIR]*k_t_bond*dt, -vtr[YDIR]*k_t_bond*dt, -vtr[ZDIR]*k_t_bond*dt};
+                    force_tang[XDIR] += dtforce[XDIR];
+                    force_tang[YDIR] += dtforce[YDIR];
+                    force_tang[ZDIR] += dtforce[ZDIR];
+
+                    dvX = 0.01*force_tang[XDIR]*dt;
+                    dvY = 0.01*force_tang[YDIR]*dt;
+                    dvZ = 0.01*force_tang[ZDIR]*dt;
+                    multiplierX = std::min(1.0, std::max(-1.0, vt[0]/std::max(minvel, dvX)));
+                    multiplierY = std::min(1.0, std::max(-1.0, vt[1]/std::max(minvel, dvY)));
+                    multiplierZ = std::min(1.0, std::max(-1.0, vt[2]/std::max(minvel, dvZ)));
+                    force_tang[0] -= DEM::beta_bond*fabs(force_tang[0])*multiplierX;
+                    force_tang[1] -= DEM::beta_bond*fabs(force_tang[1])*multiplierY;
+                    force_tang[2] -= DEM::beta_bond*fabs(force_tang[2])*multiplierZ;
+
+                    p1.rdata(realData::fx_bond) = force_tang[0];
+                    p1.rdata(realData::fy_bond) = force_tang[1];
+                    p1.rdata(realData::fz_bond) = force_tang[2];
+
+                    /* ------- Normal bond torque ------- */
+                    Real torq_norm[THREEDIM] = {p1.rdata(realData::taux_bond_n), p1.rdata(realData::tauy_bond_n), p1.rdata(realData::tauz_bond_n)};
+                    Real tdp = dotpdt(torq_norm, normal);
+                    torq_norm[XDIR] = tdp*normal[XDIR];
+                    torq_norm[YDIR] = tdp*normal[YDIR];
+                    torq_norm[ZDIR] = tdp*normal[ZDIR];
+
+                    Real dntorque[THREEDIM] = {-wn[XDIR]*k_tor_bond*dt, -wn[YDIR]*k_tor_bond*dt, -wn[ZDIR]*k_tor_bond*dt};
+                    torq_norm[XDIR] += dntorque[XDIR];
+                    torq_norm[YDIR] += dntorque[YDIR];
+                    torq_norm[ZDIR] += dntorque[ZDIR];
+                    torq_norm[0] -= DEM::beta_bond*fabs(torq_norm[0])*amrex::Math::copysign(1.0,wn[0]);
+                    torq_norm[1] -= DEM::beta_bond*fabs(torq_norm[1])*amrex::Math::copysign(1.0,wn[1]);
+                    torq_norm[2] -= DEM::beta_bond*fabs(torq_norm[2])*amrex::Math::copysign(1.0,wn[2]);
+
+                    p1.rdata(realData::taux_bond_n) = torq_norm[0];
+                    p1.rdata(realData::tauy_bond_n) = torq_norm[1];
+                    p1.rdata(realData::tauz_bond_n) = torq_norm[2];
+
+                    /* ------- Tangential bond torque ------- */
+                    Real torq_tang[THREEDIM] = {p1.rdata(realData::taux_bond_t), p1.rdata(realData::tauy_bond_t), p1.rdata(realData::tauz_bond_t)};
+                    tdp = dotpdt(torq_tang, normal);
+                    torq_tang[XDIR] -= tdp*normal[XDIR];
+                    torq_tang[YDIR] -= tdp*normal[YDIR];
+                    torq_tang[ZDIR] -= tdp*normal[ZDIR];
+
+                    Real dttorque[THREEDIM] = {-wt[XDIR]*k_ben_bond*dt, -wt[YDIR]*k_ben_bond*dt, -wt[ZDIR]*k_ben_bond*dt};
+                    torq_tang[XDIR] += dttorque[XDIR];
+                    torq_tang[YDIR] += dttorque[YDIR];
+                    torq_tang[ZDIR] += dttorque[ZDIR];
+                    torq_tang[0] -= DEM::beta_bond*fabs(torq_tang[0])*amrex::Math::copysign(1.0,wt[0]);
+                    torq_tang[1] -= DEM::beta_bond*fabs(torq_tang[1])*amrex::Math::copysign(1.0,wt[1]);
+                    torq_tang[2] -= DEM::beta_bond*fabs(torq_tang[2])*amrex::Math::copysign(1.0,wt[2]);
+
+                    p1.rdata(realData::taux_bond_t) = torq_tang[0];
+                    p1.rdata(realData::tauy_bond_t) = torq_tang[1];
+                    p1.rdata(realData::tauz_bond_t) = torq_tang[2];
+
+                    // Add on cross product term (should not be included in tau_bond_t update)
+                    Real tor[THREEDIM] = {0.0, 0.0, 0.0};
+                    crosspdt(force_tang, normal, tor); 
+                    Real cri = distmag * rad1 * radsuminv;
+
+                    // Total bond forces and torques are added to particle quantities (check sign for crosspdt term?)
+                    p1.rdata(realData::fx) += nforce[XDIR] + force_tang[XDIR];
+                    p1.rdata(realData::fy) += nforce[YDIR] + force_tang[YDIR];
+                    p1.rdata(realData::fz) += nforce[ZDIR] + force_tang[ZDIR];
+
+                    p1.rdata(realData::taux) += torq_norm[XDIR] + torq_tang[XDIR] - cri*tor[XDIR];
+                    p1.rdata(realData::tauy) += torq_norm[YDIR] + torq_tang[YDIR] - cri*tor[YDIR];
+                    p1.rdata(realData::tauz) += torq_norm[ZDIR] + torq_tang[ZDIR] - cri*tor[ZDIR];
+
+
+                    // Calculate bond and particle forces/torques in inertial reference frame
+                    // p1.rdata(realData::fx_bond) -= (dFx*normal[XDIR] + dFy*basis1[XDIR] + dFz*basis2[XDIR]);
+                    // p1.rdata(realData::fy_bond) -= (dFx*normal[YDIR] + dFy*basis1[YDIR] + dFz*basis2[YDIR]);
+                    // p1.rdata(realData::fz_bond) -= (dFx*normal[ZDIR] + dFy*basis1[ZDIR] + dFz*basis2[ZDIR]);
+
+                    // p1.rdata(realData::taux_bond) -= (dMx*normal[XDIR] + dMy*basis1[XDIR] + dMz*basis2[XDIR]);
+                    // p1.rdata(realData::tauy_bond) -= (dMx*normal[YDIR] + dMy*basis1[YDIR] + dMz*basis2[YDIR]);
+                    // p1.rdata(realData::tauz_bond) -= (dMx*normal[ZDIR] + dMy*basis1[ZDIR] + dMz*basis2[ZDIR]);
 
                     /* --------  OLD BERNOULLI BEAM MODEL CODE -------- */
                     // // Calculate the incremental change to forces and torques
@@ -345,18 +462,18 @@ amrex::ParallelFor(np,[=]
 
                     // Real bond_tan_torq[THREEDIM];
                     // crosspdt(contact_vect1, bond_tan_f, bond_tan_torq);
-                    // p1.rdata(realData::taux_bond) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + bond_tan_torq[XDIR];
-                    // p1.rdata(realData::tauy_bond) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + bond_tan_torq[YDIR];
-                    // p1.rdata(realData::tauz_bond) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + bond_tan_torq[ZDIR];
+                    // p1.rdata(realData::taux_bond_n) -= dt * (k_tor_bond*angvel_rel_n[XDIR] + k_ben_bond*angvel_rel_t[XDIR]) + bond_tan_torq[XDIR];
+                    // p1.rdata(realData::tauy_bond_n) -= dt * (k_tor_bond*angvel_rel_n[YDIR] + k_ben_bond*angvel_rel_t[YDIR]) + bond_tan_torq[YDIR];
+                    // p1.rdata(realData::tauz_bond_n) -= dt * (k_tor_bond*angvel_rel_n[ZDIR] + k_ben_bond*angvel_rel_t[ZDIR]) + bond_tan_torq[ZDIR];
 
-                    // Total bond forces and torques are added to particle quantities
-                    p1.rdata(realData::fx) += p1.rdata(realData::fx_bond) - F_dn[XDIR] - F_dt[XDIR];
-                    p1.rdata(realData::fy) += p1.rdata(realData::fy_bond) - F_dn[YDIR] - F_dt[YDIR];
-                    p1.rdata(realData::fz) += p1.rdata(realData::fz_bond) - F_dn[ZDIR] - F_dt[ZDIR];
+                    // // Total bond forces and torques are added to particle quantities
+                    // p1.rdata(realData::fx) += p1.rdata(realData::fx_bond) - F_dn[XDIR] - F_dt[XDIR];
+                    // p1.rdata(realData::fy) += p1.rdata(realData::fy_bond) - F_dn[YDIR] - F_dt[YDIR];
+                    // p1.rdata(realData::fz) += p1.rdata(realData::fz_bond) - F_dn[ZDIR] - F_dt[ZDIR];
 
-                    p1.rdata(realData::taux) += p1.rdata(realData::taux_bond) - M_dn[XDIR] - M_dt[XDIR];
-                    p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond) - M_dn[YDIR] - M_dt[YDIR];
-                    p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond) - M_dn[ZDIR] - M_dt[ZDIR];
+                    // p1.rdata(realData::taux) += p1.rdata(realData::taux_bond_n) - M_dn[XDIR] - M_dt[XDIR];
+                    // p1.rdata(realData::tauy) += p1.rdata(realData::tauy_bond_n) - M_dn[YDIR] - M_dt[YDIR];
+                    // p1.rdata(realData::tauz) += p1.rdata(realData::tauz_bond_n) - M_dn[ZDIR] - M_dt[ZDIR];
                 }
 
                 // Evaluate the contact force if p1 and p2 don't have a bond between them

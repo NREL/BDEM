@@ -44,6 +44,10 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
         Gpu::HostVector<ParticleType> host_particles;
         
         auto& particle_tile = DefineAndReturnParticleTile(lev,grid,tile);
+        int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4,
+                                 BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9,
+                                 BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14,
+                                 BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
 
         for (int i = 0; i < np; i++) 
         {
@@ -112,7 +116,6 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                 p.rdata(realData::pax) = pa_inert[XDIR];
                 p.rdata(realData::pay) = pa_inert[YDIR];
                 p.rdata(realData::paz) = pa_inert[ZDIR];
-                if(glued_sphere_types) ifs >> p.idata(intData::type_id);
             } else{
                 p.idata(intData::num_comp_sphere) = 1;
                 p.rdata(realData::euler_angle_x) = zero;
@@ -142,6 +145,10 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                 ifs >> p.rdata(realData::xangvel);
                 ifs >> p.rdata(realData::yangvel);
                 ifs >> p.rdata(realData::zangvel);
+                if(glued_sphere_types) {
+                  ifs >> p.idata(intData::type_id);
+                  p.idata(intData::num_comp_sphere) = p_types[p.idata(intData::type_id)];
+                }
             } else {
                 p.rdata(realData::xangvel)     = zero;
                 p.rdata(realData::yangvel)     = zero;
@@ -169,9 +176,12 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             p.rdata(realData::fx_bond) = zero;
             p.rdata(realData::fy_bond) = zero;
             p.rdata(realData::fz_bond) = zero;
-            p.rdata(realData::taux_bond) = zero;
-            p.rdata(realData::tauy_bond) = zero;
-            p.rdata(realData::tauz_bond) = zero;
+            p.rdata(realData::taux_bond_n) = zero;
+            p.rdata(realData::tauy_bond_n) = zero;
+            p.rdata(realData::tauz_bond_n) = zero;
+            p.rdata(realData::taux_bond_t) = zero;
+            p.rdata(realData::tauy_bond_t) = zero;
+            p.rdata(realData::tauz_bond_t) = zero;
             p.rdata(realData::theta_x) = zero;
 
             // Set bridge indices to -1 to indicate no existing bridges
@@ -945,9 +955,12 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::fx_bond) = zero;
     p.rdata(realData::fy_bond) = zero;
     p.rdata(realData::fz_bond) = zero;
-    p.rdata(realData::taux_bond) = zero;
-    p.rdata(realData::tauy_bond) = zero;
-    p.rdata(realData::tauz_bond) = zero;
+    p.rdata(realData::taux_bond_n) = zero;
+    p.rdata(realData::tauy_bond_n) = zero;
+    p.rdata(realData::tauz_bond_n) = zero;
+    p.rdata(realData::taux_bond_t) = zero;
+    p.rdata(realData::tauy_bond_t) = zero;
+    p.rdata(realData::tauz_bond_t) = zero;
     p.rdata(realData::theta_x) = zero;
 
     p.idata(intData::num_comp_sphere) = num_sphere;

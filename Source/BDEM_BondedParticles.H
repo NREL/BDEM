@@ -66,9 +66,12 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::fx_bond) = zero;
   p.rdata(realData::fy_bond) = zero;
   p.rdata(realData::fz_bond) = zero;
-  p.rdata(realData::taux_bond) = zero;
-  p.rdata(realData::tauy_bond) = zero;
-  p.rdata(realData::tauz_bond) = zero;  
+  p.rdata(realData::taux_bond_n) = zero;
+  p.rdata(realData::tauy_bond_n) = zero;
+  p.rdata(realData::tauz_bond_n) = zero;  
+  p.rdata(realData::taux_bond_t) = zero;
+  p.rdata(realData::tauy_bond_t) = zero;
+  p.rdata(realData::tauz_bond_t) = zero;  
   p.rdata(realData::theta_x) = zero;  
 
   // Set bridge indices to -1 to indicate no existing bridges
