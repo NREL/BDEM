@@ -335,7 +335,7 @@ struct ParticleBondData {
           Type15_bonds[i][0] = i-1; Type15_bonds[i][1] = i+1; Type15_bonds[i][2] = i+11; 
           Type15_bonds[i][3] = i+22; Type15_bonds[i][4] = i+23; Type15_bonds[i][5] = i+34; Type15_bonds[i][6] = i+35;
         } 
-        if (i>11 || i<21){
+        if (i>11 && i<21){
           Type15_bonds[i][0] = i-11; Type15_bonds[i][1] = i-1; Type15_bonds[i][2] = i+1; 
           Type15_bonds[i][3] = i+23; Type15_bonds[i][4] = i+24; Type15_bonds[i][5] = i+45; Type15_bonds[i][6] = i+46;
         }

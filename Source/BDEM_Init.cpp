@@ -173,16 +173,12 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             p.rdata(realData::taux) = zero;
             p.rdata(realData::tauy) = zero;
             p.rdata(realData::tauz) = zero;
-            p.rdata(realData::fx_bond) = zero;
-            p.rdata(realData::fy_bond) = zero;
-            p.rdata(realData::fz_bond) = zero;
-            p.rdata(realData::taux_bond_n) = zero;
-            p.rdata(realData::tauy_bond_n) = zero;
-            p.rdata(realData::tauz_bond_n) = zero;
-            p.rdata(realData::taux_bond_t) = zero;
-            p.rdata(realData::tauy_bond_t) = zero;
-            p.rdata(realData::tauz_bond_t) = zero;
             p.rdata(realData::theta_x) = zero;
+
+            // Set bond components to zero
+            for(int b=0; b<MAXBONDS*9; b++){
+                p.rdata(realData::first_bond_v+b) = zero;
+            }
 
             // Set bridge indices to -1 to indicate no existing bridges
             for(int br=0; br<MAXBRIDGES; br++){
@@ -862,12 +858,12 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                     Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                              meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                              meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
-                                    for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
-                                    for(int j = 0; j<p_types[type]; j++){
+                                    for(int pi = 0; pi<p_types[type]; pi++) bp_ids[pi] = ParticleType::NextID();
+                                    for(int pi = 0; pi<p_types[type]; pi++){
                                         ParticleType p;
-                                        p.id() = bp_ids[j];
-                                        get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
+                                        p.id() = bp_ids[pi];
+                                        get_bonded_particle_pos(type, pi, rad, bp_pos, quats, pc_pos);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, bp_ids, liquid_density, MC, FSP, E, nu);
                                         host_particles.push_back(p);
                                     } 
                                 } else if(glued_sphere_particles){
@@ -952,15 +948,6 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::taux) = zero;
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
-    p.rdata(realData::fx_bond) = zero;
-    p.rdata(realData::fy_bond) = zero;
-    p.rdata(realData::fz_bond) = zero;
-    p.rdata(realData::taux_bond_n) = zero;
-    p.rdata(realData::tauy_bond_n) = zero;
-    p.rdata(realData::tauz_bond_n) = zero;
-    p.rdata(realData::taux_bond_t) = zero;
-    p.rdata(realData::tauy_bond_t) = zero;
-    p.rdata(realData::tauz_bond_t) = zero;
     p.rdata(realData::theta_x) = zero;
 
     p.idata(intData::num_comp_sphere) = num_sphere;
@@ -994,6 +981,11 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::Ixinv) = 2.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)) );
     p.rdata(realData::Iyinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
     p.rdata(realData::Izinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
+
+    // Set bond components to zero
+    for(int b=0; b<MAXBONDS*9; b++){ 
+        p.rdata(realData::first_bond_v+b) = zero;
+    }
 
     for(int br=0; br<MAXBRIDGES; br++){
         p.idata(intData::first_bridge+3*br) = -1;

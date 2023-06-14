@@ -595,6 +595,38 @@ void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, R
     }
 }
 
+void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass, int cdir, Real cutoff)
+{
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    auto& plev  = GetParticles(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+    const auto domain = geom.Domain();
+
+    total_mass=0.0;
+
+    using PType = typename BDEMParticleContainer::SuperParticleType;
+    total_mass = amrex::ReduceSum(*this, [=]
+        AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
+        {
+            Real ppos[3] = {p.pos(0), p.pos(1), p.pos(2)};
+            if(p.idata(intData::phase)==0 && ppos[cdir] > cutoff)
+            {
+              return(p.rdata(realData::mass));
+            }
+            else
+            {
+              return(0.0);
+            }
+        });
+
+  #ifdef BL_USE_MPI
+      ParallelDescriptor::ReduceRealSum(total_mass);
+  #endif
+}
+
 void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles, const int glued_sphere_types, const int bonded_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");
@@ -645,15 +677,6 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("paz");
     real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
-    real_data_names.push_back("fx_bond");
-    real_data_names.push_back("fy_bond");
-    real_data_names.push_back("fz_bond");
-    real_data_names.push_back("taux_bond_n");
-    real_data_names.push_back("tauy_bond_n");
-    real_data_names.push_back("tauz_bond_n");
-    real_data_names.push_back("taux_bond_t");
-    real_data_names.push_back("tauy_bond_t");
-    real_data_names.push_back("tauz_bond_t");
     real_data_names.push_back("theta_x");
 
     // For debug
@@ -668,6 +691,28 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     // real_data_names.push_back("overlap_t_y");
     // real_data_names.push_back("ft_y");
     // real_data_names.push_back("vr_t_y");
+
+    for(int i=0;i<MAXBONDS;i++)
+    {
+        std::string bondval = amrex::Concatenate("bval_fx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_fy",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_fz",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_tnx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_tny",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_tnz",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_ttx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_tty",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("bval_ttz",i,2);
+        real_data_names.push_back(bondval);
+    }
 
     for(int i=0;i<MAXSPECIES;i++)
     {
@@ -694,6 +739,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
         bridgeidx = amrex::Concatenate("p2cs",i,2);
         int_data_names.push_back(bridgeidx);
     }
+
     for(int i=0;i<MAXBONDS;i++)
     {
         std::string bondidx = amrex::Concatenate("bidx",i,2);
@@ -836,17 +882,13 @@ void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
                 pcomp.rdata(realData::tauz) = p_in.rdata(realData::tauz);
                 pcomp.rdata(realData::liquid_volume) = p_in.rdata(realData::liquid_volume) / p_in.idata(intData::num_comp_sphere);
                 pcomp.rdata(realData::total_bridge_volume) = p_in.rdata(realData::total_bridge_volume) / p_in.idata(intData::num_comp_sphere);
-                pcomp.rdata(realData::fx_bond) = p_in.rdata(realData::fx_bond);
-                pcomp.rdata(realData::fy_bond) = p_in.rdata(realData::fy_bond);
-                pcomp.rdata(realData::fz_bond) = p_in.rdata(realData::fz_bond);
-                pcomp.rdata(realData::taux_bond_n) = p_in.rdata(realData::taux_bond_n);
-                pcomp.rdata(realData::tauy_bond_n) = p_in.rdata(realData::tauy_bond_n);
-                pcomp.rdata(realData::tauz_bond_n) = p_in.rdata(realData::tauz_bond_n);
-                pcomp.rdata(realData::taux_bond_t) = p_in.rdata(realData::taux_bond_t);
-                pcomp.rdata(realData::tauy_bond_t) = p_in.rdata(realData::tauy_bond_t);
-                pcomp.rdata(realData::tauz_bond_t) = p_in.rdata(realData::tauz_bond_t);
                 pcomp.rdata(realData::theta_x) = p_in.rdata(realData::theta_x);
                 pcomp.idata(intData::type_id) = p_in.idata(intData::type_id);
+
+                // Set bond components to zero
+                for(int b=0; b<MAXBONDS*9; b++){
+                    pcomp.rdata(realData::first_bond_v+b) = zero;
+                }
 
                 for(int br=0; br<MAXBRIDGES; br++){
                     pcomp.idata(intData::first_bridge+3*br) = -1;
@@ -915,7 +957,6 @@ void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_fact
                 const size_t np = aos.numParticles();
 
                 ParticleType* pstruct = aos().dataPtr();
-                const Box & bx = mfi.tilebox();
 
                 const auto phiarr = lsmfab->array(mfi);
 

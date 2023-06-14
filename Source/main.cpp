@@ -180,6 +180,16 @@ int main (int argc, char* argv[])
         // Calculate the moisture content for each particle
         if(specs.liquid_bridging && specs.recalculate_MC) bpc.computeMoistureContent(specs.moisture_content, specs.moisture_content_stdev, specs.liquid_density, specs.FSP);
 
+        amrex::Real mass_flow_prev;
+        amrex::Real mass_flow_next;
+        amrex::Real t_prev=0.0;
+        if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
+
+        Real cb_force = 0.0;
+        Real cb_torq = 0.0;
+        Real cb_intt = specs.cb_load_time + specs.cb_hold_time;
+        Real cb_int_stop = cb_intt*specs.cb_interval_num;
+
         while((steps < specs.maxsteps) and (time < specs.final_time))
         {
             time += dt;
@@ -188,14 +198,18 @@ int main (int argc, char* argv[])
             output_timePrint += dt;
             particle_sourcing_time += dt;
         
-            Real cb_force = 0.0;
-            Real cb_torq = 0.0;
             if(steps>0) specs.init_force = 0.0;
             if(specs.cantilever_beam_test){ 
-                cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:
-                                                         (time < specs.cb_unload_time) ? specs.cb_force_max:0.0;
-                cb_torq = (time < specs.cb_load_time) ?  (time/specs.cb_load_time)*specs.cb_torq_max:
-                                                         (time < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
+                if(specs.cb_intervals){
+                    Real temp_t = (time > cb_intt) ? remainder(time, cb_intt):time;
+                    if(temp_t > 0 && temp_t <= specs.cb_load_time && time < cb_int_stop) cb_force += dt / (specs.cb_interval_num*specs.cb_load_time) * specs.cb_force_max;
+                    if(temp_t > 0 && temp_t <= specs.cb_load_time && time < cb_int_stop) cb_torq += dt / (specs.cb_interval_num*specs.cb_load_time) * specs.cb_torq_max;
+                } else {
+                    cb_force = (time < specs.cb_load_time) ? (time/specs.cb_load_time)*specs.cb_force_max:
+                                                             (time < specs.cb_unload_time) ? specs.cb_force_max:0.0;
+                    cb_torq = (time < specs.cb_load_time) ?  (time/specs.cb_load_time)*specs.cb_torq_max:
+                                                             (time < specs.cb_unload_time) ? specs.cb_torq_max:0.0;
+                }
             }
 
             if(specs.particle_sourcing==1 && 
@@ -366,6 +380,14 @@ int main (int argc, char* argv[])
                 }
 
                 BL_PROFILE_VAR_STOP(outputs);
+                if(specs.calc_mass_flow){
+                     Real delta_t = time - t_prev;
+                     t_prev = time;
+                     bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_next, specs.mass_flow_dir, specs.mass_flow_cutoff);
+                     Real flow_out = mass_flow_prev - mass_flow_next;
+                     mass_flow_prev = mass_flow_next;
+                     PrintToFile("Mass_Flow.out")<<time<<"\t"<<delta_t<<"\t"<<flow_out<<"\t"<<mass_flow_next<<"\n";
+                 }
             }
             steps++;
         }

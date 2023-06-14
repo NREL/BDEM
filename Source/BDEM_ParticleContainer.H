@@ -130,6 +130,8 @@ public:
     void removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, int glued_sphere_particles, 
                                   const MultiFab *lsmfab, const int ls_refinement);
 
+    void Calculate_Total_Mass_MaterialPoints(Real &total_mass, int cdir, Real cutoff);
+
 private:
 
     int domain_bc[6]={0};

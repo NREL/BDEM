@@ -1,8 +1,8 @@
 #geometry parameters
 bdem.prob_lo        = 0.      0.     0.      # lo corner of physical domain
-bdem.prob_hi        = 4.8  4.8  1.2  # hi corner of physical domain
-bdem.ncells         = 16     16     4 
-bdem.max_grid_size  = 4
+bdem.prob_hi        = 0.05  0.05  0.05  # hi corner of physical domain
+bdem.ncells         = 2     2     2 
+bdem.max_grid_size  = 2
 bdem.is_it_periodic = 1      1      1 
 
 #0 - outflow
@@ -11,15 +11,16 @@ bdem.bc_lower = 0 0 0
 bdem.bc_upper = 0 0 0
 
 #timestepping
-bdem.final_time=500000.0
-bdem.max_steps=1000000000
-bdem.write_output_time=5000.0
+bdem.final_time=34.0
+bdem.max_steps=100000000
+bdem.write_output_time=2.0
 bdem.num_redist = 25
 bdem.cfl = 0.02
 bdem.init_particles_using_file = 1
+bdem.constant_dt = 1.0e-5
 
 #particle intrinsics
-bdem.normal_spring_constant = 1.0
+bdem.normal_spring_constant = 1.0e5
 bdem.normal_restitution_coefficient = 0.8
 bdem.friction_coefficient = 0.0
 bdem.tangential_spring_constant = 0.0
@@ -28,13 +29,18 @@ bdem.rolling_friction_coefficient = 0.0
 bdem.do_heat_transfer = false
 
 bdem.bonded_sphere_particles = 1
-bdem.young_mod_bond = 1.0
-bdem.poisson_rat_bond = 0.3
-bdem.bond_damping_factor = 0.25
+bdem.young_mod_bond = 1.0e7
+bdem.poisson_rat_bond = 7.333333
+#bdem.bond_damping_factor = 1.0e-5
+#bdem.global_damping = 0.0001
+#bdem.angv_damping = 0.1
 bdem.cantilever_beam_test = 1
-bdem.cb_force_max = -0.000005
+bdem.cb_force_max = -0.17
 bdem.cb_dir = 1
-bdem.cb_load_time = 200000.0
+bdem.cb_load_time = 1.0
+bdem.cb_intervals = true
+bdem.cb_interval_num = 17
+bdem.cb_hold_time = 1.0
 
 bdem.gravity = 0.0 0.0 0.0
 

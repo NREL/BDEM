@@ -11,7 +11,7 @@ struct realData
 {
   enum 
   { // Particle data stored in p.m_data
-    radius = 0,
+    radius,
     radinit,
     xvel,
     yvel,
@@ -50,16 +50,8 @@ struct realData
     paz,
     liquid_volume,   
     total_bridge_volume,
-    fx_bond,
-    fy_bond,
-    fz_bond,
-    taux_bond_n,
-    tauy_bond_n,
-    tauz_bond_n,
-    taux_bond_t,
-    tauy_bond_t,
-    tauz_bond_t,
-    theta_x,
+    first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
+    theta_x = first_bond_v + MAXBONDS*9,
     // for debug
     // overlap_n,
     // kn,
@@ -233,7 +225,6 @@ class DEMspecs
         bool visualize_component_spheres = false;
         int glued_sphere_types = 1;
         int bonded_sphere_particles = 0;
-        Real poisson_rat_bond = 0;
         Real bond_damping_factor = 0.0;
         Vector<int> particle_type_list;  // Generate particles by randomly sampling from user-specified list
 
@@ -259,6 +250,9 @@ class DEMspecs
         int cb_dir = 1;
         Real cb_load_time = 1.0;
         Real cb_unload_time = 1e20;
+        bool cb_intervals = false;
+        int cb_interval_num = 0;
+        Real cb_hold_time = 0.0;
 
         // Options for initializing particle temperatures according to normal dist.
         Real temp_mean = -1.0;
@@ -268,6 +262,10 @@ class DEMspecs
         int clip_particles = 0;
         int clip_particle_dir;
         Real clip_particle_val;
+
+        int calc_mass_flow = 0;
+        int mass_flow_dir = 1;
+        Real mass_flow_cutoff = 0.0;
 
         void read_dem_specs()
         {
@@ -616,7 +614,7 @@ class DEMspecs
                 pp.get("poisson_rat_bond", DEM::nu_bond);
                 pp.query("bond_damping_factor", DEM::beta_bond);
                 pp.query("bond_radius_factor", DEM::bond_radius_factor);
-                DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + poisson_rat_bond));
+                DEM::G_bond = DEM::E_bond / (2.0 * (1.0 + DEM::nu_bond));
 
                 pp.query("cantilever_beam_test", cantilever_beam_test);
                 if(cantilever_beam_test){
@@ -626,6 +624,11 @@ class DEMspecs
                     pp.get("cb_dir", cb_dir);
                     pp.get("cb_load_time", cb_load_time);
                     pp.query("cb_unload_time", cb_unload_time);
+                    pp.query("cb_intervals", cb_intervals);
+                    if(cb_intervals){
+                      pp.get("cb_interval_num", cb_interval_num);
+                      pp.get("cb_hold_time", cb_hold_time);
+                    }
                 }
             }
 
@@ -647,6 +650,12 @@ class DEMspecs
             if(clip_particles){
               pp.get("clip_particle_dir", clip_particle_dir);
               pp.get("clip_particle_val", clip_particle_val);
+            }
+
+            pp.query("calc_mass_flow", calc_mass_flow);
+            if(calc_mass_flow){
+                pp.get("mass_flow_dir", mass_flow_dir);
+                pp.get("mass_flow_cutoff", mass_flow_cutoff);
             }
         }
         void clear()
