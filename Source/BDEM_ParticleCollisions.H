@@ -327,6 +327,7 @@ amrex::ParallelFor(np,[=]
                     // M_dt[YDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[YDIR];
                     // M_dt[ZDIR] = DEM::beta_bond * pow(2.0*k_ben_bond/p1.rdata(realData::Iinv),0.5) * angvel_rel_t[ZDIR];
 
+                    Real radsuminv = 1.0 / (rad1 + rad2);
                     Real wr[THREEDIM] = {p1.rdata(realData::xangvel) - p2.rdata(realData::xangvel), 
                                          p1.rdata(realData::yangvel) - p2.rdata(realData::yangvel), 
                                          p1.rdata(realData::zangvel) - p2.rdata(realData::zangvel)}; 
