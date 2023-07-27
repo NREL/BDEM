@@ -98,6 +98,7 @@ int main (int argc, char* argv[])
                         specs.autogen_min_sphere, specs.autogen_max_sphere,
                         specs.autogen_min_radius, specs.autogen_max_radius,
                         specs.autogen_bp_type, specs.particle_type_list, 
+                        specs.use_type_dist, specs.particle_dist_list,
                         specs.liquid_bridging,
                         specs.liquid_density, specs.moisture_content,
                         specs.moisture_content_stdev, specs.FSP);
@@ -230,6 +231,7 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere,
                                    specs.particle_sourcing_min_radius, specs.particle_sourcing_max_radius,
                                    specs.particle_sourcing_bp_type, specs.particle_type_list, 
+                                   specs.use_type_dist, specs.particle_dist_list,
                                    specs.liquid_bridging, specs.liquid_density,
                                    specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
 

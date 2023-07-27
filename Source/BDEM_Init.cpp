@@ -47,7 +47,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
         int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4,
                                  BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9,
                                  BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14,
-                                 BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
+                                 BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
+                                 BP_NP20, BP_NP21, BP_NP22};
 
         for (int i = 0; i < np; i++) 
         {
@@ -277,7 +278,8 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
         int bp_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, 
                                   BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
                                   BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
-                                  BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
+                                  BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
+                                  BP_NP20, BP_NP21, BP_NP22};
 
         Real pc_pos[THREEDIM];                    
         int bp_ids[200];
@@ -699,6 +701,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            int min_sphere, int max_sphere,
                                            Real min_rad, Real max_rad, 
                                            int p_type, Vector<int> type_list,
+                                           int use_type_dist, Vector<Real> dist_list,
                                            int liquid_bridging,
                                            Real liquid_density, Real MC_avg, 
                                            Real MC_stdev, Real FSP)
@@ -720,7 +723,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
     int p_types[BP_TYPES] = {BP_NP0, BP_NP1, BP_NP2, BP_NP3, BP_NP4, 
                              BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
                              BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
-                             BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, BP_NP20};
+                             BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
+                             BP_NP20, BP_NP21, BP_NP22};
 
     Real pc_pos[THREEDIM];                    
     Real bp_pos[THREEDIM];
@@ -759,7 +763,24 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                         if(bonded_sphere_particles){
                             int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                             if(type_list.size() > 0){
-                                type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                if(use_type_dist){
+                                    Real rnum = amrex::Random();
+                                    Real dsum = 0.0;
+                                    bool found_type = false;
+                                    int type_idx = 0;
+                                    while(!found_type) {
+                                      dsum += dist_list[type_idx];
+                                      if(rnum < dsum){
+                                        found_type = true;
+                                      } else{
+                                        type_idx++;    
+                                        if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
+                                      }
+                                    }
+                                    type = type_list[type_idx];
+                                } else {
+                                    type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                }
                                 if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
                             }
                             bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
@@ -767,7 +788,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             // Real eay = amrex::Random()*PI/2.0;
                             // Real eaz = amrex::Random()*PI/2.0;
                             Real eax = PI/2.0;
-                            Real eay = amrex::Random()*PI/20.0;
+                            // Real eay = amrex::Random()*PI/20.0;
+                            Real eay = amrex::Random()*PI/2.0;
                             Real eaz = amrex::Random()*PI/20.0;
                             amrex::Real quats[4] ={cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0),
                                                   -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0),
@@ -787,7 +809,24 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                         } else if(glued_sphere_particles){
                             int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                             if(type_list.size() > 0){
-                                type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                if(use_type_dist){
+                                    Real rnum = amrex::Random();
+                                    Real dsum = 0.0;
+                                    bool found_type = false;
+                                    int type_idx = 0;
+                                    while(!found_type) {
+                                      dsum += dist_list[type_idx];
+                                      if(rnum < dsum){
+                                        found_type = true;
+                                      } else{
+                                        type_idx++;    
+                                        if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
+                                      }
+                                    }
+                                    type = type_list[type_idx];
+                                } else {
+                                    type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                }
                                 if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
                             }
                             int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
@@ -844,7 +883,24 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                 if(bonded_sphere_particles){
                                     int type = (p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                                     if(type_list.size() > 0){
-                                        type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        if(use_type_dist){
+                                            Real rnum = amrex::Random();
+                                            Real dsum = 0.0;
+                                            bool found_type = false;
+                                            int type_idx = 0;
+                                            while(!found_type) {
+                                              dsum += dist_list[type_idx];
+                                              if(rnum < dsum){
+                                                found_type = true;
+                                              } else{
+                                                type_idx++;    
+                                                if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
+                                              }
+                                            }
+                                            type = type_list[type_idx];
+                                        } else {
+                                            type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        }
                                         if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
                                     }
                                     bp_pos[XDIR] = x; bp_pos[YDIR] = y; bp_pos[ZDIR] = z;
@@ -869,7 +925,24 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                 } else if(glued_sphere_particles){
                                     int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
                                     if(type_list.size() > 0){
-                                        type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        if(use_type_dist){
+                                            Real rnum = amrex::Random();
+                                            Real dsum = 0.0;
+                                            bool found_type = false;
+                                            int type_idx = 0;
+                                            while(!found_type) {
+                                              dsum += dist_list[type_idx];
+                                              if(rnum < dsum){
+                                                found_type = true;
+                                              } else{
+                                                type_idx++;    
+                                                if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
+                                              }
+                                            }
+                                            type = type_list[type_idx];
+                                        } else {
+                                            type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
+                                        }
                                         if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
                                     }
                                     int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));

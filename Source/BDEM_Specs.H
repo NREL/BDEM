@@ -78,7 +78,7 @@ struct intData
     near_softwall = 1,
     num_comp_sphere = 2,
     type_id = 3,
-    first_bridge = 4,
+    first_bridge=4,
     first_bond = first_bridge + 3*MAXBRIDGES,
     count = first_bond + MAXBONDS
   };
@@ -227,6 +227,8 @@ class DEMspecs
         int bonded_sphere_particles = 0;
         Real bond_damping_factor = 0.0;
         Vector<int> particle_type_list;  // Generate particles by randomly sampling from user-specified list
+        int use_type_dist = 0;
+        Vector<Real> particle_dist_list;  // List of percentages for each particle type
 
         // Options for modeling liquid bridging
         int liquid_bridging = 0;
@@ -639,6 +641,19 @@ class DEMspecs
                     int num_types = pp.countval("particle_type_list");
                     particle_type_list.resize(num_types);
                     pp.getarr("particle_type_list", particle_type_list);
+                    pp.query("use_type_dist", use_type_dist);
+                    if(use_type_dist){
+                        int num_types_dist = pp.countval("particle_dist_list");
+                        if(num_types != num_types_dist) amrex::Abort("Particle type distribution list length much match particle type list length!\n");
+                        particle_dist_list.resize(num_types_dist);
+                        pp.getarr("particle_dist_list", particle_dist_list);
+                        
+                        // Normalize particle distribution list
+                        Real dsum = 0.0;
+                        for(int i=0; i<num_types; i++) dsum += particle_dist_list[i];
+                        if(dsum <= 0.0) amrex::Abort("Invalid distribution values supplied!\n");
+                        for(int i=0; i<num_types; i++) particle_dist_list[i] = particle_dist_list[i] / dsum;
+                    }
                 }
             }
 

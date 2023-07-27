@@ -12,7 +12,7 @@
 #define MAXBRIDGES 12
 #define MAXBONDS 12
 
-#define BP_TYPES 21
+#define BP_TYPES 23
 #define BP_NP0 1
 #define BP_NP1 2
 #define BP_NP2 3
@@ -34,6 +34,8 @@
 #define BP_NP18 12
 #define BP_NP19 32
 #define BP_NP20 40
+#define BP_NP21 8
+#define BP_NP22 10
 
 #define BP_R0 1.0
 #define BP_R1 2.0
@@ -56,6 +58,9 @@
 #define BP_R18 6.0
 #define BP_R19 8.0
 #define BP_R20 8.0
+#define BP_R20 8.0
+#define BP_R21 4.5
+#define BP_R22 5.5
 
 #define NTP_TEMP 293
 #define fourbythree 1.3333333333

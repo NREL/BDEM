@@ -28,6 +28,8 @@ struct ParticleBondData {
   int Type18_bonds[BP_NP18][MAXBONDS];    // 6x2, single layer
   int Type19_bonds[BP_NP19][MAXBONDS];    // 8x4, single layer
   int Type20_bonds[BP_NP20][MAXBONDS];    // 8x5, single layer
+  int Type21_bonds[BP_NP21][MAXBONDS];    // 4x2, single layer, offset
+  int Type22_bonds[BP_NP22][MAXBONDS];    // 5x2, single layer, offset
 
   // Constructor to fill in bond info
   ParticleBondData(){
@@ -139,6 +141,16 @@ struct ParticleBondData {
       for(int i=0; i<BP_NP20; i++){
           for(int j=0; j<MAXBONDS; j++){
               Type20_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP21; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type21_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP22; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type22_bonds[i][j] = -1;
           }
       }
 
@@ -437,5 +449,27 @@ struct ParticleBondData {
         if((i>8 && i<15) || (i>16 && i<23) || (i>24 && i<31)){ Type20_bonds[i][0] = i-8; Type20_bonds[i][1] = i-1; Type20_bonds[i][2] = i+1; Type20_bonds[i][3] = i+8;}
         if(i>32 && i<39){ Type20_bonds[i][0] = i-8; Type20_bonds[i][1] = i-1; Type20_bonds[i][2] = i+1; }
       }
+
+      // Particle type 21
+      Type21_bonds[0][0] = 1;  Type21_bonds[0][1] = 4;
+      Type21_bonds[1][0] = 0;  Type21_bonds[1][1] = 2;  Type21_bonds[1][2] = 5;
+      Type21_bonds[2][0] = 1;  Type21_bonds[2][1] = 3;  Type21_bonds[2][2] = 6;
+      Type21_bonds[3][0] = 2;  Type21_bonds[3][1] = 7;
+      Type21_bonds[4][0] = 0;  Type21_bonds[4][1] = 5;
+      Type21_bonds[5][0] = 1;  Type21_bonds[5][1] = 4;  Type21_bonds[5][2] = 6;
+      Type21_bonds[6][0] = 2;  Type21_bonds[6][1] = 5;  Type21_bonds[6][2] = 7;
+      Type21_bonds[7][0] = 3;  Type21_bonds[7][1] = 6;
+      
+      // Particle type 22
+      Type22_bonds[0][0] = 1;  Type22_bonds[0][1] = 5;
+      Type22_bonds[1][0] = 0;  Type22_bonds[1][1] = 2;  Type22_bonds[1][2] = 6;
+      Type22_bonds[2][0] = 1;  Type22_bonds[2][1] = 3;  Type22_bonds[2][2] = 7;
+      Type22_bonds[3][0] = 2;  Type22_bonds[3][1] = 4;  Type22_bonds[3][2] = 8;
+      Type22_bonds[4][0] = 3;  Type22_bonds[4][1] = 9;
+      Type22_bonds[5][0] = 0;  Type22_bonds[5][1] = 6;
+      Type22_bonds[6][0] = 1;  Type22_bonds[6][1] = 5;  Type22_bonds[6][2] = 7;
+      Type22_bonds[7][0] = 2;  Type22_bonds[7][1] = 6;  Type22_bonds[7][2] = 8;
+      Type22_bonds[8][0] = 3;  Type22_bonds[8][1] = 7;  Type22_bonds[8][2] = 9;
+      Type22_bonds[9][0] = 4;  Type22_bonds[9][1] = 8;
   }
 };
