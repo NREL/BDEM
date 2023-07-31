@@ -25,8 +25,6 @@ bdem.friction_coefficient = 0.0
 bdem.tangential_spring_constant = 0.1
 bdem.tangential_restitution_coefficient = 0.8
 bdem.rolling_friction_coefficient = 0.0
-bdem.glued_sphere_particles = 1
-bdem.visualize_component_spheres = false
 
 bdem.gravity = 0.0 0.0 0.0
 
