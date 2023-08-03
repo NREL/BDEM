@@ -27,7 +27,7 @@ Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles)
         // return( std::pow(DEM::k_n/p.rdata(realData::mass)
         Real bonded_dt = 1e10;
         if(bonded_sphere_particles) bonded_dt = 0.8165*2.0*p.rdata(realData::radius)*pow(p.rdata(realData::density) / DEM::E_bond,0.5); 
-        return( std::min(bonded_dt, std::pow(DEM::k_n/(p.rdata(realData::mass)/p.idata(intData::num_comp_sphere))
+        return( std::min(bonded_dt, std::pow(DEM::k_n/(p.rdata(realData::mass))
                 *PI*PI/(PI*PI + log(DEM::e_n)*log(DEM::e_n))
                 ,-half))
          ); 
@@ -46,7 +46,6 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
             RealVect &gravity,
-            const int glued_sphere_particles,
             const int bonded_sphere_particles,
             const int liquid_bridging, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
@@ -66,10 +65,6 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
     bool resolve_levset_wall_collisions=(eb_factory != NULL);
     
     std::map<PairIndex, bool> particle_tile_has_walls;
-
-    // Putting random vectors for bond orthonormal basis calculations here to avoid GPU issues
-    Real s_vect[THREEDIM] = {amrex::Random(), amrex::Random(), amrex::Random()};
-    Real s_vect2[THREEDIM] = {amrex::Random(), amrex::Random(), amrex::Random()};
 
     if(resolve_levset_wall_collisions)
     {
@@ -163,8 +158,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
 
 void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
-        int do_chemistry,Real minradfrac, int verlet_scheme, 
-        const int glued_sphere_particles)
+        int do_chemistry,Real minradfrac, int verlet_scheme)
 {
     BL_PROFILE("BDEMParticleContainer::moveParticles");
 
@@ -245,110 +239,28 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.pos(2) += p.rdata(realData::zvel) * dt;
               }
 
-              if(glued_sphere_particles){
-                  // Angular velocity is updated in body-fixed frame of reference so that diagonal inertia tensor can be used
-                  // I d (w_body)/dt = -w_body x (w_body I) + R tau
-  
-                  // Calculate the body-fixed angular velocity
-                  Real angvel_inert[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
-                  Real angvel_body[THREEDIM];
-                  rotate_vector_to_body(p, angvel_inert, angvel_body);
+              // Global damping of particle torques
+              p.rdata(realData::taux) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::xangvel);
+              p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
+              p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
 
-                  // Calculate the cross product term
-                  Real wI[THREEDIM];
-                  Real cpdt[THREEDIM];
-                  wI[XDIR] = angvel_body[XDIR] / p.rdata(realData::Ixinv);
-                  wI[YDIR] = angvel_body[YDIR] / p.rdata(realData::Iyinv);
-                  wI[ZDIR] = angvel_body[ZDIR] / p.rdata(realData::Izinv);
-                  crosspdt(angvel_body, wI, cpdt);
-
-                  // Global damping of particle torques
-                  p.rdata(realData::taux) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::xangvel);
-                  p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
-                  p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
-
-                  // Rotate the torque vector to body-fixed frame
-                  Real tau_inert[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
-                  Real tau_body[THREEDIM];
-                  rotate_vector_to_body(p, tau_inert, tau_body);
-
-                  // Update the angular velocity in the body-fixed reference frame
-                  angvel_body[XDIR] += (tau_body[XDIR] - cpdt[XDIR]) * p.rdata(realData::Ixinv) * dt * verlet_factor;
-                  angvel_body[YDIR] += (tau_body[YDIR] - cpdt[YDIR]) * p.rdata(realData::Iyinv) * dt * verlet_factor;
-                  angvel_body[ZDIR] += (tau_body[ZDIR] - cpdt[ZDIR]) * p.rdata(realData::Izinv) * dt * verlet_factor;
-
-                  // Update the quaternion components with the updated angular velocity
-                  Real q0 = p.rdata(realData::q0);
-                  Real q1 = p.rdata(realData::q1);
-                  Real q2 = p.rdata(realData::q2);
-                  Real q3 = p.rdata(realData::q3);
-
-                  // TODO: Should we modify quaternion update using verlet factor?
-                  Real dq0 = (dt/2.0) * (-q1*angvel_inert[XDIR] - q2*angvel_inert[YDIR] - q3*angvel_inert[ZDIR]) * verlet_factor;
-                  Real dq1 = (dt/2.0) * ( q0*angvel_inert[XDIR] + q3*angvel_inert[YDIR] - q2*angvel_inert[ZDIR]) * verlet_factor;
-                  Real dq2 = (dt/2.0) * (-q3*angvel_inert[XDIR] + q0*angvel_inert[YDIR] + q1*angvel_inert[ZDIR]) * verlet_factor;
-                  Real dq3 = (dt/2.0) * ( q2*angvel_inert[XDIR] - q1*angvel_inert[YDIR] + q0*angvel_inert[ZDIR]) * verlet_factor;
-
-                  q0 += dq0;
-                  q1 += dq1;
-                  q2 += dq2;
-                  q3 += dq3;
-
-                  // Normalize quaternion components to ensure sum_i (q_i)^2 = 1
-                  Real qmag = sqrt(q0*q0 + q1*q1 + q2*q2 + q3*q3);
-                  
-                  if(qmag > TINYVAL){
-                      p.rdata(realData::q0) = (q0 - amrex::Math::copysign(1.0,q0)*TINYVAL)/qmag;
-                      p.rdata(realData::q1) = (q1 - amrex::Math::copysign(1.0,q1)*TINYVAL)/qmag;
-                      p.rdata(realData::q2) = (q2 - amrex::Math::copysign(1.0,q2)*TINYVAL)/qmag;
-                      p.rdata(realData::q3) = (q3 - amrex::Math::copysign(1.0,q3)*TINYVAL)/qmag;
-                  }
-
-                  // Make sure single particles are not rotated
-                  if(p.idata(intData::num_comp_sphere) == 1){
-                      p.rdata(realData::q0) = 1.0;
-                      p.rdata(realData::q1) = zero;
-                      p.rdata(realData::q2) = zero;
-                      p.rdata(realData::q3) = zero;
-                  }
-
-                  // Rotate updated body-fixed angular velocity back to inertial frame
-                  rotate_vector_to_inertial(p, angvel_body, angvel_inert);
-                  p.rdata(realData::xangvel) = angvel_inert[XDIR];
-                  p.rdata(realData::yangvel) = angvel_inert[YDIR];
-                  p.rdata(realData::zangvel) = angvel_inert[ZDIR];
-
-                  // Calculate principal axis components in inertial reference frame
-                  Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
-                  Real pa_inert[THREEDIM];
-                  rotate_vector_to_inertial(p, pa_body, pa_inert);
-                  p.rdata(realData::pax) = pa_inert[XDIR];
-                  p.rdata(realData::pay) = pa_inert[YDIR];
-                  p.rdata(realData::paz) = pa_inert[ZDIR];
-              } else{
-                  // Global damping of particle torques
-                  p.rdata(realData::taux) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::xangvel);
-                  p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
-                  p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
-
-                  // Torque-based damping
-                  Real angvel_vect[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
-                  Real tau_vect[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
-                  Real angvmag = sqrt(dotpdt(angvel_vect, angvel_vect));
-                  Real tmag = sqrt(dotpdt(tau_vect, tau_vect));
-                  if(angvmag > TINYVAL){
-                      p.rdata(realData::taux) -= DEM::force_damping * tmag * (p.rdata(realData::xangvel)/angvmag);
-                      p.rdata(realData::tauy) -= DEM::force_damping * tmag * (p.rdata(realData::yangvel)/angvmag);
-                      p.rdata(realData::tauz) -= DEM::force_damping * tmag * (p.rdata(realData::zangvel)/angvmag);
-                  }
-
-                  p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::xangvel);
-                  p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::yangvel);
-                  p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::zangvel);
-
-                  // Tracking change in theta_x for beam twisting testing
-                  if(verlet_scheme != 2) p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
+              // Torque-based damping
+              Real angvel_vect[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
+              Real tau_vect[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
+              Real angvmag = sqrt(dotpdt(angvel_vect, angvel_vect));
+              Real tmag = sqrt(dotpdt(tau_vect, tau_vect));
+              if(angvmag > TINYVAL){
+                  p.rdata(realData::taux) -= DEM::force_damping * tmag * (p.rdata(realData::xangvel)/angvmag);
+                  p.rdata(realData::tauy) -= DEM::force_damping * tmag * (p.rdata(realData::yangvel)/angvmag);
+                  p.rdata(realData::tauz) -= DEM::force_damping * tmag * (p.rdata(realData::zangvel)/angvmag);
               }
+
+              p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::xangvel);
+              p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::yangvel);
+              p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::zangvel);
+
+              // Tracking change in theta_x for beam twisting testing
+              if(verlet_scheme != 2) p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
 
               // FIXME: Chemistry should be compatible w Verlet scheme
               if(do_chemistry)
@@ -418,8 +330,7 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
     }
 }
 
-
-void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_particle_val, int glued_sphere_particles)
+void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_particle_val)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -438,27 +349,19 @@ void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_parti
         const Box & bx = mfi.tilebox();
         amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
             ParticleType& p = pstruct[i];
-            for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
-                Real ppos_inert[THREEDIM];
-                if(glued_sphere_particles){
-                    get_inertial_pos(p, pc, ppos_inert);
-                } else {
-                    ppos_inert[XDIR] = p.pos(0);
-                    ppos_inert[YDIR] = p.pos(1);
-                    ppos_inert[ZDIR] = p.pos(2);
-                }
-                if(ppos_inert[clip_particle_dir] > clip_particle_val)
-                {
-                    p.id()=-1;
-                }
+            Real ppos_inert[THREEDIM];
+            ppos_inert[XDIR] = p.pos(0);
+            ppos_inert[YDIR] = p.pos(1);
+            ppos_inert[ZDIR] = p.pos(2);
+
+            if(ppos_inert[clip_particle_dir] > clip_particle_val)
+            {
+                p.id()=-1;
             }
         });
     }
     Redistribute();
 }
-
-
-
 
 void BDEMParticleContainer::saveParticles_softwall()
 {
@@ -627,7 +530,7 @@ void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass
   #endif
 }
 
-void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_particles, const int glued_sphere_types, const int bonded_sphere_particles)
+void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = amrex::Concatenate("plt", n, 5);
@@ -653,9 +556,6 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("tauy");
     real_data_names.push_back("tauz");
     real_data_names.push_back("Iinv");
-    real_data_names.push_back("Ixinv");
-    real_data_names.push_back("Iyinv");
-    real_data_names.push_back("Izinv");
     real_data_names.push_back("volume");
     real_data_names.push_back("mass");
     real_data_names.push_back("density");
@@ -668,13 +568,6 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     real_data_names.push_back("euler_angle_x");
     real_data_names.push_back("euler_angle_y");
     real_data_names.push_back("euler_angle_z");
-    real_data_names.push_back("q0");
-    real_data_names.push_back("q1");
-    real_data_names.push_back("q2");
-    real_data_names.push_back("q3");
-    real_data_names.push_back("pax");
-    real_data_names.push_back("pay");
-    real_data_names.push_back("paz");
     real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
     real_data_names.push_back("theta_x");
@@ -727,16 +620,11 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
 
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
-    int_data_names.push_back("num_comp_sphere");
     int_data_names.push_back("type_id");
 
     for(int i=0;i<MAXBRIDGES;i++)
     {
         std::string bridgeidx = amrex::Concatenate("p2idx",i,2);
-        int_data_names.push_back(bridgeidx);
-        bridgeidx = amrex::Concatenate("p1cs",i,2);
-        int_data_names.push_back(bridgeidx);
-        bridgeidx = amrex::Concatenate("p2cs",i,2);
         int_data_names.push_back(bridgeidx);
     }
 
@@ -760,42 +648,16 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
     writeflags_real[realData::tauy]=1;
     writeflags_real[realData::tauz]=1;
     writeflags_real[realData::mass]=1;
-    writeflags_real[realData::Ixinv]=1;
-    writeflags_real[realData::Iyinv]=1;
-    writeflags_real[realData::Izinv]=1;
-    writeflags_real[realData::q0]=1;
-    writeflags_real[realData::q1]=1;
-    writeflags_real[realData::q2]=1;
-    writeflags_real[realData::q3]=1;
     writeflags_real[realData::temperature]=1;
     writeflags_real[realData::liquid_volume]=1;
     writeflags_real[realData::total_bridge_volume]=1;
     writeflags_real[realData::theta_x]=1;
 
-    // for debug
-    // writeflags_real[realData::overlap_n]=1;
-    // writeflags_real[realData::kn]=1;
-    // writeflags_real[realData::kt]=1;
-    // writeflags_real[realData::eta_n]=1;
-    // writeflags_real[realData::eta_t]=1;
-    // writeflags_real[realData::overlap_n_y]=1;
-    // writeflags_real[realData::fn_y]=1;
-    // writeflags_real[realData::vr_n_y]=1;
-    // writeflags_real[realData::overlap_t_y]=1;
-    // writeflags_real[realData::ft_y]=1;
-    // writeflags_real[realData::vr_t_y]=1;
-
     for(int i=0;i<m_chemptr->nspecies;i++)
     {
         writeflags_real[realData::firstspec+i]=1;
     }
-    if(glued_sphere_particles){
-        writeflags_real[realData::pax] = 1;
-        writeflags_real[realData::pay] = 1;
-        writeflags_real[realData::paz] = 1;
-        writeflags_int[intData::num_comp_sphere] = 1;
-    }
-    if(bonded_sphere_particles || glued_sphere_types){
+    if(bonded_sphere_particles){
         writeflags_int[intData::type_id] = 1;
     }
 
@@ -804,123 +666,10 @@ void BDEMParticleContainer::writeParticles(const int n, const int glued_sphere_p
 
 }
 
-void BDEMParticleContainer::createGluedSpheres(BDEMParticleContainer& pin)
-{
-    // Extract particle tile from input BPC
-    const int lev = 0;
-    const Geometry& geom = Geom(lev);
-    auto& plev_in = pin.GetParticles(lev);
-    auto& plev_out = GetParticles(lev);
-
-    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
-    {
-        int gid = mfi.index();
-        int tid = mfi.LocalTileIndex();
-        auto index = std::make_pair(gid, tid);
-
-        auto& ptile_in = plev_in[index];
-        auto& ptile_out = plev_out[index];
-        auto& aos_in   = ptile_in.GetArrayOfStructs();
-        const size_t np = aos_in.numParticles();
-
-        ParticleType* pstruct_in = aos_in().dataPtr();
-        Gpu::HostVector<ParticleType> host_particles;
-
-        for(int i = 0; i<np; i++){
-            ParticleType& p_in = pstruct_in[i];
-            for(int pc = 0; pc < p_in.idata(intData::num_comp_sphere); pc++){
-                ParticleType pcomp;
-
-                // Calculate inertial frame position of each component sphere
-                Real ppos_inert[THREEDIM];
-                get_inertial_pos(p_in, pc, ppos_inert);
-
-                pcomp.id()   = ParticleType::NextID();
-                pcomp.cpu()  = ParallelDescriptor::MyProc();
-                
-                pcomp.pos(0) = ppos_inert[XDIR];
-                pcomp.pos(1) = ppos_inert[YDIR];
-                pcomp.pos(2) = ppos_inert[ZDIR];
-
-                pcomp.rdata(realData::radius) = p_in.rdata(realData::radius);
-                pcomp.rdata(realData::radinit) = p_in.rdata(realData::radinit);
-                pcomp.rdata(realData::density) = p_in.rdata(realData::density);
-                pcomp.rdata(realData::temperature) = p_in.rdata(realData::temperature);
-                pcomp.rdata(realData::mass) = p_in.rdata(realData::mass) / p_in.idata(intData::num_comp_sphere);
-                pcomp.rdata(realData::volume) = p_in.rdata(realData::volume) / p_in.idata(intData::num_comp_sphere);
-
-                Real rvel[THREEDIM];
-                Real avel[THREEDIM] = {p_in.rdata(realData::xangvel), p_in.rdata(realData::yangvel), p_in.rdata(realData::zangvel)};
-                crosspdt(avel, ppos_inert, rvel);
-                pcomp.rdata(realData::xvel) = p_in.rdata(realData::xvel) + rvel[XDIR];
-                pcomp.rdata(realData::yvel) = p_in.rdata(realData::yvel) + rvel[YDIR];
-                pcomp.rdata(realData::zvel) = p_in.rdata(realData::zvel) + rvel[ZDIR];
-
-                pcomp.idata(intData::num_comp_sphere) = p_in.idata(intData::num_comp_sphere);
-                pcomp.rdata(realData::euler_angle_x) = p_in.rdata(realData::euler_angle_x);
-                pcomp.rdata(realData::euler_angle_y) = p_in.rdata(realData::euler_angle_y);
-                pcomp.rdata(realData::euler_angle_z) = p_in.rdata(realData::euler_angle_z);
-                pcomp.rdata(realData::q0) = p_in.rdata(realData::q0);
-                pcomp.rdata(realData::q1) = p_in.rdata(realData::q1);
-                pcomp.rdata(realData::q2) = p_in.rdata(realData::q2);
-                pcomp.rdata(realData::q3) = p_in.rdata(realData::q3);
-                pcomp.rdata(realData::pax) = p_in.rdata(realData::pax);
-                pcomp.rdata(realData::pay) = p_in.rdata(realData::pay);
-                pcomp.rdata(realData::paz) = p_in.rdata(realData::paz);
-                pcomp.rdata(realData::Iinv) = p_in.rdata(realData::Iinv);
-                pcomp.rdata(realData::Ixinv) = p_in.rdata(realData::Ixinv);
-                pcomp.rdata(realData::Iyinv) = p_in.rdata(realData::Iyinv);
-                pcomp.rdata(realData::Izinv) = p_in.rdata(realData::Izinv);
-                pcomp.rdata(realData::xangvel) = p_in.rdata(realData::xangvel);
-                pcomp.rdata(realData::yangvel) = p_in.rdata(realData::yangvel);
-                pcomp.rdata(realData::zangvel) = p_in.rdata(realData::zangvel);
-                pcomp.rdata(realData::fx) = p_in.rdata(realData::fx);
-                pcomp.rdata(realData::fy) = p_in.rdata(realData::fy);
-                pcomp.rdata(realData::fz) = p_in.rdata(realData::fz);
-                pcomp.rdata(realData::taux) = p_in.rdata(realData::taux);
-                pcomp.rdata(realData::tauy) = p_in.rdata(realData::tauy);
-                pcomp.rdata(realData::tauz) = p_in.rdata(realData::tauz);
-                pcomp.rdata(realData::liquid_volume) = p_in.rdata(realData::liquid_volume) / p_in.idata(intData::num_comp_sphere);
-                pcomp.rdata(realData::total_bridge_volume) = p_in.rdata(realData::total_bridge_volume) / p_in.idata(intData::num_comp_sphere);
-                pcomp.rdata(realData::theta_x) = p_in.rdata(realData::theta_x);
-                pcomp.idata(intData::type_id) = p_in.idata(intData::type_id);
-
-                // Set bond components to zero
-                for(int b=0; b<MAXBONDS*9; b++){
-                    pcomp.rdata(realData::first_bond_v+b) = zero;
-                }
-
-                for(int br=0; br<MAXBRIDGES; br++){
-                    pcomp.idata(intData::first_bridge+3*br) = -1;
-                    pcomp.idata(intData::first_bridge+3*br+1) = -1;
-                    pcomp.idata(intData::first_bridge+3*br+2) = -1;
-                }
-                for(int sp=0;sp<MAXSPECIES;sp++)
-                {
-                    pcomp.rdata(realData::firstspec+sp)=p_in.rdata(realData::firstspec+sp);
-                }
-                for(int b=0; b<MAXBONDS; b++) pcomp.idata(intData::first_bond + b) = -1;
-   
-                host_particles.push_back(pcomp);
-            }
-        }
-
-        auto old_size = ptile_out.GetArrayOfStructs().size();
-        auto new_size = old_size + host_particles.size();
-        ptile_out.resize(new_size);
-
-        Gpu::copy(Gpu::hostToDevice,
-                  host_particles.begin(),
-                  host_particles.end(),
-                  ptile_out.GetArrayOfStructs().begin() + old_size);
-    }
-}
-
-void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, int glued_sphere_particles,
+void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory,
                                                      const MultiFab *lsmfab, const int ls_refinement){
   // This function removes particles that have gotten "wedged" in corners of an EB
   // boundary (where forces are not calculated correctly, and particles may stick out of the boundary)
-
 
     const int lev = 0;
     const Geometry& geom = Geom(lev);
@@ -962,21 +711,16 @@ void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_fact
 
                 amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
                     ParticleType& p = pstruct[i];
-                    for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
-                        Real ppos_inert[THREEDIM];
-                        if(glued_sphere_particles){
-                            get_inertial_pos(p, pc, ppos_inert);
-                        } else {
-                            ppos_inert[XDIR] = p.pos(0);
-                            ppos_inert[YDIR] = p.pos(1);
-                            ppos_inert[ZDIR] = p.pos(2);
-                        }
-                        Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+                    Real ppos_inert[THREEDIM];
+                    ppos_inert[XDIR] = p.pos(0);
+                    ppos_inert[YDIR] = p.pos(1);
+                    ppos_inert[ZDIR] = p.pos(2);
 
-                        if (ls_value < p.rdata(realData::radius)*0.95)
-                        {
-                            p.id() = -1;
-                        }
+                    Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+
+                    if (ls_value < p.rdata(realData::radius)*0.95)
+                    {
+                        p.id() = -1;
                     }
                 });
             }

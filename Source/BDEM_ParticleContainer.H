@@ -29,8 +29,6 @@ public:
 
     void InitParticles (const std::string & filename,
                         bool &do_heat_transfer, 
-                        int glued_sphere_particles, 
-                        int glued_sphere_types, 
                         Real temp_mean, Real temp_stdev,
                         int contact_law, int liquid_bridging,
                         Real liquid_density, Real MC_avg, 
@@ -40,10 +38,9 @@ public:
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
         Real dens, Real E, Real nu, Real temp, Real spec[MAXSPECIES], 
         int do_multi_part_per_cell, int layer_particles,
-        int glued_sphere_particles, int glued_sphere_types,
-        int bonded_sphere_particles, int min_sphere, int max_sphere,
-        Real min_rad, Real max_rad,  int p_type, Vector<int> type_list, 
-        int use_type_dist, Vector<Real> dist_list,int liquid_bridging, 
+        int bonded_sphere_particles,Real min_rad, Real max_rad,  
+        int p_type, Vector<int> type_list, int use_type_dist, 
+        Vector<Real> dist_list,int liquid_bridging, 
         Real liquid_density, Real MC_avg, Real MC_stdev, Real FSP);
 
     void InitBondedParticles (const std::string & filename,
@@ -65,7 +62,6 @@ public:
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
             RealVect &gravity,
-            const int glued_sphere_particles=0,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
@@ -74,21 +70,19 @@ public:
     Real compute_coll_timescale(int bonded_sphere_particles);
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
-            const int ls_refinement, const int glued_sphere_particles);
+            const int ls_refinement);
     
-    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
-    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, const int glued_sphere_particles);
+    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
+    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
 
-    void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0, const int glued_sphere_particles=0);
+    void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0);
 
-    void writeParticles (const int n, const int glued_sphere_particles, const int glued_sphere_types, const int bonded_sphere_particles);   
+    void writeParticles (const int n, const int bonded_sphere_particles);   
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,
                 Real dens, Real E, Real nu, Real rad, Real temp,Real spec[MAXSPECIES], 
-                Real liquid_density, Real MC, Real FSP, int num_sphere=1, int p_type=0);
-
-    void createGluedSpheres(BDEMParticleContainer& pin);
+                Real liquid_density, Real MC, Real FSP, int p_type=0);
 
     void redist_particles(const int local,bool using_softwalls)
     {
@@ -126,12 +120,13 @@ public:
 
     void computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP);
 
-    void clipParticles(int clip_particle_dir, Real clip_particle_val, int glued_sphere_particles);
+    void clipParticles(int clip_particle_dir, Real clip_particle_val);
     
-    void removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, int glued_sphere_particles, 
-                                  const MultiFab *lsmfab, const int ls_refinement);
+    void removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory, const MultiFab *lsmfab, const int ls_refinement);
 
     void Calculate_Total_Mass_MaterialPoints(Real &total_mass, int cdir, Real cutoff);
+
+    void reassignParticleProperties(Real reinit_rad, Real reinit_dens, Real reinit_E, Real reinit_nu);
 
 private:
 

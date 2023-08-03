@@ -26,9 +26,6 @@ struct realData
     tauy,
     tauz,
     Iinv,
-    Ixinv,
-    Iyinv,
-    Izinv,
     volume,
     mass,
     density,
@@ -41,30 +38,10 @@ struct realData
     euler_angle_x,
     euler_angle_y,
     euler_angle_z,
-    q0,
-    q1,
-    q2,
-    q3,
-    pax,
-    pay,
-    paz,
     liquid_volume,   
     total_bridge_volume,
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
     theta_x = first_bond_v + MAXBONDS*9,
-    // for debug
-    // overlap_n,
-    // kn,
-    // kt,
-    // eta_n,
-    // eta_t,
-    // overlap_n_y,
-    // fn_y,
-    // vr_n_y,
-    // overlap_t_y,
-    // ft_y,
-    // vr_t_y,
-    //up here
     firstspec,
     count
   };
@@ -76,10 +53,9 @@ struct intData
   {
     phase = 0,
     near_softwall = 1,
-    num_comp_sphere = 2,
-    type_id = 3,
-    first_bridge=4,
-    first_bond = first_bridge + 3*MAXBRIDGES,
+    type_id = 2,
+    first_bridge=3,
+    first_bond = first_bridge + MAXBRIDGES,
     count = first_bond + MAXBONDS
   };
 };
@@ -141,8 +117,6 @@ class DEMspecs
         Real autogen_E = 100.0;
         Real autogen_nu = 0.3;
         Real autogen_temp;
-        int autogen_max_sphere = 1;
-        int autogen_min_sphere = 1;
         Real autogen_min_radius = -1.0;
         Real autogen_max_radius = -1.0;
         Vector<Real> autogen_species_massfracs;
@@ -153,6 +127,7 @@ class DEMspecs
         bool do_heat_transfer=false;
         bool using_softwalls=false;
         bool remove_eb_overlaps=false;
+        bool reassign_particle_properties=false;
 
         Vector<Real> walltemp_polynomial;
         int walltemp_vardir=0;
@@ -180,8 +155,6 @@ class DEMspecs
         Real particle_sourcing_interval=1.0; 
         Vector<Real> particle_sourcing_species_massfracs;
         Real stop_sourcing_time; 
-        int particle_sourcing_min_sphere = 1;
-        int particle_sourcing_max_sphere = 1;
         Real particle_sourcing_min_radius = -1.0;
         Real particle_sourcing_max_radius = -1.0;
         int particle_sourcing_bp_type = 0;
@@ -196,7 +169,7 @@ class DEMspecs
 
         int max_grid_size=8;
         Real write_output_time=10.0;
-	Real screen_output_time;
+	      Real screen_output_time;
         Real massflow_output_time=1.0;
         int maxsteps=100;
         Real final_time=100.0;
@@ -220,10 +193,7 @@ class DEMspecs
         Vector<Real> strat_maxcoords;
         Vector<Real> strat_spec_massfracs; 
 
-        // input options for glued and bonded sphere particles
-        int glued_sphere_particles = 0;
-        bool visualize_component_spheres = false;
-        int glued_sphere_types = 1;
+        // input options for bonded sphere particles
         int bonded_sphere_particles = 0;
         Real bond_damping_factor = 0.0;
         Vector<int> particle_type_list;  // Generate particles by randomly sampling from user-specified list
@@ -515,6 +485,8 @@ class DEMspecs
                     }
             }
 
+            // Reassign particle properties for a restarted case using autogen particle parameters
+            pp.query("reassign_particle_properties", reassign_particle_properties);
 
             pp.query("do_heat_transfer",do_heat_transfer);
 
@@ -564,17 +536,6 @@ class DEMspecs
                 }
             }
 
-            pp.query("glued_sphere_particles", glued_sphere_particles);
-            if(glued_sphere_particles){
-                // Read in other glued sphere variables
-                pp.query("visualize_component_spheres", visualize_component_spheres);
-                pp.query("autogen_min_sphere", autogen_min_sphere);
-                pp.query("autogen_max_sphere", autogen_max_sphere);
-                pp.query("glued_sphere_types", glued_sphere_types);
-                pp.query("particle_sourcing_min_sphere", particle_sourcing_min_sphere);
-                pp.query("particle_sourcing_max_sphere", particle_sourcing_max_sphere);
-            }
-
             pp.query("liquid_bridging", liquid_bridging);
             if(liquid_bridging){
                 // Read in liquid bridging variables
@@ -610,7 +571,6 @@ class DEMspecs
 
             // Bonded sphere model variables
             pp.query("bonded_sphere_particles", bonded_sphere_particles);
-            if(glued_sphere_particles && bonded_sphere_particles) Abort("\nGlued sphere and bonded sphere models are not compatible, only one may be chosen!\n");
             if(bonded_sphere_particles){
                 pp.get("young_mod_bond", DEM::E_bond);
                 pp.get("poisson_rat_bond", DEM::nu_bond);
@@ -634,7 +594,7 @@ class DEMspecs
                 }
             }
 
-            if(bonded_sphere_particles || glued_sphere_types){
+            if(bonded_sphere_particles){
                 pp.query("autogen_bp_type", autogen_bp_type);
                 pp.query("particle_sourcing_bp_type", particle_sourcing_bp_type);
                 if (pp.contains("particle_type_list")){

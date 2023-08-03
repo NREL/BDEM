@@ -6,8 +6,6 @@
 
 void BDEMParticleContainer::InitParticles (const std::string& filename,
                                            bool &do_heat_transfer,
-                                           int glued_sphere_particles, 
-                                           int glued_sphere_types,
                                            Real temp_mean, Real temp_stdev,
                                            int contact_law, int liquid_bridging,
                                            Real liquid_density, Real MC_avg, 
@@ -90,83 +88,24 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                p.rdata(realData::temperature)=NTP_TEMP;
             }
             
-           
-
-            if(glued_sphere_particles)
-            {
-                // Extracting number of component spheres and Euler angles for glued-sphere cylinders
-                // TODO: How do we make sure cylinders don't intersect upon initialization?
-                if(!glued_sphere_types) ifs >> p.idata(intData::num_comp_sphere);
-                ifs >> p.rdata(realData::euler_angle_x);
-                ifs >> p.rdata(realData::euler_angle_y);
-                ifs >> p.rdata(realData::euler_angle_z);
-
-                // Use Euler angles to calculate initial quaternion components
-                Real eax = p.rdata(realData::euler_angle_x);
-                Real eay = p.rdata(realData::euler_angle_y);
-                Real eaz = p.rdata(realData::euler_angle_z);
-                p.rdata(realData::q0) =  cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
-                p.rdata(realData::q1) = -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
-                p.rdata(realData::q2) =  cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
-                p.rdata(realData::q3) =  sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
-
-                // Calculate principal axis components in inertial frame (for visualization)
-                Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
-                Real pa_inert[THREEDIM];
-                rotate_vector_to_inertial(p, pa_body, pa_inert);
-                p.rdata(realData::pax) = pa_inert[XDIR];
-                p.rdata(realData::pay) = pa_inert[YDIR];
-                p.rdata(realData::paz) = pa_inert[ZDIR];
-            } else{
-                p.idata(intData::num_comp_sphere) = 1;
-                p.rdata(realData::euler_angle_x) = zero;
-                p.rdata(realData::euler_angle_y) = zero;
-                p.rdata(realData::euler_angle_z) = zero;
-                p.rdata(realData::q0) = 1.0;
-                p.rdata(realData::q1) = zero;
-                p.rdata(realData::q2) = zero;
-                p.rdata(realData::q3) = zero;
-                p.rdata(realData::pax) = zero;
-                p.rdata(realData::pay) = zero;
-                p.rdata(realData::paz) = zero;
-                p.idata(intData::type_id) = 0;
-            }
+            p.rdata(realData::euler_angle_x) = zero;
+            p.rdata(realData::euler_angle_y) = zero;
+            p.rdata(realData::euler_angle_z) = zero;
+            p.idata(intData::type_id) = 0;
 
             //set initial radius
             p.rdata(realData::radinit)=p.rdata(realData::radius);
 
             // Set other particle properties
             // NOTE: Calculation of particle mass for glued sphere particles assumes no component sphere overlap
-            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);
+            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
             p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
             p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
             
             // User input for angular velocity when using glued sphere particles (at least for testing purposes)
-            if(glued_sphere_particles){
-                ifs >> p.rdata(realData::xangvel);
-                ifs >> p.rdata(realData::yangvel);
-                ifs >> p.rdata(realData::zangvel);
-                if(glued_sphere_types) {
-                  ifs >> p.idata(intData::type_id);
-                  p.idata(intData::num_comp_sphere) = p_types[p.idata(intData::type_id)];
-                }
-            } else {
-                p.rdata(realData::xangvel)     = zero;
-                p.rdata(realData::yangvel)     = zero;
-                p.rdata(realData::zangvel)     = zero;
-            }
-
-            if(glued_sphere_particles){
-                // NOTE: Approximating moments of inertia for glued sphere particle using cylinder formula
-                p.rdata(realData::Ixinv) = 2.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)) );
-                p.rdata(realData::Iyinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
-                p.rdata(realData::Izinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
-
-            } else {
-                p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-                p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-                p.rdata(realData::Izinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-            }
+            p.rdata(realData::xangvel)     = zero;
+            p.rdata(realData::yangvel)     = zero;
+            p.rdata(realData::zangvel)     = zero;
 
             p.rdata(realData::fx) = zero;
             p.rdata(realData::fy) = zero;
@@ -182,11 +121,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             }
 
             // Set bridge indices to -1 to indicate no existing bridges
-            for(int br=0; br<MAXBRIDGES; br++){
-                p.idata(intData::first_bridge+3*br) = -1;
-                p.idata(intData::first_bridge+3*br+1) = -1;
-                p.idata(intData::first_bridge+3*br+2) = -1;
-            }
+            for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
 
             // If using liquid bridging, calculate particle liquid and recalculate particle mass and density
             if(liquid_bridging){
@@ -454,8 +389,7 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
 
 void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfab,
         const EBFArrayBoxFactory *ebfactory,
-        const int ls_refinement,
-        const int glued_sphere_particles)
+        const int ls_refinement)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -496,20 +430,15 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
             {
                 ParticleType& p = pstruct[i];
                 Real rp = p.rdata(realData::radius);
-                for(int pc=0; pc<p.idata(intData::num_comp_sphere); pc++){
-                    Real ppos_inert[THREEDIM];
-                    if(glued_sphere_particles){
-                        get_inertial_pos(p, pc, ppos_inert); 
-                    } else {
-                        ppos_inert[XDIR] = p.pos(0);
-                        ppos_inert[YDIR] = p.pos(1);
-                        ppos_inert[ZDIR] = p.pos(2);
-                    }
-                    Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
-                    if(ls_value < 0.0)
-                    {
-                        p.id()=-1;   
-                    }
+                Real ppos_inert[THREEDIM];
+                ppos_inert[XDIR] = p.pos(0);
+                ppos_inert[YDIR] = p.pos(1);
+                ppos_inert[ZDIR] = p.pos(2);
+                Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+                // if(ls_value < 0.0)
+                if(ls_value < p.rdata(realData::radius))
+                {
+                    p.id()=-1;   
                 }
             });
         }
@@ -517,7 +446,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, const int glued_sphere_particles)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -543,56 +472,50 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
   
-                Real ploc[THREEDIM];
-                if(glued_sphere_particles){
-                    get_inertial_pos(p, pc, ploc); 
-                } else {
-                    ploc[XDIR] = p.pos(0);
-                    ploc[XDIR] = p.pos(1);
-                    ploc[XDIR] = p.pos(2);
-                }
-                Real ploc_t[3]={0.0};
-                Real t1[3],t2[3],t3[3];
-                Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-                int num_intersects=0;
+            Real ploc[THREEDIM];
+            ploc[XDIR] = p.pos(0);
+            ploc[XDIR] = p.pos(1);
+            ploc[XDIR] = p.pos(2);
+            Real ploc_t[3]={0.0};
+            Real t1[3],t2[3],t3[3];
+            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+            int num_intersects=0;
 
-                for(int dim=0;dim<3;dim++)
+            for(int dim=0;dim<3;dim++)
+            {
+                for(int j=0;j<3;j++)
                 {
-                    for(int j=0;j<3;j++)
-                    {
-                        ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
-                    }
+                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
                 }
+            }
 
-                if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-                   (ploc_t[0]<STLtools::bbox_hi[0]) &&
-                   (ploc_t[1]>STLtools::bbox_lo[1]) &&
-                   (ploc_t[1]<STLtools::bbox_hi[1]) &&
-                   (ploc_t[2]>STLtools::bbox_lo[2]) &&
-                   (ploc_t[2]<STLtools::bbox_hi[2]) )
+            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+               (ploc_t[0]<STLtools::bbox_hi[0]) &&
+               (ploc_t[1]>STLtools::bbox_lo[1]) &&
+               (ploc_t[1]<STLtools::bbox_hi[1]) &&
+               (ploc_t[2]>STLtools::bbox_lo[2]) &&
+               (ploc_t[2]<STLtools::bbox_hi[2]) )
+            {
+                for(int tr=0;tr<STLtools::num_tri;tr++)
                 {
-                    for(int tr=0;tr<STLtools::num_tri;tr++)
-                    {
-                        t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                        t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                        t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                        t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                        t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                        t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                        t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                        t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                        t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                        num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                    }
-                    if(num_intersects%2 == 1)
-                    {
-                        p.id()=-1;   
-                    }
+                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                }
+                if(num_intersects%2 == 1)
+                {
+                    p.id()=-1;   
                 }
             }
         });
@@ -601,7 +524,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
     Redistribute();
 }
 
-void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, const int glued_sphere_particles)
+void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -627,60 +550,54 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            for(int pc = 0; pc<p.idata(intData::num_comp_sphere); pc++){
-                Real ploc[THREEDIM];
-                if(glued_sphere_particles){
-                    get_inertial_pos(p, pc, ploc); 
-                } else {
-                    ploc[XDIR] = p.pos(0);
-                    ploc[XDIR] = p.pos(1);
-                    ploc[XDIR] = p.pos(2);
-                }
-                Real ploc_t[3]={0.0};
-                Real t1[3],t2[3],t3[3];
-                Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-                int num_intersects=0;
+            Real ploc[THREEDIM];
+            ploc[XDIR] = p.pos(0);
+            ploc[XDIR] = p.pos(1);
+            ploc[XDIR] = p.pos(2);
+            Real ploc_t[3]={0.0};
+            Real t1[3],t2[3],t3[3];
+            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+            int num_intersects=0;
 
-                for(int dim=0;dim<3;dim++)
+            for(int dim=0;dim<3;dim++)
+            {
+                for(int j=0;j<3;j++)
                 {
-                    for(int j=0;j<3;j++)
-                    {
-                        ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
-                    }
+                    ploc_t[dim] += STLtools::eigdirs[3*dim+j]*ploc[j];
                 }
+            }
 
-                if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
-                   (ploc_t[0]<STLtools::bbox_hi[0]) &&
-                   (ploc_t[1]>STLtools::bbox_lo[1]) &&
-                   (ploc_t[1]<STLtools::bbox_hi[1]) &&
-                   (ploc_t[2]>STLtools::bbox_lo[2]) &&
-                   (ploc_t[2]<STLtools::bbox_hi[2]) )
+            if( (ploc_t[0]>STLtools::bbox_lo[0]) && 
+               (ploc_t[0]<STLtools::bbox_hi[0]) &&
+               (ploc_t[1]>STLtools::bbox_lo[1]) &&
+               (ploc_t[1]<STLtools::bbox_hi[1]) &&
+               (ploc_t[2]>STLtools::bbox_lo[2]) &&
+               (ploc_t[2]<STLtools::bbox_hi[2]) )
+            {
+                for(int tr=0;tr<STLtools::num_tri;tr++)
                 {
-                    for(int tr=0;tr<STLtools::num_tri;tr++)
-                    {
-                        t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
-                        t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
-                        t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
+                    t1[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+0];
+                    t1[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+1];
+                    t1[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+2];
 
-                        t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
-                        t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
-                        t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
+                    t2[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+3];
+                    t2[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+4];
+                    t2[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+5];
 
-                        t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
-                        t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
-                        t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
+                    t3[0]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+6];
+                    t3[1]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+7];
+                    t3[2]=STLtools::tri_pts[tr*STLtools::ndata_per_tri+8];
 
-                        num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                    }
-                    if(num_intersects%2 == 1)
-                    {
+                    num_intersects += (1-STLtools::lineseg_tri_intersect(outp,ploc,t1,t2,t3));
+                }
+                if(num_intersects%2 == 1)
+                {
 #ifndef AMREX_USE_GPU
-                        amrex::Print()<<"particle inside stl:"<<ploc[0]<<"\t"<<ploc[1]<<"\t"<<ploc[2]<<"\n";
+                    amrex::Print()<<"particle inside stl:"<<ploc[0]<<"\t"<<ploc[1]<<"\t"<<ploc[2]<<"\n";
 #else
-                        amrex::Abort("particle inside stl");
+                    amrex::Abort("particle inside stl");
 #endif
 
-                    }
                 }
             }
         });
@@ -688,6 +605,46 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
 
 }
 
+void BDEMParticleContainer::reassignParticleProperties(Real reinit_rad, Real reinit_dens, Real reinit_E, Real reinit_nu)
+{
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+    const Geometry& geom = Geom(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+
+        ParticleType* pstruct = aos().dataPtr();
+
+        amrex::ParallelFor(np,[=]
+                AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+
+            // Assign new particle parameters
+            p.rdata(realData::radius) = reinit_rad;
+            p.rdata(realData::density) = reinit_dens;
+            p.rdata(realData::E) = reinit_E;
+            p.rdata(realData::nu) = reinit_nu;
+
+            // Recalculate impacted quantities
+            p.rdata(realData::radinit)=p.rdata(realData::radius);
+            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
+            p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
+            p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+        });
+    }
+}
 
 void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
                                            Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
@@ -695,10 +652,7 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                            Real spec[MAXSPECIES],
                                            int do_multi_part_per_cell, 
                                            int layer_particles,
-                                           int glued_sphere_particles,
-                                           int glued_sphere_types,
                                            int bonded_sphere_particles,
-                                           int min_sphere, int max_sphere,
                                            Real min_rad, Real max_rad, 
                                            int p_type, Vector<int> type_list,
                                            int use_type_dist, Vector<Real> dist_list,
@@ -806,37 +760,6 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                 bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
                                 host_particles.push_back(p);
                             } 
-                        } else if(glued_sphere_particles){
-                            int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
-                            if(type_list.size() > 0){
-                                if(use_type_dist){
-                                    Real rnum = amrex::Random();
-                                    Real dsum = 0.0;
-                                    bool found_type = false;
-                                    int type_idx = 0;
-                                    while(!found_type) {
-                                      dsum += dist_list[type_idx];
-                                      if(rnum < dsum){
-                                        found_type = true;
-                                      } else{
-                                        type_idx++;    
-                                        if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
-                                      }
-                                    }
-                                    type = type_list[type_idx];
-                                } else {
-                                    type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
-                                }
-                                if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
-                            }
-                            int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
-                            ParticleType p = generate_particle(x,y,z,
-                                                               meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                               meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                               meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                               dens, rad, E, nu, 
-                                                               temp, spec, liquid_density, MC, FSP, ncs, type);
-                            host_particles.push_back(p);
                         } else {
                             // Calculate radius using random distribution if min and max values are specified
                             Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
@@ -922,37 +845,6 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                         bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, bp_ids, liquid_density, MC, FSP, E, nu);
                                         host_particles.push_back(p);
                                     } 
-                                } else if(glued_sphere_particles){
-                                    int type = (!glued_sphere_types) ? -2:(p_type == -1) ? ceil(amrex::Random()*BP_TYPES) -1:p_type;
-                                    if(type_list.size() > 0){
-                                        if(use_type_dist){
-                                            Real rnum = amrex::Random();
-                                            Real dsum = 0.0;
-                                            bool found_type = false;
-                                            int type_idx = 0;
-                                            while(!found_type) {
-                                              dsum += dist_list[type_idx];
-                                              if(rnum < dsum){
-                                                found_type = true;
-                                              } else{
-                                                type_idx++;    
-                                                if(type_idx >= type_list.size()) amrex::Abort("Something went wrong with type dist calculations!\n");
-                                              }
-                                            }
-                                            type = type_list[type_idx];
-                                        } else {
-                                            type = type_list[ceil(amrex::Random()*type_list.size()) - 1];
-                                        }
-                                        if ( type < 0 || type > BP_TYPES-1) Abort("\nInvalid particle type specified .\n");
-                                    }
-                                    int ncs = (glued_sphere_types) ? p_types[type]:min_sphere + floor(amrex::Random()*(max_sphere+1 - min_sphere));
-                                    ParticleType p = generate_particle(x,y,z,
-                                                                       meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
-                                                                       meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
-                                                                       meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
-                                                                       dens, rad, E, nu, 
-                                                                       temp, spec, liquid_density, MC, FSP, ncs, type);
-                                    host_particles.push_back(p);
                                 } else {
                                     // Calculate radius using random distribution if min and max values are specified
                                     Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
@@ -993,7 +885,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
                                                                              Real dens, Real rad, Real E, Real nu,
                                                                              Real temp, Real spec[MAXSPECIES], 
                                                                              Real liquid_density, Real MC, Real FSP,
-                                                                             int num_sphere, int p_type)
+                                                                             int p_type)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -1023,7 +915,6 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::tauz) = zero;
     p.rdata(realData::theta_x) = zero;
 
-    p.idata(intData::num_comp_sphere) = num_sphere;
     p.rdata(realData::euler_angle_x) = PI/2.0;                 
     p.rdata(realData::euler_angle_y) = amrex::Random()*PI/20.0;
     p.rdata(realData::euler_angle_z) = amrex::Random()*PI/20.0;
@@ -1031,40 +922,23 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     Real eax = p.rdata(realData::euler_angle_x);
     Real eay = p.rdata(realData::euler_angle_y);
     Real eaz = p.rdata(realData::euler_angle_z);
-    p.rdata(realData::q0) =  cos(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
-    p.rdata(realData::q1) = -sin(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + cos(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
-    p.rdata(realData::q2) =  cos(eaz/2.0)*sin(eay/2.0)*cos(eax/2.0) + sin(eaz/2.0)*cos(eay/2.0)*sin(eax/2.0);
-    p.rdata(realData::q3) =  sin(eaz/2.0)*cos(eay/2.0)*cos(eax/2.0) - cos(eaz/2.0)*sin(eay/2.0)*sin(eax/2.0);
 
-    Real pa_body[THREEDIM] = {1.0, 0.0, 0.0};
-    Real pa_inert[THREEDIM];
-    rotate_vector_to_inertial(p, pa_body, pa_inert);
-    p.rdata(realData::pax) = pa_inert[XDIR];
-    p.rdata(realData::pay) = pa_inert[YDIR];
-    p.rdata(realData::paz) = pa_inert[ZDIR];
     p.idata(intData::type_id) = p_type;
 
     // Set other particle properties
-    p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);
+    p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
     p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
     p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
     p.rdata(realData::xangvel)     = zero;
     p.rdata(realData::yangvel)     = zero;
     p.rdata(realData::zangvel)     = zero;
-    p.rdata(realData::Ixinv) = 2.0/(p.rdata(realData::mass)*(pow(p.rdata(realData::radius),two)) );
-    p.rdata(realData::Iyinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
-    p.rdata(realData::Izinv) = 12.0/(p.rdata(realData::mass)*(3.0*pow(p.rdata(realData::radius),two)+pow(2.0*p.idata(intData::num_comp_sphere)*p.rdata(realData::radius),two)));
 
     // Set bond components to zero
     for(int b=0; b<MAXBONDS*9; b++){ 
         p.rdata(realData::first_bond_v+b) = zero;
     }
 
-    for(int br=0; br<MAXBRIDGES; br++){
-        p.idata(intData::first_bridge+3*br) = -1;
-        p.idata(intData::first_bridge+3*br+1) = -1;
-        p.idata(intData::first_bridge+3*br+2) = -1;
-    }
+    for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
 
     // If nonzero MC passed in, calculate liquid volume
     if(MC > 0.0){

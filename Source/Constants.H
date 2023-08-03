@@ -8,9 +8,9 @@
 #define HARDWALL_BC 1
 #define SOFTWALL_BC 2
 #define CONTACT_HERTZ 1
-#define MAXSPECIES 5
-#define MAXBRIDGES 12
-#define MAXBONDS 12
+#define MAXSPECIES 1
+#define MAXBRIDGES 1
+#define MAXBONDS 4
 
 #define BP_TYPES 23
 #define BP_NP0 1
@@ -36,31 +36,6 @@
 #define BP_NP20 40
 #define BP_NP21 8
 #define BP_NP22 10
-
-#define BP_R0 1.0
-#define BP_R1 2.0
-#define BP_R2 3.0
-#define BP_R3 4.0
-#define BP_R4 5.0
-#define BP_R5 6.0
-#define BP_R6 7.0
-#define BP_R7 8.0
-#define BP_R8 9.0
-#define BP_R9 10.0
-#define BP_R10 4.0
-#define BP_R11 8.0
-#define BP_R12 8.0
-#define BP_R13 12.0
-#define BP_R14 12.0
-#define BP_R15 12.0
-#define BP_R16 4.0
-#define BP_R17 4.0
-#define BP_R18 6.0
-#define BP_R19 8.0
-#define BP_R20 8.0
-#define BP_R20 8.0
-#define BP_R21 4.5
-#define BP_R22 5.5
 
 #define NTP_TEMP 293
 #define fourbythree 1.3333333333

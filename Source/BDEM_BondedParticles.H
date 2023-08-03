@@ -28,23 +28,15 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::nu) = nu;
 
   // Set rotation-related quantities to zero
-  p.idata(intData::num_comp_sphere) = 1;
   p.rdata(realData::euler_angle_x) = zero;
   p.rdata(realData::euler_angle_y) = zero;
   p.rdata(realData::euler_angle_z) = zero;
-  p.rdata(realData::q0) = 1.0;
-  p.rdata(realData::q1) = zero;
-  p.rdata(realData::q2) = zero;
-  p.rdata(realData::q3) = zero;
-  p.rdata(realData::pax) = zero;
-  p.rdata(realData::pay) = zero;
-  p.rdata(realData::paz) = zero;
 
   //set initial radius
   p.rdata(realData::radinit)=p.rdata(realData::radius);
   
   // Set other particle properties
-  p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three)*p.idata(intData::num_comp_sphere);
+  p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
   p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
   p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
   
@@ -52,10 +44,6 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::xangvel)     = zero;
   p.rdata(realData::yangvel)     = zero;
   p.rdata(realData::zangvel)     = zero;
-  
-  p.rdata(realData::Ixinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-  p.rdata(realData::Iyinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-  p.rdata(realData::Izinv) = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
   
   p.rdata(realData::fx) = zero;
   p.rdata(realData::fy) = zero;
@@ -71,11 +59,7 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
    }
 
   // Set bridge indices to -1 to indicate no existing bridges
-  for(int br=0; br<MAXBRIDGES; br++){
-      p.idata(intData::first_bridge+3*br) = -1;
-      p.idata(intData::first_bridge+3*br+1) = -1;
-      p.idata(intData::first_bridge+3*br+2) = -1;
-  }
+  for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
 
   // If nonzero MC passed in, calculate liquid volume
   if(MC > 0.0){

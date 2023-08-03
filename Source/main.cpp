@@ -77,7 +77,6 @@ int main (int argc, char* argv[])
                                             specs.moisture_content_stdev,specs.FSP);
                 } else {
                     bpc.InitParticles("particle_input.dat",specs.do_heat_transfer, 
-                                      specs.glued_sphere_particles, specs.glued_sphere_types, 
                                       specs.temp_mean, specs.temp_stdev, specs.contact_law,
                                       specs.liquid_bridging, specs.liquid_density, 
                                       specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
@@ -93,9 +92,7 @@ int main (int argc, char* argv[])
                         specs.autogen_temp,
                         specs.autogen_species_massfracs.data(),
                         specs.autogen_multi_part_per_cell, specs.autogen_layer_particles, 
-                        specs.glued_sphere_particles, specs.glued_sphere_types,
                         specs.bonded_sphere_particles,
-                        specs.autogen_min_sphere, specs.autogen_max_sphere,
                         specs.autogen_min_radius, specs.autogen_max_radius,
                         specs.autogen_bp_type, specs.particle_type_list, 
                         specs.use_type_dist, specs.particle_dist_list,
@@ -107,6 +104,7 @@ int main (int argc, char* argv[])
         else
         {
             bpc.Restart(specs.restartfilename, "particles");
+            if(specs.reassign_particle_properties) bpc.reassignParticleProperties(specs.autogen_radius, specs.autogen_dens, specs.autogen_E, specs.autogen_nu);
         }
 
         if(specs.modify_species)
@@ -140,37 +138,31 @@ int main (int argc, char* argv[])
 
         amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
         //if(EBtools::using_levelset_geometry and !specs.restartedcase)
-        // FIXME: How do we handle bonded sphere particles that are partially outside boundary?
-        if(EBtools::using_levelset_geometry)
-        {
-            bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                               EBtools::ebfactory,EBtools::ls_refinement, specs.glued_sphere_particles);
-            amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
-        }
-        if(specs.stl_geom_present)
-        {
-            bpc.removeParticlesInsideSTL(specs.outside_point, specs.glued_sphere_particles);
-            amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+        if(!specs.restartedcase){
+            if(EBtools::using_levelset_geometry)
+            {
+                bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
+                                                   EBtools::ebfactory,EBtools::ls_refinement);
+                amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
+            }
+            if(specs.stl_geom_present)
+            {
+                bpc.removeParticlesInsideSTL(specs.outside_point);
+                amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+            }
+            if(specs.remove_eb_overlaps) {
+                bpc.removeEBOverlapParticles(EBtools::ebfactory, EBtools::lsphi, EBtools::ls_refinement);
+                amrex::Print() << "Num particles after EB overlap removal " << bpc.TotalNumberOfParticles() << "\n";
+            }
         }
         if(specs.clip_particles) {
-            bpc.clipParticles(specs.clip_particle_dir, specs.clip_particle_val, specs.glued_sphere_particles);
+            bpc.clipParticles(specs.clip_particle_dir, specs.clip_particle_val);
             amrex::Print() << "Num particles after clipping " << bpc.TotalNumberOfParticles() << "\n";
-        }
-        if(specs.remove_eb_overlaps) {
-            bpc.removeEBOverlapParticles(EBtools::ebfactory, specs.glued_sphere_particles, EBtools::lsphi, EBtools::ls_refinement);
-            amrex::Print() << "Num particles after EB overlap removal " << bpc.TotalNumberOfParticles() << "\n";
         }
 
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
-        if(specs.visualize_component_spheres && specs.glued_sphere_particles){
-            // If using glued sphere model, create new particle container to create particles for each 
-            // component sphere (for visualization purposes)
-            BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-            bpc_vis.createGluedSpheres(bpc);
-            bpc_vis.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-        } else {
-            bpc.writeParticles(steps+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-        }
+        bpc.writeParticles(steps+specs.stepoffset, specs.bonded_sphere_particles);
+
         if(specs.dynamicstl!=0)
         {
             std::string stlpltfile = amrex::Concatenate("triplt", steps+specs.stepoffset, 5)+".stl";
@@ -226,26 +218,22 @@ int main (int argc, char* argv[])
                                    specs.particle_sourcing_species_massfracs.data(),
                                    specs.particle_sourcing_multi_part_per_cell, 
                                    specs.particle_sourcing_layer_particles,
-                                   specs.glued_sphere_particles, specs.glued_sphere_types,
                                    specs.bonded_sphere_particles,
-                                   specs.particle_sourcing_min_sphere, specs.particle_sourcing_max_sphere,
                                    specs.particle_sourcing_min_radius, specs.particle_sourcing_max_radius,
                                    specs.particle_sourcing_bp_type, specs.particle_type_list, 
                                    specs.use_type_dist, specs.particle_dist_list,
                                    specs.liquid_bridging, specs.liquid_density,
                                    specs.moisture_content, specs.moisture_content_stdev, specs.FSP);
 
-                amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
-                //if(EBtools::using_levelset_geometry and !specs.restartedcase)
                 if(EBtools::using_levelset_geometry)
                 {
                     bpc.removeParticlesOutsideBoundary(EBtools::lsphi,
-                                                       EBtools::ebfactory,EBtools::ls_refinement, specs.glued_sphere_particles);
+                                                       EBtools::ebfactory,EBtools::ls_refinement);
                 }
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 if(specs.stl_geom_present)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.glued_sphere_particles);
+                    bpc.removeParticlesInsideSTL(specs.outside_point);
                 }
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
 
@@ -262,7 +250,7 @@ int main (int argc, char* argv[])
             if (steps % specs.num_redist == 0)
             {
                 if(specs.remove_eb_overlaps) {
-                    bpc.removeEBOverlapParticles(EBtools::ebfactory, specs.glued_sphere_particles, EBtools::lsphi, EBtools::ls_refinement);
+                    bpc.removeEBOverlapParticles(EBtools::ebfactory, EBtools::lsphi, EBtools::ls_refinement);
                     amrex::Print() << "Num particles after EB overlap removal " << bpc.TotalNumberOfParticles() << "\n";
                 }
 
@@ -286,7 +274,7 @@ int main (int argc, char* argv[])
             if(specs.verlet_scheme){
                 BL_PROFILE_VAR("MOVE_PART",movepart);
                 specs.verlet_scheme = 1;
-                bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme,specs.glued_sphere_particles);
+                bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
                 BL_PROFILE_VAR_STOP(movepart);
             }
 
@@ -297,7 +285,6 @@ int main (int argc, char* argv[])
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present, specs.contact_law, steps,
                                   specs.gravity,
-                                  specs.glued_sphere_particles,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
@@ -307,7 +294,7 @@ int main (int argc, char* argv[])
 
             BL_PROFILE_VAR("MOVE_PART",movepart);
             if(specs.verlet_scheme) specs.verlet_scheme = 2;
-            bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme,specs.glued_sphere_particles);
+            bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
             BL_PROFILE_VAR_STOP(movepart);
 
             if(specs.dynamicstl!=0)
@@ -360,13 +347,7 @@ int main (int argc, char* argv[])
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
                 bpc.redist_particles(0,specs.using_softwalls);
                 output_it++;
-                if(specs.visualize_component_spheres && specs.glued_sphere_particles){
-                    BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-                    bpc_vis.createGluedSpheres(bpc);
-                    bpc_vis.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-                } else {
-                    bpc.writeParticles(output_it+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-                }
+                bpc.writeParticles(output_it+specs.stepoffset, specs.bonded_sphere_particles);
                 const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
                 bpc.Checkpoint(rstfile, "particles");
                 output_time=zero;
@@ -395,13 +376,7 @@ int main (int argc, char* argv[])
         }
 
         bpc.redist_particles(0,specs.using_softwalls);
-        if(specs.visualize_component_spheres && specs.glued_sphere_particles){
-            BDEMParticleContainer bpc_vis(geom, dm, ba, ng_cells,specs.chemptr);
-            bpc_vis.createGluedSpheres(bpc);
-            bpc_vis.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-        } else {
-            bpc.writeParticles(output_it+1+specs.stepoffset, specs.glued_sphere_particles, specs.glued_sphere_types, specs.bonded_sphere_particles);
-        }
+        bpc.writeParticles(output_it+1+specs.stepoffset, specs.bonded_sphere_particles);
         const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");
         if(specs.using_softwalls)

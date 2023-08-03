@@ -1,22 +1,6 @@
 #include <BDEM_ParticleContainer.H>
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void rotate_vector_to_inertial (const BDEMParticleContainer::ParticleType& p, 
-               amrex::Real v_body[THREEDIM], amrex::Real v_inert[THREEDIM])
-{
-    // Rotates a vector from a particle's body-fixed reference frame to the inertial frame 
-
-    amrex::Real q0 = p.rdata(realData::q0);
-    amrex::Real q1 = p.rdata(realData::q1);
-    amrex::Real q2 = p.rdata(realData::q2);
-    amrex::Real q3 = p.rdata(realData::q3);
-     
-    v_inert[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_body[XDIR] + 2.0*(q1*q2  - q0*q3)*v_body[YDIR] + 2.0*(q1*q3 + q0*q2)*v_body[ZDIR];
-    v_inert[YDIR] = 2.0*(q1*q2 + q0*q3)*v_body[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_body[YDIR] + 2.0*(q2*q3 - q0*q1)*v_body[ZDIR];
-    v_inert[ZDIR] = 2.0*(q1*q3 - q0*q2)*v_body[XDIR] + 2.0*(q2*q3 + q0*q1)*v_body[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_body[ZDIR];
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void rotate_vector_to_inertial (amrex::Real quats[4], amrex::Real v_body[THREEDIM], amrex::Real v_inert[THREEDIM])
 {
     // Rotates a vector from a particle's body-fixed reference frame to the inertial frame 
@@ -29,22 +13,6 @@ void rotate_vector_to_inertial (amrex::Real quats[4], amrex::Real v_body[THREEDI
     v_inert[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_body[XDIR] + 2.0*(q1*q2  - q0*q3)*v_body[YDIR] + 2.0*(q1*q3 + q0*q2)*v_body[ZDIR];
     v_inert[YDIR] = 2.0*(q1*q2 + q0*q3)*v_body[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_body[YDIR] + 2.0*(q2*q3 - q0*q1)*v_body[ZDIR];
     v_inert[ZDIR] = 2.0*(q1*q3 - q0*q2)*v_body[XDIR] + 2.0*(q2*q3 + q0*q1)*v_body[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_body[ZDIR];
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void rotate_vector_to_body (const BDEMParticleContainer::ParticleType& p, 
-               amrex::Real v_inert[THREEDIM], amrex::Real v_body[THREEDIM])
-{
-    // Rotates a vector from the inertial reference frame to the particle's body-fixed reference frame
- 
-    amrex::Real q0 = p.rdata(realData::q0);
-    amrex::Real q1 = p.rdata(realData::q1);
-    amrex::Real q2 = p.rdata(realData::q2);
-    amrex::Real q3 = p.rdata(realData::q3);
-     
-    v_body[XDIR] = (q0*q0 + q1*q1 - q2*q2 - q3*q3)*v_inert[XDIR] + 2.0*(q1*q2 + q0*q3)*v_inert[YDIR] + 2.0*(q1*q3 - q0*q2)*v_inert[ZDIR];
-    v_body[YDIR] = 2.0*(q1*q2  - q0*q3)*v_inert[XDIR] + (q0*q0 - q1*q1 + q2*q2 - q3*q3)*v_inert[YDIR] + 2.0*(q2*q3 + q0*q1)*v_inert[ZDIR];
-    v_body[ZDIR] = 2.0*(q1*q3 + q0*q2)*v_inert[XDIR] + 2.0*(q2*q3 - q0*q1)*v_inert[YDIR] + (q0*q0 - q1*q1 - q2*q2 + q3*q3)*v_inert[ZDIR];
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -166,31 +134,6 @@ void get_bonded_particle_pos(int type, int comp, amrex::Real radius,
   pc_pos[XDIR] += bp_pos[XDIR];
   pc_pos[YDIR] += bp_pos[YDIR];
   pc_pos[ZDIR] += bp_pos[ZDIR];
-}
-
-AMREX_GPU_HOST_DEVICE AMREX_INLINE
-void get_inertial_pos(const BDEMParticleContainer::ParticleType& p, 
-                                 const int pc, 
-                                 amrex::Real p_inert[THREEDIM])
-{
-    // Return the position components of component sphere pc of particle p
-    // for both body-fixed and inertial reference frame
-
-    // Calculate inertial and body fixed positions for predefined clustered particle types
-    if(p.idata(intData::type_id) > 0){
-        amrex::Real com_pos[THREEDIM] = {p.pos(0), p.pos(1), p.pos(2)};
-        amrex::Real quats[4] = {p.rdata(realData::q0), p.rdata(realData::q1), p.rdata(realData::q2), p.rdata(realData::q3)};
-        get_bonded_particle_pos(p.idata(intData::type_id), pc, p.rdata(realData::radius), com_pos, quats, p_inert);
-    } else {  // Otherwise assume rod-like particle
-        amrex::Real p_body[THREEDIM];
-        p_body[XDIR] = p.rdata(realData::radius)*((p.idata(intData::num_comp_sphere) - 1) - 2.0*pc);
-        p_body[YDIR] = 0.0;
-        p_body[ZDIR] = 0.0;
-        rotate_vector_to_inertial(p, p_body, p_inert);
-        p_inert[XDIR] += p.pos(0);
-        p_inert[YDIR] += p.pos(1);
-        p_inert[ZDIR] += p.pos(2);
-    }
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
@@ -325,7 +268,7 @@ amrex::Real get_levelset_value (amrex::Real ptxyz[THREEDIM],
     ls_dx[XDIR]=dx[XDIR]/amrex::Real(lsref);
     ls_dx[YDIR]=dx[YDIR]/amrex::Real(lsref);
     ls_dx[ZDIR]=dx[ZDIR]/amrex::Real(lsref);
-
+    
     int i=amrex::Math::floor((ptxyz[XDIR]-problo[XDIR]+TINYVAL)/ls_dx[XDIR]);
     int j=amrex::Math::floor((ptxyz[YDIR]-problo[YDIR]+TINYVAL)/ls_dx[YDIR]);
     int k=amrex::Math::floor((ptxyz[ZDIR]-problo[ZDIR]+TINYVAL)/ls_dx[ZDIR]);
@@ -529,24 +472,21 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         ft[ZDIR] = zero;
     }
 
-    // Only calculate nonzero rolling friction when particle has a single component sphere
     rollfric_torq_by_d[XDIR]=zero;
     rollfric_torq_by_d[YDIR]=zero;
     rollfric_torq_by_d[ZDIR]=zero;
-    if(p.idata(intData::num_comp_sphere) == 1){
-        Real omega_p1[THREEDIM];
-        omega_p1[XDIR] = p.rdata(realData::xangvel);
-        omega_p1[YDIR] = p.rdata(realData::yangvel);
-        omega_p1[ZDIR] = p.rdata(realData::zangvel);
-        Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
-        if (mag_omegap1 > zero)
-        {
-            Real mag_fn = sqrt(dotpdt(fn,fn));
-            Real fric_force   = -DEM::muR * mag_fn;
-            rollfric_torq_by_d[XDIR]=fric_force*omega_p1[XDIR]/mag_omegap1;
-            rollfric_torq_by_d[YDIR]=fric_force*omega_p1[YDIR]/mag_omegap1;
-            rollfric_torq_by_d[ZDIR]=fric_force*omega_p1[ZDIR]/mag_omegap1;
-        }
+    Real omega_p1[THREEDIM];
+    omega_p1[XDIR] = p.rdata(realData::xangvel);
+    omega_p1[YDIR] = p.rdata(realData::yangvel);
+    omega_p1[ZDIR] = p.rdata(realData::zangvel);
+    Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
+    if (mag_omegap1 > zero)
+    {
+        Real mag_fn = sqrt(dotpdt(fn,fn));
+        Real fric_force   = -DEM::muR * mag_fn;
+        rollfric_torq_by_d[XDIR]=fric_force*omega_p1[XDIR]/mag_omegap1;
+        rollfric_torq_by_d[YDIR]=fric_force*omega_p1[YDIR]/mag_omegap1;
+        rollfric_torq_by_d[ZDIR]=fric_force*omega_p1[ZDIR]/mag_omegap1;
     }
 
     p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
