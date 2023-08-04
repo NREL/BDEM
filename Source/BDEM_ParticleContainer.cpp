@@ -530,6 +530,31 @@ void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass
   #endif
 }
 
+void BDEMParticleContainer::Calculate_Total_Speed_MaterialPoints(Real &total_speed)
+{
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    auto& plev  = GetParticles(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+    const auto domain = geom.Domain();
+
+    total_speed=0.0;
+
+    using PType = typename BDEMParticleContainer::SuperParticleType;
+    total_speed = amrex::ReduceSum(*this, [=]
+        AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
+        {
+            Real pvel[3] = {p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel)};
+            return(sqrt(pvel[0]*pvel[0] + pvel[1]*pvel[1] + pvel[2]*pvel[2]));
+        });
+
+  #ifdef BL_USE_MPI
+      ParallelDescriptor::ReduceRealSum(total_speed);
+  #endif
+}
+
 void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_particles)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");

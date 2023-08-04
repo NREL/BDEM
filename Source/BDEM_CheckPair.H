@@ -20,8 +20,8 @@ struct CheckPair
         amrex::Real d1 = (p1.pos(1) - p2.pos(1));
         amrex::Real d2 = (p1.pos(2) - p2.pos(2));
         amrex::Real d = sqrt(d0*d0 + d1*d1 + d2*d2);
-        // return (d <= 1.4*max_len);
-        return (d <= 1.1*max_len);
+        return (d <= 1.25*max_len);
+        // return (d <= 1.1*max_len);
 
         // If we get through all component particles with no pair match, return false
         return not_pair;

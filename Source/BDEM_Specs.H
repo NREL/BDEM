@@ -164,6 +164,7 @@ class DEMspecs
         Real cfl=0.02;
         Real constant_dt = 0.0;
         int verlet_scheme = 0;
+        Real avg_speed_stop = -1;
 
         int mass_flow=0;
 
@@ -310,6 +311,7 @@ class DEMspecs
 
             pp.get("max_steps", maxsteps);
             pp.get("final_time",final_time);
+            pp.query("avg_speed_stop", avg_speed_stop);
 
 	    pp.query("particle_mass_history",mass_flow);
 	    if(mass_flow)

@@ -126,6 +126,8 @@ public:
 
     void Calculate_Total_Mass_MaterialPoints(Real &total_mass, int cdir, Real cutoff);
 
+    void Calculate_Total_Speed_MaterialPoints(Real &total_speed);
+
     void reassignParticleProperties(Real reinit_rad, Real reinit_dens, Real reinit_E, Real reinit_nu);
 
 private:

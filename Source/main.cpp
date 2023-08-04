@@ -175,6 +175,7 @@ int main (int argc, char* argv[])
 
         amrex::Real mass_flow_prev;
         amrex::Real mass_flow_next;
+        amrex::Real total_speed=1e10;
         amrex::Real t_prev=0.0;
         if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
 
@@ -183,7 +184,7 @@ int main (int argc, char* argv[])
         Real cb_intt = specs.cb_load_time + specs.cb_hold_time;
         Real cb_int_stop = cb_intt*specs.cb_interval_num;
 
-        while((steps < specs.maxsteps) and (time < specs.final_time))
+        while((steps < specs.maxsteps) and (time < specs.final_time) and (total_speed > specs.avg_speed_stop))
         {
             time += dt;
             output_time += dt;
@@ -371,6 +372,8 @@ int main (int argc, char* argv[])
                      mass_flow_prev = mass_flow_next;
                      PrintToFile("Mass_Flow.out")<<time<<"\t"<<delta_t<<"\t"<<flow_out<<"\t"<<mass_flow_next<<"\n";
                  }
+                 bpc.Calculate_Total_Speed_MaterialPoints(total_speed);
+                 total_speed /= bpc.TotalNumberOfParticles();
             }
             steps++;
         }
