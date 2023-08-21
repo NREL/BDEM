@@ -261,7 +261,7 @@ int main (int argc, char* argv[])
                     bpc.reassignParticles_softwall(); 
                 }
             } 
-            else
+            else if (steps % specs.num_upd_neighbor == 0)
             {
                 bpc.updateNeighbors();
             }

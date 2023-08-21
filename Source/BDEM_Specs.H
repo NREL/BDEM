@@ -175,6 +175,7 @@ class DEMspecs
         int maxsteps=100;
         Real final_time=100.0;
         int num_redist=25;
+        int num_upd_neighbor=1;
         int stepoffset=0;
         std::string restartfilename {""};
         std::string stlfilename {""};
@@ -327,6 +328,7 @@ class DEMspecs
 	    pp.query("screen_output_time", screen_output_time);
 
             pp.query("num_redist", num_redist);
+            pp.query("num_upd_neighbor", num_upd_neighbor);
             pp.query("cfl", cfl);
             pp.query("constant_dt", constant_dt);
             pp.query("verlet_scheme", verlet_scheme);
