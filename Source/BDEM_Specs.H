@@ -179,6 +179,7 @@ class DEMspecs
         int stepoffset=0;
         std::string restartfilename {""};
         std::string stlfilename {""};
+	std::string pltprefix {""};
 
         mechanism *chemptr;
         std::string chemistry;
@@ -463,6 +464,10 @@ class DEMspecs
                 stl_geom_present=true;
             }
             pp.query("dynamicstl",dynamicstl);
+            pp.query("pltprefix",pltprefix);
+	    if(!pltprefix.empty()){
+	    	pltprefix = pltprefix + "/";
+	    }
 
             if(!stl_geom_present)
             {

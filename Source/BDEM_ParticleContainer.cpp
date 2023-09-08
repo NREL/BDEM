@@ -555,10 +555,10 @@ void BDEMParticleContainer::Calculate_Total_Speed_MaterialPoints(Real &total_spe
   #endif
 }
 
-void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_particles)
+void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_particles, const std::string pltprefix)
 {
     BL_PROFILE("BDEMParticleContainer::writeParticles");
-    const std::string& pltfile = amrex::Concatenate("plt", n, 5);
+    const std::string& pltfile = pltprefix + amrex::Concatenate("plt", n, 5);
 
     Vector<int> writeflags_real(realData::count+MAXSPECIES-1,0);
     Vector<int> writeflags_int(intData::count,0);

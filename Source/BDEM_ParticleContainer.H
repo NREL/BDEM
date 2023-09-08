@@ -77,7 +77,7 @@ public:
 
     void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0);
 
-    void writeParticles (const int n, const int bonded_sphere_particles);   
+    void writeParticles (const int n, const int bonded_sphere_particles, const std::string pltprefix);   
 
     ParticleType generate_particle(Real x,Real y,Real z,
                 Real velx, Real vely, Real velz,

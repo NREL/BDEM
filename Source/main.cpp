@@ -161,7 +161,7 @@ int main (int argc, char* argv[])
         }
 
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
-        bpc.writeParticles(steps+specs.stepoffset, specs.bonded_sphere_particles);
+        bpc.writeParticles(steps+specs.stepoffset, specs.bonded_sphere_particles, specs.pltprefix);
 
         if(specs.dynamicstl!=0)
         {
@@ -348,8 +348,8 @@ int main (int argc, char* argv[])
                 Print()<<"writing outputs at step,time:"<<steps<<"\t"<<time<<"\n";
                 bpc.redist_particles(0,specs.using_softwalls);
                 output_it++;
-                bpc.writeParticles(output_it+specs.stepoffset, specs.bonded_sphere_particles);
-                const std::string& rstfile = amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
+                bpc.writeParticles(output_it+specs.stepoffset, specs.bonded_sphere_particles, specs.pltprefix);
+                const std::string& rstfile = specs.pltprefix + amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
                 bpc.Checkpoint(rstfile, "particles");
                 output_time=zero;
                 if(specs.dynamicstl!=0)
@@ -370,7 +370,7 @@ int main (int argc, char* argv[])
                      bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_next, specs.mass_flow_dir, specs.mass_flow_cutoff);
                      Real flow_out = mass_flow_prev - mass_flow_next;
                      mass_flow_prev = mass_flow_next;
-                     PrintToFile("Mass_Flow.out")<<time<<"\t"<<delta_t<<"\t"<<flow_out<<"\t"<<mass_flow_next<<"\n";
+                     PrintToFile(specs.pltprefix + "Mass_Flow.out")<<time<<"\t"<<delta_t<<"\t"<<flow_out<<"\t"<<mass_flow_next<<"\n";
                  }
                  bpc.Calculate_Total_Speed_MaterialPoints(total_speed);
                  total_speed /= bpc.TotalNumberOfParticles();
@@ -379,8 +379,8 @@ int main (int argc, char* argv[])
         }
 
         bpc.redist_particles(0,specs.using_softwalls);
-        bpc.writeParticles(output_it+1+specs.stepoffset, specs.bonded_sphere_particles);
-        const std::string& rstfile = amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
+        bpc.writeParticles(output_it+1+specs.stepoffset, specs.bonded_sphere_particles, specs.pltprefix);
+        const std::string& rstfile = specs.pltprefix + amrex::Concatenate("rst", output_it+1+specs.stepoffset, 5);
         bpc.Checkpoint(rstfile, "particles");
         if(specs.using_softwalls)
         {
