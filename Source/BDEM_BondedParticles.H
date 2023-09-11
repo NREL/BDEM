@@ -141,6 +141,15 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   if(type == 22){
       for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type22_bonds[comp][b] != -1) ? ids[bp_data.Type22_bonds[comp][b]]:0;
   }
+  if(type == 23){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type23_bonds[comp][b] != -1) ? ids[bp_data.Type23_bonds[comp][b]]:0;
+  }
+  if(type == 24){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type24_bonds[comp][b] != -1) ? ids[bp_data.Type24_bonds[comp][b]]:0;
+  }
+  if(type == 25){
+      for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = (bp_data.Type25_bonds[comp][b] != -1) ? ids[bp_data.Type25_bonds[comp][b]]:0;
+  }
   
   //FIXME: get chemistry data from inputs file
   for(int sp=0;sp<MAXSPECIES;sp++)

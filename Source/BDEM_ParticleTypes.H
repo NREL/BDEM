@@ -30,6 +30,9 @@ struct ParticleBondData {
   int Type20_bonds[BP_NP20][MAXBONDS];    // 8x5, single layer
   int Type21_bonds[BP_NP21][MAXBONDS];    // 4x2, single layer, offset
   int Type22_bonds[BP_NP22][MAXBONDS];    // 5x2, single layer, offset
+  int Type23_bonds[BP_NP23][MAXBONDS];    // 6x2, single layer, offset
+  int Type24_bonds[BP_NP24][MAXBONDS];    // 8x4, single layer, offset
+  int Type25_bonds[BP_NP25][MAXBONDS];    // 10x4, single layer, offset
 
   // Constructor to fill in bond info
   ParticleBondData(){
@@ -151,6 +154,21 @@ struct ParticleBondData {
       for(int i=0; i<BP_NP22; i++){
           for(int j=0; j<MAXBONDS; j++){
               Type22_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP23; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type23_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP24; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type24_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP25; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type25_bonds[i][j] = -1;
           }
       }
 
@@ -471,5 +489,53 @@ struct ParticleBondData {
       Type22_bonds[7][0] = 2;  Type22_bonds[7][1] = 6;  Type22_bonds[7][2] = 8;
       Type22_bonds[8][0] = 3;  Type22_bonds[8][1] = 7;  Type22_bonds[8][2] = 9;
       Type22_bonds[9][0] = 4;  Type22_bonds[9][1] = 8;
+      
+      // Particle type 23
+      Type23_bonds[0][0] = 1;   Type23_bonds[0][1] = 6;
+      Type23_bonds[1][0] = 0;   Type23_bonds[1][1] = 2;   Type23_bonds[1][2] = 7;
+      Type23_bonds[2][0] = 1;   Type23_bonds[2][1] = 3;   Type23_bonds[2][2] = 8;
+      Type23_bonds[3][0] = 2;   Type23_bonds[3][1] = 4;   Type23_bonds[3][2] = 9;
+      Type23_bonds[4][0] = 3;   Type23_bonds[4][1] = 5;   Type23_bonds[4][2] = 10;
+      Type23_bonds[5][0] = 4;   Type23_bonds[5][1] = 11;
+      Type23_bonds[6][0] = 0;   Type23_bonds[6][1] = 7;
+      Type23_bonds[7][0] = 1;   Type23_bonds[7][1] = 6;   Type23_bonds[7][2] = 8;
+      Type23_bonds[8][0] = 2;   Type23_bonds[8][1] = 7;   Type23_bonds[8][2] = 9;
+      Type23_bonds[9][0] = 3;   Type23_bonds[9][1] = 8;   Type23_bonds[9][2] = 10;
+      Type23_bonds[10][0] = 4;  Type23_bonds[10][1] = 9;  Type23_bonds[10][2] = 11;
+      Type23_bonds[11][0] = 5;  Type23_bonds[11][1] = 10;
+
+      // Particle type 24
+      // Manually adding all corner point bonds and middle layer y-edge point bonds
+      Type24_bonds[0][0] = 1;   Type24_bonds[0][1] = 8;
+      Type24_bonds[7][0] = 6;   Type24_bonds[7][1] = 15;
+      Type24_bonds[8][0] = 0;   Type24_bonds[8][1] = 9;   Type24_bonds[8][2] = 16;
+      Type24_bonds[15][0] = 7;  Type24_bonds[15][1] = 14; Type24_bonds[15][2] = 23;
+      Type24_bonds[16][0] = 8;  Type24_bonds[16][1] = 17; Type24_bonds[16][2] = 24;
+      Type24_bonds[23][0] = 15; Type24_bonds[23][1] = 22; Type24_bonds[23][2] = 31;
+      Type24_bonds[24][0] = 16; Type24_bonds[24][1] = 25;
+      Type24_bonds[31][0] = 23; Type24_bonds[31][1] = 30;
+
+      for(int i=0; i<BP_NP24; i++){
+        if(i>0 && i<7){ Type24_bonds[i][0] = i-1; Type24_bonds[i][1] = i+1; Type24_bonds[i][2] = i+8; }
+        if((i>8 && i<15) || (i>16 && i<23)){Type24_bonds[i][0] = i-8; Type24_bonds[i][1] = i-1; Type24_bonds[i][2] = i+1; Type24_bonds[i][3] = i+8;}
+        if(i>24 && i<31){ Type24_bonds[i][0] = i-8; Type24_bonds[i][1] = i-1; Type24_bonds[i][2] = i+1; }
+      }
+
+      // Particle type 25
+      // Manually adding all corner point bonds and middle layer y-edge point bonds
+      Type25_bonds[0][0] = 1;   Type25_bonds[0][1] = 10;
+      Type25_bonds[9][0] = 8;   Type25_bonds[9][1] = 19;
+      Type25_bonds[10][0] = 0;  Type25_bonds[10][1] = 11; Type25_bonds[10][2] = 20;
+      Type25_bonds[19][0] = 9;  Type25_bonds[19][1] = 18; Type25_bonds[19][2] = 29;
+      Type25_bonds[20][0] = 10; Type25_bonds[20][1] = 21; Type25_bonds[20][2] = 30;
+      Type25_bonds[29][0] = 19; Type25_bonds[29][1] = 28; Type25_bonds[29][2] = 39;
+      Type25_bonds[30][0] = 20; Type25_bonds[30][1] = 31;
+      Type25_bonds[39][0] = 29; Type25_bonds[39][1] = 38;
+
+      for(int i=0; i<BP_NP25; i++){
+        if(i>0 && i<9){ Type25_bonds[i][0] = i-1; Type25_bonds[i][1] = i+1; Type25_bonds[i][2] = i+10; }
+        if((i>10 && i<19) || (i>20 && i<29)){Type25_bonds[i][0] = i-10; Type25_bonds[i][1] = i-1; Type25_bonds[i][2] = i+1; Type25_bonds[i][3] = i+10;}
+        if(i>30 && i<39){ Type25_bonds[i][0] = i-10; Type25_bonds[i][1] = i-1; Type25_bonds[i][2] = i+1; }
+      }
   }
 };

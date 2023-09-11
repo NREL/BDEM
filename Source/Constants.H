@@ -9,10 +9,10 @@
 #define SOFTWALL_BC 2
 #define CONTACT_HERTZ 1
 #define MAXSPECIES 1
-#define MAXBRIDGES 1
+#define MAXBRIDGES 8
 #define MAXBONDS 4
 
-#define BP_TYPES 23
+#define BP_TYPES 26
 #define BP_NP0 1
 #define BP_NP1 2
 #define BP_NP2 3
@@ -36,6 +36,9 @@
 #define BP_NP20 40
 #define BP_NP21 8
 #define BP_NP22 10
+#define BP_NP23 12
+#define BP_NP24 32
+#define BP_NP25 40
 
 #define NTP_TEMP 293
 #define fourbythree 1.3333333333
