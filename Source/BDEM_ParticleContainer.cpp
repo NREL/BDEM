@@ -487,14 +487,23 @@ void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, R
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
 
-        for (int i = 0; i < np; i++)
+        amrex::ParallelFor(np,[=]
+        AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            Real MC = (MC_stdev > 0.0) ? std::min(std::max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
-            p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
+            // Real MC = (MC_stdev > 0.0) ? std::min(std::max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
+            Real MC = MC_avg;
+	    Real original_lv = p.rdata(realData::liquid_volume);
+            p.rdata(realData::liquid_volume) = (MC > FSP || MC == 0.0) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1.0 - MC):0;
             p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
             p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
-        }
+
+	    // Rescale the total liquid participating in bridges
+	    if(original_lv > 0.0) p.rdata(realData::total_bridge_volume) *= p.rdata(realData::liquid_volume) / original_lv;
+
+	    // If MC < FSP, remove all existing liquid bridges
+	    for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
+        });
     }
 }
 
