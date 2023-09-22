@@ -484,9 +484,12 @@ amrex::ParallelFor(np,[=]
                 Real ccoef = 0.0018*log(Vtot/pow(rad2,3.0)) + 0.078;
 
                 // Calculate the normal capillary force and normal/tangential viscous forces 
-                // Real Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
-                // Real Fcap = (Sdist > 0.0) ? PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef)):0.0;
-                Real Fcap = (Sdist > 0.0) ? PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef)) * 0.5*(tanh(5000.0*(Sdist - Drupt/10.0)) + 1.0):0.0;
+                Real Fcap = 0.0;
+                if(liquid_bridging == 2){
+                  Fcap = (Sdist > 0.0) ? PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef)) * 0.5*(tanh(5000.0*(Sdist - Drupt/10.0)) + 1.0):0.0;
+                } else {
+                  Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
+                }
                 
                 Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
                 Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
