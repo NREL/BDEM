@@ -30,7 +30,7 @@ amrex::ParallelFor(np,[=]
         normal[1] *= -1;
         normal[2] *= -1;
 
-        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_law);
+        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_law, liquid_bridging);
 
         if(do_heat_transfer)
         {

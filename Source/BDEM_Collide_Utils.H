@@ -354,7 +354,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
         amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
         amrex::Real rollfric_torq_by_d[THREEDIM], amrex::Real pos[THREEDIM],
-        int contact_law)
+        int contact_law, int liquid_bridging)
 {
     Real rp = p.rdata(realData::radius);
     Real overlap_n = rp - walldist;
@@ -514,4 +514,26 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     p.rdata(realData::taux) += torq[XDIR] + walldist*rollfric_torq_by_d[XDIR];
     p.rdata(realData::tauy) += torq[YDIR] + walldist*rollfric_torq_by_d[YDIR];
     p.rdata(realData::tauz) += torq[ZDIR] + walldist*rollfric_torq_by_d[ZDIR];
+
+    /* Calculating liquid bridge force for particles in contact with wall
+          - Assumes bridges are only present when particle is in direct contact with wall
+          - Assumes there is enough free liquid for bridge to form
+          - FIXME: Currently, bridge is calculated assuming the wall surface acts as a sphere with the same radius
+    */
+    if(liquid_bridging){ 
+      // Bridge volume 
+      Real Vtot = (p.rdata(realData::liquid_volume))*pow(0.5,0.5);
+
+      // Calculate the fitting coefficients from Soulie et al. (2006)
+      Real acoef = -1.1*pow( Vtot/pow(rp,3.0) ,-0.53);
+      Real bcoef = (-0.148*log(Vtot/pow(rp,3.0)) - 0.96)*pow(DEM::contact_angle,two) - 0.0082*log(Vtot/pow(rp,3.0)) + 0.48;
+      Real ccoef = 0.0018*log(Vtot/pow(rp,3.0)) + 0.078;
+
+      // Calculate the normal capillary force
+      Real Fcap = PI*DEM::gamma*rp*(ccoef + exp(bcoef));
+
+      p.rdata(realData::fx) += Fcap*normal[XDIR];
+      p.rdata(realData::fy) += Fcap*normal[YDIR];
+      p.rdata(realData::fz) += Fcap*normal[ZDIR];
+    }
 }
