@@ -530,7 +530,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
       Real ccoef = 0.0018*log(Vtot/pow(rp,3.0)) + 0.078;
 
       // Calculate the normal capillary force
-      Real Fcap = PI*DEM::gamma*rp*(ccoef + exp(bcoef));
+      Real Fcap = PI*DEM::wall_gamma*rp*(ccoef + exp(bcoef));
 
       p.rdata(realData::fx) += Fcap*normal[XDIR];
       p.rdata(realData::fy) += Fcap*normal[YDIR];

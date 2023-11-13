@@ -84,6 +84,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real gamma;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real wall_gamma;
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
@@ -555,6 +556,7 @@ class DEMspecs
                 pp.query("liquid_density", liquid_density);
                 pp.query("liquid_viscosity", DEM::mu_liq);
                 pp.query("surface_tension", DEM::gamma);
+                pp.query("wall_surface_tension", DEM::wall_gamma);
                 pp.query("recalculate_MC", recalculate_MC);
 
                 // Convert contact angle to rad

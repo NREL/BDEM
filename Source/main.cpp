@@ -24,6 +24,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::tcoll    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_liq   = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::wall_gamma    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_bond  = zero;
