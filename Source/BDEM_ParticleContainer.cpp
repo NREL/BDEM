@@ -26,8 +26,8 @@ Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles)
         // FIXME: should this change when using glued sphere model?
         // return( std::pow(DEM::k_n/p.rdata(realData::mass)
         Real bonded_dt = 1e10;
-        if(bonded_sphere_particles) bonded_dt = 0.8165*2.0*p.rdata(realData::radius)*pow(p.rdata(realData::density) / DEM::E_bond,0.5); 
-        return( std::min(bonded_dt, std::pow(DEM::k_n/(p.rdata(realData::mass))
+        if(bonded_sphere_particles) bonded_dt = 0.8165*2.0*p.rdata(aos_realData::radius)*pow(p.rdata(aos_realData::density) / DEM::E_bond,0.5); 
+        return( std::min(bonded_dt, std::pow(DEM::k_n/(p.rdata(aos_realData::mass))
                 *PI*PI/(PI*PI + log(DEM::e_n)*log(DEM::e_n))
                 ,-half))
          ); 
@@ -98,22 +98,30 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
 
         auto nbor_data = m_neighbor_list[lev][index].data();
         ParticleType* pstruct = aos().dataPtr();
 
+        auto fx_arr = soa.GetRealData(soa_realData::fx).data();
+        auto fy_arr = soa.GetRealData(soa_realData::fy).data();
+        auto fz_arr = soa.GetRealData(soa_realData::fz).data();
+
+        auto taux_arr = soa.GetRealData(soa_realData::taux).data();
+        auto tauy_arr = soa.GetRealData(soa_realData::tauy).data();
+        auto tauz_arr = soa.GetRealData(soa_realData::tauz).data();
+
         amrex::ParallelFor(np,[=]
                 AMREX_GPU_DEVICE (int i) noexcept
         {
-            ParticleType& p = pstruct[i];
-            p.rdata(realData::fx) = zero;
-            p.rdata(realData::fy) = zero;
-            p.rdata(realData::fz) = zero;
+            fx_arr[i] = zero;
+            fy_arr[i] = zero;
+            fz_arr[i] = zero;
 
-            p.rdata(realData::taux) = zero;
-            p.rdata(realData::tauy) = zero;
-            p.rdata(realData::tauz) = zero;
+            taux_arr[i] = zero;
+            tauy_arr[i] = zero;
+            tauz_arr[i] = zero;
         });
     }
 
@@ -125,10 +133,26 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
 
         auto nbor_data = m_neighbor_list[lev][index].data();
         ParticleType* pstruct = aos().dataPtr();
+
+        // Get SoA data for variables that are updated during force calculation kernels 
+        auto fx_arr = soa.GetRealData(soa_realData::fx).data();
+        auto fy_arr = soa.GetRealData(soa_realData::fy).data();
+        auto fz_arr = soa.GetRealData(soa_realData::fz).data();
+
+        auto taux_arr = soa.GetRealData(soa_realData::taux).data();
+        auto tauy_arr = soa.GetRealData(soa_realData::tauy).data();
+        auto tauz_arr = soa.GetRealData(soa_realData::tauz).data();
+
+        auto total_bridge_vol_arr = soa.GetRealData(soa_realData::total_bridge_volume).data();
+        Vector<int*> bridges_vec(MAXBRIDGES);
+        for(int br=0; br<MAXBRIDGES; br++) bridges_vec[br] = soa.GetIntData(soa_intData::first_bridge+br).data(); 
+        Vector<Real*> bonds_vec(MAXBONDS*9);
+        for(int b=0; b<MAXBONDS*9; b++) bonds_vec[b] = soa.GetRealData(soa_realData::first_bond_v+b).data(); 
         
         int x_lo_bc = domain_bc[0];
         int x_hi_bc = domain_bc[1];
@@ -194,18 +218,32 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        auto fx_arr = soa.GetRealData(soa_realData::fx).data();
+        auto fy_arr = soa.GetRealData(soa_realData::fy).data();
+        auto fz_arr = soa.GetRealData(soa_realData::fz).data();
+
+        auto taux_arr = soa.GetRealData(soa_realData::taux).data();
+        auto tauy_arr = soa.GetRealData(soa_realData::tauy).data();
+        auto tauz_arr = soa.GetRealData(soa_realData::tauz).data();
+        auto Iinv_arr = soa.GetRealData(soa_realData::Iinv).data();
+
+        auto radinit_arr = soa.GetRealData(soa_realData::radinit).data();
+        Vector<Real*> spec_vec(MAXSPECIES);
+        for(int sp=0; sp<MAXSPECIES; sp++) spec_vec[sp] = soa.GetRealData(soa_realData::firstspec+sp).data(); 
 
         // now we move the particles
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            if(p.idata(intData::phase) != -1){    // Particles with phase = -1 are inert and do not move
+            if(soa.GetIntData(soa_intData::phase).data()[i] != -1){    // Particles with phase = -1 are inert and do not move
               Real pos_old[3];
               Real pos_new[3];
-              Real rp = p.rdata(realData::radius);
+              Real rp = p.rdata(aos_realData::radius);
 
               pos_old[0]=p.pos(0);
               pos_old[1]=p.pos(1);
@@ -214,81 +252,78 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
               Real verlet_factor = (verlet_scheme) ? 0.5:1.0;
 
               // Global damping of particle forces
-              p.rdata(realData::fx) -= DEM::global_damping * p.rdata(realData::xvel);
-              p.rdata(realData::fy) -= DEM::global_damping * p.rdata(realData::yvel);
-              p.rdata(realData::fz) -= DEM::global_damping * p.rdata(realData::zvel);
+              fx_arr[i] -= DEM::global_damping * p.rdata(aos_realData::xvel);
+              fy_arr[i] -= DEM::global_damping * p.rdata(aos_realData::yvel);
+              fz_arr[i] -= DEM::global_damping * p.rdata(aos_realData::zvel);
 
               // Force-based damping
-              Real vel_vect[THREEDIM] = {p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel)};
-              Real f_vect[THREEDIM] = {p.rdata(realData::fx), p.rdata(realData::fy), p.rdata(realData::fz)};
+              Real vel_vect[THREEDIM] = {p.rdata(aos_realData::xvel), p.rdata(aos_realData::yvel), p.rdata(aos_realData::zvel)};
+              Real f_vect[THREEDIM] = {fx_arr[i], fy_arr[i], fz_arr[i]};
               Real vmag = sqrt(dotpdt(vel_vect, vel_vect));
               Real fmag = sqrt(dotpdt(f_vect, f_vect));
               if(vmag > TINYVAL){
-                  p.rdata(realData::fx) -= DEM::force_damping * fmag * (p.rdata(realData::xvel)/vmag);
-                  p.rdata(realData::fy) -= DEM::force_damping * fmag * (p.rdata(realData::yvel)/vmag);
-                  p.rdata(realData::fz) -= DEM::force_damping * fmag * (p.rdata(realData::zvel)/vmag);
+                  fx_arr[i] -= DEM::force_damping * fmag * (p.rdata(aos_realData::xvel)/vmag);
+                  fy_arr[i] -= DEM::force_damping * fmag * (p.rdata(aos_realData::yvel)/vmag);
+                  fz_arr[i] -= DEM::force_damping * fmag * (p.rdata(aos_realData::zvel)/vmag);
               }
 
-              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt * verlet_factor;
-              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt * verlet_factor;
-              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt * verlet_factor;
+              p.rdata(aos_realData::xvel) += (fx_arr[i]/p.rdata(aos_realData::mass)) * dt * verlet_factor;
+              p.rdata(aos_realData::yvel) += (fy_arr[i]/p.rdata(aos_realData::mass)) * dt * verlet_factor;
+              p.rdata(aos_realData::zvel) += (fz_arr[i]/p.rdata(aos_realData::mass)) * dt * verlet_factor;
 
               if(verlet_scheme != 2){
-                  p.pos(0) += p.rdata(realData::xvel) * dt;
-                  p.pos(1) += p.rdata(realData::yvel) * dt;
-                  p.pos(2) += p.rdata(realData::zvel) * dt;
+                  p.pos(0) += p.rdata(aos_realData::xvel) * dt;
+                  p.pos(1) += p.rdata(aos_realData::yvel) * dt;
+                  p.pos(2) += p.rdata(aos_realData::zvel) * dt;
               }
 
               // Global damping of particle torques
-              p.rdata(realData::taux) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::xangvel);
-              p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
-              p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
+              taux_arr[i] -= pow(p.rdata(aos_realData::radius),two)*DEM::global_damping*p.rdata(aos_realData::xangvel);
+              tauy_arr[i] -= pow(p.rdata(aos_realData::radius),two)*DEM::global_damping*p.rdata(aos_realData::yangvel);
+              tauz_arr[i] -= pow(p.rdata(aos_realData::radius),two)*DEM::global_damping*p.rdata(aos_realData::zangvel);
 
               // Torque-based damping
-              Real angvel_vect[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
-              Real tau_vect[THREEDIM] = {p.rdata(realData::taux), p.rdata(realData::tauy), p.rdata(realData::tauz)};
+              Real angvel_vect[THREEDIM] = {p.rdata(aos_realData::xangvel), p.rdata(aos_realData::yangvel), p.rdata(aos_realData::zangvel)};
+              Real tau_vect[THREEDIM] = {taux_arr[i], tauy_arr[i], tauz_arr[i]};
               Real angvmag = sqrt(dotpdt(angvel_vect, angvel_vect));
               Real tmag = sqrt(dotpdt(tau_vect, tau_vect));
               if(angvmag > TINYVAL){
-                  p.rdata(realData::taux) -= DEM::force_damping * tmag * (p.rdata(realData::xangvel)/angvmag);
-                  p.rdata(realData::tauy) -= DEM::force_damping * tmag * (p.rdata(realData::yangvel)/angvmag);
-                  p.rdata(realData::tauz) -= DEM::force_damping * tmag * (p.rdata(realData::zangvel)/angvmag);
+                  taux_arr[i] -= DEM::force_damping * tmag * (p.rdata(aos_realData::xangvel)/angvmag);
+                  tauy_arr[i] -= DEM::force_damping * tmag * (p.rdata(aos_realData::yangvel)/angvmag);
+                  tauz_arr[i] -= DEM::force_damping * tmag * (p.rdata(aos_realData::zangvel)/angvmag);
               }
 
-              p.rdata(realData::xangvel) += p.rdata(realData::taux) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::xangvel);
-              p.rdata(realData::yangvel) += p.rdata(realData::tauy) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::yangvel);
-              p.rdata(realData::zangvel) += p.rdata(realData::tauz) * p.rdata(realData::Iinv) * dt * verlet_factor - DEM::angv_damping*p.rdata(realData::zangvel);
-
-              // Tracking change in theta_x for beam twisting testing
-              if(verlet_scheme != 2) p.rdata(realData::theta_x) += p.rdata(realData::xangvel) * dt;
+              p.rdata(aos_realData::xangvel) += taux_arr[i] * Iinv_arr[i] * dt * verlet_factor - DEM::angv_damping*p.rdata(aos_realData::xangvel);
+              p.rdata(aos_realData::yangvel) += tauy_arr[i] * Iinv_arr[i] * dt * verlet_factor - DEM::angv_damping*p.rdata(aos_realData::yangvel);
+              p.rdata(aos_realData::zangvel) += tauz_arr[i] * Iinv_arr[i] * dt * verlet_factor - DEM::angv_damping*p.rdata(aos_realData::zangvel);
 
               // FIXME: Chemistry should be compatible w Verlet scheme
               if(do_chemistry)
               {
                   Real wdot[MAXSPECIES+1]={0.0};
                   Real spec[MAXSPECIES]={0.0};
-                  Real minrad=minradfrac*p.rdata(realData::radinit);
+                  Real minrad=minradfrac*radinit_arr[i];
 
                   for(int sp=0;sp<nspecies;sp++)
                   {
                       //conc in kg/m3
-                      spec[sp]=p.rdata(realData::firstspec+sp)*p.rdata(realData::density); 
+                      spec[sp]=spec_vec[sp][i]*p.rdata(aos_realData::density); 
                   }
 
-                  getProductionRate(nspecies,nsolidspecs,nreac,spec,molwts,p.rdata(realData::density), 
-                                    p.rdata(realData::radius), p.rdata(realData::radinit), p.rdata(realData::temperature),
+                  getProductionRate(nspecies,nsolidspecs,nreac,spec,molwts,p.rdata(aos_realData::density), 
+                                    p.rdata(aos_realData::radius), radinit_arr[i], p.rdata(aos_realData::temperature),
                                     solidspec_ids, reactmatrix, arrh_A, arrh_Ea, wdot);
 
                   for(int sp=0;sp<nspecies;sp++)
                   {
-                      p.rdata(realData::firstspec+sp) += wdot[sp]*dt/p.rdata(realData::density);
+                      spec_vec[sp][i] += wdot[sp]*dt/p.rdata(aos_realData::density);
                   }
-                  p.rdata(realData::radius) += wdot[nspecies]*dt;
+                  p.rdata(aos_realData::radius) += wdot[nspecies]*dt;
 
                   //reset radius
-                  if(p.rdata(realData::radius)<minrad)
+                  if(p.rdata(aos_realData::radius)<minrad)
                   {
-                      p.rdata(realData::radius)=minrad;
+                      p.rdata(aos_realData::radius)=minrad;
                   }
               }
 
@@ -296,32 +331,32 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
               if (x_lo_bc==HARDWALL_BC and p.pos(0) < (plo[0]+rp))
               {
                   p.pos(0) = two*(plo[0]+rp) - p.pos(0);
-                  p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+                  p.rdata(aos_realData::xvel) = -p.rdata(aos_realData::xvel);
               }
               if (x_hi_bc==HARDWALL_BC and p.pos(0) > (phi[0]-rp))
               {
                   p.pos(0) = two*(phi[0]-rp) - p.pos(0);
-                  p.rdata(realData::xvel) = -p.rdata(realData::xvel);
+                  p.rdata(aos_realData::xvel) = -p.rdata(aos_realData::xvel);
               }
               if (y_lo_bc==HARDWALL_BC and p.pos(1) < (plo[1]+rp))
               {
                   p.pos(1) = two*(plo[1]+rp) - p.pos(1);
-                  p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+                  p.rdata(aos_realData::yvel) = -p.rdata(aos_realData::yvel);
               }
               if (y_hi_bc==HARDWALL_BC and p.pos(1) > (phi[1]-rp))
               {
                   p.pos(1) = two*(phi[1]-rp) - p.pos(1);
-                  p.rdata(realData::yvel) = -p.rdata(realData::yvel);
+                  p.rdata(aos_realData::yvel) = -p.rdata(aos_realData::yvel);
               }
               if (z_lo_bc==HARDWALL_BC and p.pos(2) < (plo[2]+rp))
               {
                   p.pos(2) = two*(plo[2]+rp) - p.pos(2);
-                  p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+                  p.rdata(aos_realData::zvel) = -p.rdata(aos_realData::zvel);
               }
               if (z_hi_bc==HARDWALL_BC and p.pos(2) > (phi[2]-rp))
               {
                   p.pos(2) = two*(phi[2]-rp) - p.pos(2);
-                  p.rdata(realData::zvel) = -p.rdata(realData::zvel);
+                  p.rdata(aos_realData::zvel) = -p.rdata(aos_realData::zvel);
               }
             }
 
@@ -388,47 +423,54 @@ void BDEMParticleContainer::saveParticles_softwall()
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        auto pxp_arr = soa.GetRealData(soa_realData::posx_prvs).data();
+        auto pyp_arr = soa.GetRealData(soa_realData::posy_prvs).data();
+        auto pzp_arr = soa.GetRealData(soa_realData::posz_prvs).data();
+
+        auto softwall_arr = soa.GetIntData(soa_intData::near_softwall).data();
 
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            p.rdata(realData::posx_prvs)=p.pos(0);
-            p.rdata(realData::posy_prvs)=p.pos(1);
-            p.rdata(realData::posz_prvs)=p.pos(2);
-            p.idata(intData::near_softwall)=0;
+            pxp_arr[i]=p.pos(0);
+            pyp_arr[i]=p.pos(1);
+            pzp_arr[i]=p.pos(2);
+            softwall_arr[i]=0;
             
             if (x_lo_bc==SOFTWALL_BC and p.pos(0) < plo[0])
             {
                 p.pos(0) = two*plo[0] - p.pos(0);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
             if (x_hi_bc==SOFTWALL_BC and p.pos(0) > phi[0])
             {
                 p.pos(0) = two*phi[0] - p.pos(0);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
             if (y_lo_bc==SOFTWALL_BC and p.pos(1) < plo[1])
             {
                 p.pos(1) = two*plo[1] - p.pos(1);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
             if (y_hi_bc==SOFTWALL_BC and p.pos(1) > phi[1])
             {
                 p.pos(1) = two*phi[1] - p.pos(1);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
             if (z_lo_bc==SOFTWALL_BC and p.pos(2) < plo[2])
             {
                 p.pos(2) = two*plo[2] - p.pos(2);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
             if (z_hi_bc==SOFTWALL_BC and p.pos(2) > phi[2])
             {
                 p.pos(2) = two*phi[2] - p.pos(2);
-                p.idata(intData::near_softwall)=1;
+                softwall_arr[i]=1;
             }
         });
     }
@@ -449,20 +491,26 @@ void BDEMParticleContainer::reassignParticles_softwall()
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        auto pxp_arr = soa.GetRealData(soa_realData::posx_prvs).data();
+        auto pyp_arr = soa.GetRealData(soa_realData::posy_prvs).data();
+        auto pzp_arr = soa.GetRealData(soa_realData::posz_prvs).data();
+        auto softwall_arr = soa.GetIntData(soa_intData::near_softwall).data();
 
         // now we move the particles
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
-            if(p.idata(intData::near_softwall)==1)
+            if(softwall_arr[i]==1)
             {
-                p.pos(0)=p.rdata(realData::posx_prvs);
-                p.pos(1)=p.rdata(realData::posy_prvs);
-                p.pos(2)=p.rdata(realData::posz_prvs);
-                p.idata(intData::near_softwall)=0;
+                p.pos(0)=pxp_arr[i];
+                p.pos(1)=pyp_arr[i];
+                p.pos(2)=pzp_arr[i];
+                softwall_arr[i]=0;
             }
         });
     }
@@ -484,8 +532,15 @@ void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, R
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        auto vol_arr = soa.GetRealData(soa_realData::volume).data();
+        auto total_bridge_vol_arr = soa.GetRealData(soa_realData::total_bridge_volume).data();
+
+        Vector<int*> bridges_vec(MAXBRIDGES);
+        for(int br=0; br<MAXBRIDGES; br++) bridges_vec[br] = soa.GetIntData(soa_intData::first_bridge+br).data(); 
 
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
@@ -493,16 +548,16 @@ void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, R
             ParticleType& p = pstruct[i];
             // Real MC = (MC_stdev > 0.0) ? std::min(std::max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
             Real MC = MC_avg;
-	    Real original_lv = p.rdata(realData::liquid_volume);
-            p.rdata(realData::liquid_volume) = (MC > FSP || MC == 0.0) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1.0 - MC):0;
-            p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
-            p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+	          Real original_lv = p.rdata(aos_realData::liquid_volume);
+            p.rdata(aos_realData::liquid_volume) = (MC > FSP || MC == 0.0) ? (p.rdata(aos_realData::density)*vol_arr[i]/liquid_density)*(MC - FSP)/(1.0 - MC):0;
+            p.rdata(aos_realData::mass) = p.rdata(aos_realData::density)*vol_arr[i] * (1.0 + MC/(1.0 - MC));
+            p.rdata(aos_realData::density) = p.rdata(aos_realData::mass) / vol_arr[i];
 
-	    // Rescale the total liquid participating in bridges
-	    if(original_lv > 0.0) p.rdata(realData::total_bridge_volume) *= p.rdata(realData::liquid_volume) / original_lv;
+	          // Rescale the total liquid participating in bridges
+	          if(original_lv > 0.0) total_bridge_vol_arr[i] *= p.rdata(aos_realData::liquid_volume) / original_lv;
 
-	    // If MC < FSP, remove all existing liquid bridges
-	    for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
+	          // If MC < FSP, remove all existing liquid bridges
+	          for(int br=0; br<MAXBRIDGES; br++) bridges_vec[br][i] = -1;
         });
     }
 }
@@ -524,14 +579,14 @@ void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass
         AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
         {
             Real ppos[3] = {p.pos(0), p.pos(1), p.pos(2)};
-            if(p.idata(intData::phase)==0 && ppos[cdir] > cutoff)
-            {
-              return(p.rdata(realData::mass));
-            }
-            else
-            {
-              return(0.0);
-            }
+            //if(p.idata(intData::phase)==0 && ppos[cdir] > cutoff)
+            //{
+              return(p.rdata(aos_realData::mass));
+            //}
+            //else
+            //{
+            //  return(0.0);
+            //}
         });
 
   #ifdef BL_USE_MPI
@@ -555,7 +610,7 @@ void BDEMParticleContainer::Calculate_Total_Speed_MaterialPoints(Real &total_spe
     total_speed = amrex::ReduceSum(*this, [=]
         AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
         {
-            Real pvel[3] = {p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel)};
+            Real pvel[3] = {p.rdata(aos_realData::xvel), p.rdata(aos_realData::yvel), p.rdata(aos_realData::zvel)};
             return(sqrt(pvel[0]*pvel[0] + pvel[1]*pvel[1] + pvel[2]*pvel[2]));
         });
 
@@ -569,8 +624,8 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = pltprefix + amrex::Concatenate("plt", n, 5);
 
-    Vector<int> writeflags_real(realData::count+MAXSPECIES-1,0);
-    Vector<int> writeflags_int(intData::count,0);
+    Vector<int> writeflags_real(aos_realData::count+MAXSPECIES-1,0);
+    Vector<int> writeflags_int(soa_intData::count,0);
 
     Vector<std::string> real_data_names;
     Vector<std::string>  int_data_names;
@@ -604,20 +659,6 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     real_data_names.push_back("euler_angle_z");
     real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
-    real_data_names.push_back("theta_x");
-
-    // For debug
-    // real_data_names.push_back("overlap_n");
-    // real_data_names.push_back("kn");
-    // real_data_names.push_back("kt");
-    // real_data_names.push_back("eta_n");
-    // real_data_names.push_back("eta_t");
-    // real_data_names.push_back("overlap_n_y");
-    // real_data_names.push_back("fn_y");
-    // real_data_names.push_back("vr_n_y");
-    // real_data_names.push_back("overlap_t_y");
-    // real_data_names.push_back("ft_y");
-    // real_data_names.push_back("vr_t_y");
 
     for(int i=0;i<MAXBONDS;i++)
     {
@@ -647,10 +688,10 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         real_data_names.push_back(chemname);
     }
 
-    for(int i=0;i<m_chemptr->nspecies;i++)
-    {
-        real_data_names[realData::firstspec+i]=m_chemptr->specnames[i];
-    }
+    // for(int i=0;i<m_chemptr->nspecies;i++)
+    // {
+    //     real_data_names[realData::firstspec+i]=m_chemptr->specnames[i];
+    // }
 
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
@@ -668,35 +709,37 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         int_data_names.push_back(bondidx);
     }
 
-    writeflags_real[realData::radius]=1;
-    writeflags_real[realData::xvel]=1;
-    writeflags_real[realData::yvel]=1;
-    writeflags_real[realData::zvel]=1;
-    writeflags_real[realData::fx]=1;
-    writeflags_real[realData::fy]=1;
-    writeflags_real[realData::fz]=1;
-    writeflags_real[realData::xangvel]=1;
-    writeflags_real[realData::yangvel]=1;
-    writeflags_real[realData::zangvel]=1;
-    writeflags_real[realData::taux]=1;
-    writeflags_real[realData::tauy]=1;
-    writeflags_real[realData::tauz]=1;
-    writeflags_real[realData::mass]=1;
-    writeflags_real[realData::temperature]=1;
-    writeflags_real[realData::liquid_volume]=1;
-    writeflags_real[realData::total_bridge_volume]=1;
-    writeflags_real[realData::theta_x]=1;
+    // writeflags_real[realData::radius]=1;
+    // writeflags_real[realData::xvel]=1;
+    // writeflags_real[realData::yvel]=1;
+    // writeflags_real[realData::zvel]=1;
+    // writeflags_real[realData::fx]=1;
+    // writeflags_real[realData::fy]=1;
+    // writeflags_real[realData::fz]=1;
+    // writeflags_real[realData::xangvel]=1;
+    // writeflags_real[realData::yangvel]=1;
+    // writeflags_real[realData::zangvel]=1;
+    // writeflags_real[realData::taux]=1;
+    // writeflags_real[realData::tauy]=1;
+    // writeflags_real[realData::tauz]=1;
+    // writeflags_real[realData::mass]=1;
+    // writeflags_real[realData::temperature]=1;
+    // writeflags_real[realData::liquid_volume]=1;
+    // writeflags_real[realData::total_bridge_volume]=1;
+    // writeflags_real[realData::theta_x]=1;
 
-    for(int i=0;i<m_chemptr->nspecies;i++)
-    {
-        writeflags_real[realData::firstspec+i]=1;
-    }
-    if(bonded_sphere_particles){
-        writeflags_int[intData::type_id] = 1;
-    }
+    // for(int i=0;i<m_chemptr->nspecies;i++)
+    // {
+    //     writeflags_real[realData::firstspec+i]=1;
+    // }
+    // if(bonded_sphere_particles){
+    //     writeflags_int[intData::type_id] = 1;
+    // }
 
-    WritePlotFile(pltfile, "particles",writeflags_real, 
-            writeflags_int, real_data_names, int_data_names);
+    // WritePlotFile(pltfile, "particles",writeflags_real, 
+    //         writeflags_int, real_data_names, int_data_names);
+
+    WritePlotFile(pltfile, "particles");
 
 }
 
@@ -752,7 +795,7 @@ void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_fact
 
                     Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
 
-                    if (ls_value < p.rdata(realData::radius)*0.95)
+                    if (ls_value < p.rdata(aos_realData::radius)*0.95)
                     {
                         p.id() = -1;
                     }

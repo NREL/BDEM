@@ -174,21 +174,21 @@ void get_relative_velocities (const BDEMParticleContainer::ParticleType& p1,
 {
     // translational relative velocity
     amrex::Real vreltrans[3];
-    vreltrans[0] =  p1.rdata(realData::xvel) - p2.rdata(realData::xvel);
-    vreltrans[1] =  p1.rdata(realData::yvel) - p2.rdata(realData::yvel);
-    vreltrans[2] =  p1.rdata(realData::zvel) - p2.rdata(realData::zvel);
+    vreltrans[0] =  p1.rdata(aos_realData::xvel) - p2.rdata(aos_realData::xvel);
+    vreltrans[1] =  p1.rdata(aos_realData::yvel) - p2.rdata(aos_realData::yvel);
+    vreltrans[2] =  p1.rdata(aos_realData::zvel) - p2.rdata(aos_realData::zvel);
 
     // distance from the contact point to the particle centers
     amrex::Real dist_c1 = 0.5*(dist_mag*dist_mag 
-                    + p1.rdata(realData::radius)*p1.rdata(realData::radius) 
-                    - p2.rdata(realData::radius)*p2.rdata(realData::radius)) / dist_mag;
+                    + p1.rdata(aos_realData::radius)*p1.rdata(aos_realData::radius) 
+                    - p2.rdata(aos_realData::radius)*p2.rdata(aos_realData::radius)) / dist_mag;
 
     amrex::Real dist_c2 = dist_mag - dist_c1;
 
     amrex::Real omega_sum[3];
-    omega_sum[0] = p1.rdata(realData::xangvel) * dist_c1 + p2.rdata(realData::xangvel) * dist_c2;
-    omega_sum[1] = p1.rdata(realData::yangvel) * dist_c1 + p2.rdata(realData::yangvel) * dist_c2;
-    omega_sum[2] = p1.rdata(realData::zangvel) * dist_c1 + p2.rdata(realData::zangvel) * dist_c2;
+    omega_sum[0] = p1.rdata(aos_realData::xangvel) * dist_c1 + p2.rdata(aos_realData::xangvel) * dist_c2;
+    omega_sum[1] = p1.rdata(aos_realData::yangvel) * dist_c1 + p2.rdata(aos_realData::yangvel) * dist_c2;
+    omega_sum[2] = p1.rdata(aos_realData::zangvel) * dist_c1 + p2.rdata(aos_realData::zangvel) * dist_c2;
 
     // the rotational relative velocity
     amrex::Real v_rot[3];
@@ -354,9 +354,9 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
         amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
         amrex::Real rollfric_torq_by_d[THREEDIM], amrex::Real pos[THREEDIM],
-        int contact_law, int liquid_bridging)
+        int contact_law, int liquid_bridging, Real ftau_arr[6])
 {
-    Real rp = p.rdata(realData::radius);
+    Real rp = p.rdata(aos_realData::radius);
     Real overlap_n = rp - walldist;
 
     // Location of the point of contact with the wall 
@@ -373,12 +373,12 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
 
     // Calculate the velocity at the point of contact
     Real vrel[THREEDIM];
-    Real angvel[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};
+    Real angvel[THREEDIM] = {p.rdata(aos_realData::xangvel), p.rdata(aos_realData::yangvel), p.rdata(aos_realData::zangvel)};
     Real cpdt[THREEDIM];
     crosspdt(angvel, contact_vect, cpdt);
-    vrel[XDIR] = p.rdata(realData::xvel) + cpdt[XDIR];
-    vrel[YDIR] = p.rdata(realData::yvel) + cpdt[YDIR];
-    vrel[ZDIR] = p.rdata(realData::zvel) + cpdt[ZDIR];
+    vrel[XDIR] = p.rdata(aos_realData::xvel) + cpdt[XDIR];
+    vrel[YDIR] = p.rdata(aos_realData::yvel) + cpdt[YDIR];
+    vrel[ZDIR] = p.rdata(aos_realData::zvel) + cpdt[ZDIR];
 
     Real vreltrans_norm = dotpdt(vrel, normal);
 
@@ -388,7 +388,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     vrel_t[2] = vrel[2] - vreltrans_norm*normal[2];
 
     // Contact law: default - linear, 1 - hertz
-    Real meff = p.rdata(realData::mass);
+    Real meff = p.rdata(aos_realData::mass);
     Real Reff = rp;
     Real kn_dem_w;
     Real etan_dem_w;
@@ -396,10 +396,10 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     Real etat_dem_w;
     if (contact_law == CONTACT_HERTZ)
     {
-        Real E1 = p.rdata(realData::E);
+        Real E1 = p.rdata(aos_realData::E);
         Real E2 = DEM::E_wall;
         E2 = (E2==100.0) ? E1 : E2; // E_wall=E_p if not specified
-        Real nu1 = p.rdata(realData::nu);
+        Real nu1 = p.rdata(aos_realData::nu);
         Real nu2 = DEM::nu_wall;
         Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
         Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
@@ -491,9 +491,9 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     rollfric_torq_by_d[YDIR]=zero;
     rollfric_torq_by_d[ZDIR]=zero;
     Real omega_p1[THREEDIM];
-    omega_p1[XDIR] = p.rdata(realData::xangvel);
-    omega_p1[YDIR] = p.rdata(realData::yangvel);
-    omega_p1[ZDIR] = p.rdata(realData::zangvel);
+    omega_p1[XDIR] = p.rdata(aos_realData::xangvel);
+    omega_p1[YDIR] = p.rdata(aos_realData::yangvel);
+    omega_p1[ZDIR] = p.rdata(aos_realData::zangvel);
     Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
     if (mag_omegap1 > zero)
     {
@@ -504,16 +504,16 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         rollfric_torq_by_d[ZDIR]=fric_force*omega_p1[ZDIR]/mag_omegap1;
     }
 
-    p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-    p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-    p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+    ftau_arr[0] = fn[XDIR] + ft[XDIR];
+    ftau_arr[1] = fn[YDIR] + ft[YDIR];
+    ftau_arr[2] = fn[ZDIR] + ft[ZDIR];
 
     Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
     Real torq[THREEDIM];
     crosspdt(contact_vect, ftot, torq);
-    p.rdata(realData::taux) += torq[XDIR] + walldist*rollfric_torq_by_d[XDIR];
-    p.rdata(realData::tauy) += torq[YDIR] + walldist*rollfric_torq_by_d[YDIR];
-    p.rdata(realData::tauz) += torq[ZDIR] + walldist*rollfric_torq_by_d[ZDIR];
+    ftau_arr[3] = torq[XDIR] + walldist*rollfric_torq_by_d[XDIR];
+    ftau_arr[4] = torq[YDIR] + walldist*rollfric_torq_by_d[YDIR];
+    ftau_arr[5] = torq[ZDIR] + walldist*rollfric_torq_by_d[ZDIR];
 
     /* Calculating liquid bridge force for particles in contact with wall
           - Assumes bridges are only present when particle is in direct contact with wall
@@ -522,7 +522,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     */
     if(liquid_bridging){ 
       // Bridge volume 
-      Real Vtot = (p.rdata(realData::liquid_volume))*pow(0.5,0.5);
+      Real Vtot = (p.rdata(aos_realData::liquid_volume))*pow(0.5,0.5);
 
       // Calculate the fitting coefficients from Soulie et al. (2006)
       Real acoef = -1.1*pow( Vtot/pow(rp,3.0) ,-0.53);
@@ -532,8 +532,8 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
       // Calculate the normal capillary force
       Real Fcap = PI*DEM::wall_gamma*rp*(ccoef + exp(bcoef));
 
-      p.rdata(realData::fx) += Fcap*normal[XDIR];
-      p.rdata(realData::fy) += Fcap*normal[YDIR];
-      p.rdata(realData::fz) += Fcap*normal[ZDIR];
+      ftau_arr[0] += Fcap*normal[XDIR];
+      ftau_arr[1] += Fcap*normal[YDIR];
+      ftau_arr[2] += Fcap*normal[ZDIR];
     }
 }

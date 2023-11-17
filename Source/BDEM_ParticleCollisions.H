@@ -13,9 +13,9 @@ amrex::ParallelFor(np,[=]
     p1pos_inert[ZDIR] = p1.pos(2);
 
     // Calculate the gravitational force and nonzero torque
-    p1.rdata(realData::fx) += gravity[XDIR]*p1.rdata(realData::mass);
-    p1.rdata(realData::fy) += gravity[YDIR]*p1.rdata(realData::mass);
-    p1.rdata(realData::fz) += gravity[ZDIR]*p1.rdata(realData::mass);
+    fx_arr[i] += gravity[XDIR]*p1.rdata(aos_realData::mass);
+    fy_arr[i] += gravity[YDIR]*p1.rdata(aos_realData::mass);
+    fz_arr[i] += gravity[ZDIR]*p1.rdata(aos_realData::mass);
   
     Real posvect[THREEDIM];     // Vector from CoM of particle to CoM of component sphere
     posvect[XDIR] = p1pos_inert[XDIR] - p1.pos(0);
@@ -27,15 +27,15 @@ amrex::ParallelFor(np,[=]
     Real f_init[THREEDIM] = {0.0, 0.0, 0.0};
     f_init[init_force_dir] = init_force;
     if(p1.id() == 1){
-        p1.rdata(realData::fx) += f_init[XDIR];
-        p1.rdata(realData::fy) += f_init[YDIR];
-        p1.rdata(realData::fz) += f_init[ZDIR];
+        fx_arr[i] += f_init[XDIR];
+        fy_arr[i] += f_init[YDIR];
+        fz_arr[i] += f_init[ZDIR];
 
         Real torq_init[THREEDIM];
         crosspdt(posvect, f_init, torq_init);
-        p1.rdata(realData::taux) += torq_init[XDIR];
-        p1.rdata(realData::tauy) += torq_init[YDIR];
-        p1.rdata(realData::tauz) += torq_init[ZDIR];
+        taux_arr[i] += torq_init[XDIR];
+        tauy_arr[i] += torq_init[YDIR];
+        tauz_arr[i] += torq_init[ZDIR];
     }
 
     // Code for cantilever beam test
@@ -45,21 +45,21 @@ amrex::ParallelFor(np,[=]
         Real cb_torq_vect[THREEDIM] = {0.0, 0.0, 0.0};
         cb_force_vect[cb_dir] = cb_force;        
         cb_torq_vect[cb_dir] = cb_torq;        
-        p1.rdata(realData::fx) += cb_force_vect[XDIR];
-        p1.rdata(realData::fy) += cb_force_vect[YDIR];
-        p1.rdata(realData::fz) += cb_force_vect[ZDIR];
-        p1.rdata(realData::taux) += cb_torq_vect[XDIR];
-        p1.rdata(realData::tauy) += cb_torq_vect[YDIR];
-        p1.rdata(realData::tauz) += cb_torq_vect[ZDIR];
+        fx_arr[i] += cb_force_vect[XDIR];
+        fy_arr[i] += cb_force_vect[YDIR];
+        fz_arr[i] += cb_force_vect[ZDIR];
+        taux_arr[i] += cb_torq_vect[XDIR];
+        tauy_arr[i] += cb_torq_vect[YDIR];
+        tauz_arr[i] += cb_torq_vect[ZDIR];
     }
 
     for (const auto& p2 : nbor_data.getNeighbors(i))
     {                
         // Renaming properties for readability
-        Real m1 = p1.rdata(realData::mass);
-        Real m2 = p2.rdata(realData::mass);
-        Real rad1 = p1.rdata(realData::radius);
-        Real rad2 = p2.rdata(realData::radius);
+        Real m1 = p1.rdata(aos_realData::mass);
+        Real m2 = p2.rdata(aos_realData::mass);
+        Real rad1 = p1.rdata(aos_realData::radius);
+        Real rad2 = p2.rdata(aos_realData::radius);
 
         // Calculate positional quantities for p2
         Real p2pos_inert[THREEDIM];
@@ -88,7 +88,7 @@ amrex::ParallelFor(np,[=]
         if(liquid_bridging){
             // Check to see if a liquid bridge exists between the component spheres
             for(int br=0; br<MAXBRIDGES; br++){
-                if(p1.idata(intData::first_bridge+br) == (int)p2.id()){
+                if(soa.GetIntData(soa_intData::first_bridge+br).data()[i] == (int)p2.id()){
                     bridge_exists = true;
                     bridge_index = br;
                 }
@@ -100,7 +100,7 @@ amrex::ParallelFor(np,[=]
         int bond_index = 0;
         if(bonded_sphere_particles){
             for(int b=0; b<MAXBONDS; b++){
-                if(p1.idata(intData::first_bond+b) == (int)p2.id()){
+                if(soa.GetIntData(soa_intData::first_bond+b).data()[i] == (int)p2.id()){
                     bond_exists = true;
                     bond_index = b;
                 }
@@ -123,8 +123,8 @@ amrex::ParallelFor(np,[=]
         Real contact_vect1[THREEDIM];
         Real contact_vect2[THREEDIM];
         Real vrel[THREEDIM];
-        Real angvel1[THREEDIM] = {p1.rdata(realData::xangvel), p1.rdata(realData::yangvel), p1.rdata(realData::zangvel)};
-        Real angvel2[THREEDIM] = {p2.rdata(realData::xangvel), p2.rdata(realData::yangvel), p2.rdata(realData::zangvel)};
+        Real angvel1[THREEDIM] = {p1.rdata(aos_realData::xangvel), p1.rdata(aos_realData::yangvel), p1.rdata(aos_realData::zangvel)};
+        Real angvel2[THREEDIM] = {p2.rdata(aos_realData::xangvel), p2.rdata(aos_realData::yangvel), p2.rdata(aos_realData::zangvel)};
         Real cpdt1[THREEDIM];
         Real cpdt2[THREEDIM];
     
@@ -157,9 +157,9 @@ amrex::ParallelFor(np,[=]
             crosspdt(angvel1, contact_vect1, cpdt1);
             crosspdt(angvel2, contact_vect2, cpdt2);
   
-            vrel[XDIR] = p1.rdata(realData::xvel) - p2.rdata(realData::xvel) + cpdt1[XDIR] - cpdt2[XDIR];
-            vrel[YDIR] = p1.rdata(realData::yvel) - p2.rdata(realData::yvel) + cpdt1[YDIR] - cpdt2[YDIR];
-            vrel[ZDIR] = p1.rdata(realData::zvel) - p2.rdata(realData::zvel) + cpdt1[ZDIR] - cpdt2[ZDIR];
+            vrel[XDIR] = p1.rdata(aos_realData::xvel) - p2.rdata(aos_realData::xvel) + cpdt1[XDIR] - cpdt2[XDIR];
+            vrel[YDIR] = p1.rdata(aos_realData::yvel) - p2.rdata(aos_realData::yvel) + cpdt1[YDIR] - cpdt2[YDIR];
+            vrel[ZDIR] = p1.rdata(aos_realData::zvel) - p2.rdata(aos_realData::zvel) + cpdt1[ZDIR] - cpdt2[ZDIR];
 
             // Calculate normal and tangential components of relative velocity
             vrel_trans_norm = dotpdt(vrel, normal);
@@ -181,22 +181,22 @@ amrex::ParallelFor(np,[=]
             }
 
             // Add liquid bridge between particles if there isn't one already, particles are not bonded, and at least one particle has moisture content
-            if(liquid_bridging && !bridge_exists && !bond_exists && (p1.rdata(realData::liquid_volume) + p2.rdata(realData::liquid_volume) > 0.0)){
+            if(liquid_bridging && !bridge_exists && !bond_exists && (p1.rdata(aos_realData::liquid_volume) + p2.rdata(aos_realData::liquid_volume) > 0.0)){
                 // Find first available bridge index (denoted with -1 value)
-                while(p1.idata(intData::first_bridge+bridge_index) != -1){
+                while(bridges_vec[bridge_index][i] != -1){
                     bridge_index++;
                     if(bridge_index == MAXBRIDGES) Abort("\nMaximum number of liquid bridges reached, MAXBRIDGES needs to be increased!\n");
                 }
 
                 // Calculate the liquid volume belonging to p1 that contributes to the new bridge, and add to bridge total
-                Real Vtot = (p1.rdata(realData::liquid_volume)/(2.0))*(1.0-sqrt(1.0-(pow(rad2,two)/(pow(rad1,two)+pow(rad2,two)))));
+                Real Vtot = (p1.rdata(aos_realData::liquid_volume)/(2.0))*(1.0-sqrt(1.0-(pow(rad2,two)/(pow(rad1,two)+pow(rad2,two)))));
     
                 // Only create new bridge if the particle has sufficient liquid volume to do so
-                if(p1.rdata(realData::total_bridge_volume) + Vtot < p1.rdata(realData::liquid_volume)){
-                    p1.rdata(realData::total_bridge_volume) += Vtot;
+                if(total_bridge_vol_arr[i] + Vtot < p1.rdata(aos_realData::liquid_volume)){
+                    total_bridge_vol_arr[i] += Vtot;
 
                     // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
-                    p1.idata(intData::first_bridge+bridge_index) = (int)p2.id();
+                    bridges_vec[bridge_index][i] = (int)p2.id();
                     bridge_exists = true;
                 }
             }
@@ -218,9 +218,9 @@ amrex::ParallelFor(np,[=]
             Real k_ben_bond = DEM::E_bond * I_bond / rad_sum;
 
             Real radsuminv = 1.0 / (rad1 + rad2);
-            Real wr[THREEDIM] = {p1.rdata(realData::xangvel) - p2.rdata(realData::xangvel), 
-                                 p1.rdata(realData::yangvel) - p2.rdata(realData::yangvel), 
-                                 p1.rdata(realData::zangvel) - p2.rdata(realData::zangvel)}; 
+            Real wr[THREEDIM] = {p1.rdata(aos_realData::xangvel) - p2.rdata(aos_realData::xangvel), 
+                                 p1.rdata(aos_realData::yangvel) - p2.rdata(aos_realData::yangvel), 
+                                 p1.rdata(aos_realData::zangvel) - p2.rdata(aos_realData::zangvel)}; 
 
             Real wdp = dotpdt(wr, normal);
             Real wn[THREEDIM] = {wdp*normal[XDIR], wdp*normal[YDIR], wdp*normal[ZDIR]};
@@ -245,9 +245,9 @@ amrex::ParallelFor(np,[=]
             nforce_damped[2] = nforce[2] - DEM::beta_bond*fabs(nforce[2])*multiplierZ;
 
             /* ------- Tangent bond force ------- */
-            Real force_tang[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+0), 
-                                         p1.rdata(realData::first_bond_v+bond_index*9+1), 
-                                         p1.rdata(realData::first_bond_v+bond_index*9+2)};
+            Real force_tang[THREEDIM] = {bonds_vec[bond_index*9+0][i], 
+                                         bonds_vec[bond_index*9+1][i], 
+                                         bonds_vec[bond_index*9+2][i]};
             Real tforce_damped[THREEDIM] = {0.0, 0.0, 0.0};
             Real fdp = dotpdt(force_tang, normal);
             Real force_norm[THREEDIM] = {fdp*normal[XDIR], fdp*normal[YDIR], fdp*normal[ZDIR]};
@@ -271,14 +271,14 @@ amrex::ParallelFor(np,[=]
             tforce_damped[1] = force_tang[1] - DEM::beta_bond*fabs(force_tang[1])*multiplierY;
             tforce_damped[2] = force_tang[2] - DEM::beta_bond*fabs(force_tang[2])*multiplierZ;
 
-            p1.rdata(realData::first_bond_v+bond_index*9+0) = tforce_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+1) = tforce_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+2) = tforce_damped[2];
+            bonds_vec[bond_index*9+0][i] = tforce_damped[0];
+            bonds_vec[bond_index*9+1][i] = tforce_damped[1];
+            bonds_vec[bond_index*9+2][i] = tforce_damped[2];
 
             /* ------- Normal bond torque ------- */
-            Real torq_norm[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+3), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+4), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+5)};
+            Real torq_norm[THREEDIM] = {bonds_vec[bond_index*9+3][i], 
+                                        bonds_vec[bond_index*9+4][i], 
+                                        bonds_vec[bond_index*9+5][i]};
             Real ntorq_damped[THREEDIM] = {0.0, 0.0, 0.0};
             Real tdp = dotpdt(torq_norm, normal);
             torq_norm[XDIR] = tdp*normal[XDIR];
@@ -293,14 +293,14 @@ amrex::ParallelFor(np,[=]
             ntorq_damped[1] = torq_norm[1] - DEM::beta_bond*fabs(torq_norm[1])*amrex::Math::copysign(1.0,wn[1]);
             ntorq_damped[2] = torq_norm[2] - DEM::beta_bond*fabs(torq_norm[2])*amrex::Math::copysign(1.0,wn[2]);
 
-            p1.rdata(realData::first_bond_v+bond_index*9+3) = ntorq_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+4) = ntorq_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+5) = ntorq_damped[2];
+            bonds_vec[bond_index*9+3][i] = ntorq_damped[0];
+            bonds_vec[bond_index*9+4][i] = ntorq_damped[1];
+            bonds_vec[bond_index*9+5][i] = ntorq_damped[2];
 
             /* ------- Tangential bond torque ------- */
-            Real torq_tang[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+6), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+7), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+8)};
+            Real torq_tang[THREEDIM] = {bonds_vec[bond_index*9+6][i], 
+                                        bonds_vec[bond_index*9+7][i], 
+                                        bonds_vec[bond_index*9+8][i]};
             Real ttorq_damped[THREEDIM] = {0.0, 0.0, 0.0};
             tdp = dotpdt(torq_tang, normal);
             torq_tang[XDIR] -= tdp*normal[XDIR];
@@ -315,9 +315,9 @@ amrex::ParallelFor(np,[=]
             ttorq_damped[1] = torq_tang[1] - DEM::beta_bond*fabs(torq_tang[1])*amrex::Math::copysign(1.0,wt[1]);
             ttorq_damped[2] = torq_tang[2] - DEM::beta_bond*fabs(torq_tang[2])*amrex::Math::copysign(1.0,wt[2]);
 
-            p1.rdata(realData::first_bond_v+bond_index*9+6) = ttorq_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+7) = ttorq_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+8) = ttorq_damped[2];
+            bonds_vec[bond_index*9+6][i] = ttorq_damped[0];
+            bonds_vec[bond_index*9+7][i] = ttorq_damped[1];
+            bonds_vec[bond_index*9+8][i] = ttorq_damped[2];
 
             // Add on cross product term (should not be included in tau_bond_t update)
             Real tor[THREEDIM] = {0.0, 0.0, 0.0};
@@ -325,13 +325,13 @@ amrex::ParallelFor(np,[=]
             Real cri = distmag * rad1 * radsuminv;
 
             // Total bond forces and torques are added to particle quantities (check sign for crosspdt term?)
-            p1.rdata(realData::fx) += nforce_damped[XDIR] + tforce_damped[XDIR];
-            p1.rdata(realData::fy) += nforce_damped[YDIR] + tforce_damped[YDIR];
-            p1.rdata(realData::fz) += nforce_damped[ZDIR] + tforce_damped[ZDIR];
+            fx_arr[i] += nforce_damped[XDIR] + tforce_damped[XDIR];
+            fy_arr[i] += nforce_damped[YDIR] + tforce_damped[YDIR];
+            fz_arr[i] += nforce_damped[ZDIR] + tforce_damped[ZDIR];
 
-            p1.rdata(realData::taux) += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri*tor[XDIR];
-            p1.rdata(realData::tauy) += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri*tor[YDIR];
-            p1.rdata(realData::tauz) += ntorq_damped[ZDIR] + ttorq_damped[ZDIR] - cri*tor[ZDIR];
+            taux_arr[i] += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri*tor[XDIR];
+            tauy_arr[i] += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri*tor[YDIR];
+            tauz_arr[i] += ntorq_damped[ZDIR] + ttorq_damped[ZDIR] - cri*tor[ZDIR];
         }
 
         // Evaluate the contact force if p1 and p2 don't have a bond between them
@@ -341,10 +341,10 @@ amrex::ParallelFor(np,[=]
             Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
             if (contact_law == CONTACT_HERTZ)
             {
-                Real E1 = p1.rdata(realData::E);
-                Real E2 = p2.rdata(realData::E);
-                Real nu1 = p1.rdata(realData::nu);
-                Real nu2 = p2.rdata(realData::nu);
+                Real E1 = p1.rdata(aos_realData::E);
+                Real E2 = p2.rdata(aos_realData::E);
+                Real nu1 = p1.rdata(aos_realData::nu);
+                Real nu2 = p2.rdata(aos_realData::nu);
                 Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
                 Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
                 Real G_eff = E1*E2/temp;
@@ -425,21 +425,21 @@ amrex::ParallelFor(np,[=]
             }
 
             // Total force on composite particle is just a sum across the forces on all component spheres
-            p1.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
-            p1.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
-            p1.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+            fx_arr[i] += fn[XDIR] + ft[XDIR];
+            fy_arr[i] += fn[YDIR] + ft[YDIR];
+            fz_arr[i] += fn[ZDIR] + ft[ZDIR];
 
             //Torque calculation
             //=================
         
             Real rollfric_torq[THREEDIM]={0.0};
-            Real dist_c_p1 = 0.5 * (distmag + (p1.rdata(realData::radius)*p1.rdata(realData::radius)
-                            - p2.rdata(realData::radius)*p2.rdata(realData::radius))*distmag_inv);
+            Real dist_c_p1 = 0.5 * (distmag + (p1.rdata(aos_realData::radius)*p1.rdata(aos_realData::radius)
+                            - p2.rdata(aos_realData::radius)*p2.rdata(aos_realData::radius))*distmag_inv);
 
             Real omega_p1[THREEDIM];
-            omega_p1[XDIR] = p1.rdata(realData::xangvel);
-            omega_p1[YDIR] = p1.rdata(realData::yangvel);
-            omega_p1[ZDIR] = p1.rdata(realData::zangvel);
+            omega_p1[XDIR] = p1.rdata(aos_realData::xangvel);
+            omega_p1[YDIR] = p1.rdata(aos_realData::yangvel);
+            omega_p1[ZDIR] = p1.rdata(aos_realData::zangvel);
             Real mag_omegap1 = sqrt(dotpdt(omega_p1,omega_p1));
             if (mag_omegap1 > zero)
             {
@@ -454,19 +454,19 @@ amrex::ParallelFor(np,[=]
             Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
             Real torq[THREEDIM];
             crosspdt(contact_vect1, ftot, torq);
-            p1.rdata(realData::taux) += torq[XDIR] + rollfric_torq[XDIR];
-            p1.rdata(realData::tauy) += torq[YDIR] + rollfric_torq[YDIR];
-            p1.rdata(realData::tauz) += torq[ZDIR] + rollfric_torq[ZDIR];
+            taux_arr[i] += torq[XDIR] + rollfric_torq[XDIR];
+            tauy_arr[i] += torq[YDIR] + rollfric_torq[YDIR];
+            tauz_arr[i] += torq[ZDIR] + rollfric_torq[ZDIR];
 
-            Real avgtemp=0.5*(p1.rdata(realData::temperature) + p2.rdata(realData::temperature));
-            p1.rdata(realData::temperature)=avgtemp;
+            Real avgtemp=0.5*(p1.rdata(aos_realData::temperature) + p2.rdata(aos_realData::temperature));
+            p1.rdata(aos_realData::temperature)=avgtemp;
         }
 
         // Calculate the capillary force from the liquid bridge
         if(bridge_exists){
             // Recalculate bridge volume (not necessary if there's an easy/efficient way to store this) 
-            Real Vp1 = (p1.rdata(realData::liquid_volume)/(2.0))*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))));
-            Real Vp2 = (p2.rdata(realData::liquid_volume)/(2.0))*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
+            Real Vp1 = (p1.rdata(aos_realData::liquid_volume)/(2.0))*(1.0 - sqrt(1.0 - (pow(rad2,two) / (pow(rad1,two) + pow(rad2,two)))));
+            Real Vp2 = (p2.rdata(aos_realData::liquid_volume)/(2.0))*(1.0 - sqrt(1.0 - (pow(rad1,two) / (pow(rad1,two) + pow(rad2,two)))));
             Real Vtot = Vp1 + Vp2;
 
             // Calculate the separation distance
@@ -475,8 +475,8 @@ amrex::ParallelFor(np,[=]
             // Compute rupture distance and remove bridge if necessary
             Real Drupt = (1.0 + 0.5*DEM::contact_angle)*pow(Vtot,1.0/3.0);
             if(Sdist > Drupt){
-                p1.idata(intData::first_bridge+bridge_index) = -1;
-                p1.rdata(realData::total_bridge_volume) -= Vp1;
+                bridges_vec[bridge_index][i] = -1;
+                total_bridge_vol_arr[i] -= Vp1;
             } else {
                 // Calculate the fitting coefficients from Soulie et al. (2006)
                 Real acoef = -1.1*pow( Vtot/pow(rad2,3.0) ,-0.53);
@@ -500,14 +500,14 @@ amrex::ParallelFor(np,[=]
                 bridge_force[YDIR] = (Fcap - Fvisc_n)*normal[YDIR] - Fvisc_t*tangent[YDIR];
                 bridge_force[ZDIR] = (Fcap - Fvisc_n)*normal[ZDIR] - Fvisc_t*tangent[ZDIR];
 
-                p1.rdata(realData::fx) += bridge_force[XDIR];
-                p1.rdata(realData::fy) += bridge_force[YDIR];
-                p1.rdata(realData::fz) += bridge_force[ZDIR];
+                fx_arr[i] += bridge_force[XDIR];
+                fy_arr[i] += bridge_force[YDIR];
+                fz_arr[i] += bridge_force[ZDIR];
 
                 crosspdt(contact_vect1, bridge_force, torq);
-                p1.rdata(realData::taux) += torq[XDIR];
-                p1.rdata(realData::tauy) += torq[YDIR];
-                p1.rdata(realData::tauz) += torq[ZDIR];
+                taux_arr[i] += torq[XDIR];
+                tauy_arr[i] += torq[YDIR];
+                tauz_arr[i] += torq[ZDIR];
             }
         }
     }

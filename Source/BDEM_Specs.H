@@ -7,47 +7,54 @@
 
 using namespace amrex;
 
-struct realData
+struct aos_realData
 {
   enum 
   { // Particle data stored in p.m_data
-    radius,
-    radinit,
+    radius=0,
     xvel,
     yvel,
     zvel,
-    fx,
-    fy,
-    fz,
     xangvel,
     yangvel,
     zangvel,
+    density,
+    mass,
+    E,
+    nu,
+    temperature,
+    liquid_volume,   
+    count
+  };
+};
+
+struct soa_realData
+{
+  enum 
+  { // Particle data stored in p.m_data
+    radinit=0,
+    fx,
+    fy,
+    fz,
     taux,
     tauy,
     tauz,
     Iinv,
     volume,
-    mass,
-    density,
-    E,
-    nu,
-    temperature,
     posx_prvs,
     posy_prvs,
     posz_prvs,
     euler_angle_x,
     euler_angle_y,
     euler_angle_z,
-    liquid_volume,   
     total_bridge_volume,
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
-    theta_x = first_bond_v + MAXBONDS*9,
-    firstspec,
-    count
+    firstspec=first_bond_v + MAXBONDS*9,
+    count=firstspec + MAXSPECIES
   };
 };
 
-struct intData
+struct soa_intData
 {
   enum 
   {

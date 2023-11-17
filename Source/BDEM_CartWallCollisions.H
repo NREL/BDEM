@@ -2,7 +2,7 @@ amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
 {
     ParticleType& p = pstruct[i];
-    Real rp = p.rdata(realData::radius);
+    Real rp = p.rdata(aos_realData::radius);
     
     Real pos[THREEDIM];
     pos[XDIR] = p.pos(0);
@@ -16,6 +16,8 @@ amrex::ParallelFor(np,[=]
     Real tow[3];
     int dir=XDIR;
 
+    Real ftau_arr[6];
+
     if (x_lo_bc==SOFTWALL_BC and pos[XDIR] < (plo[XDIR]+rp))
     {
         dir=XDIR;
@@ -25,7 +27,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     if (x_hi_bc==SOFTWALL_BC and pos[XDIR] > (phi[XDIR]-rp))
     {
@@ -36,7 +45,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     if (y_lo_bc==SOFTWALL_BC and pos[YDIR] < (plo[YDIR]+rp))
     {
@@ -47,7 +63,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     if (y_hi_bc==SOFTWALL_BC and pos[YDIR] > (phi[YDIR]-rp))
     {
@@ -58,7 +81,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     if (z_lo_bc==SOFTWALL_BC and pos[ZDIR] < (plo[ZDIR]+rp))
     {
@@ -69,7 +99,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=-1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     if (z_hi_bc==SOFTWALL_BC and pos[ZDIR] > (phi[ZDIR]-rp))
     {
@@ -80,7 +117,14 @@ amrex::ParallelFor(np,[=]
         normal[YDIR]=0.0;
         normal[ZDIR]=0.0;
         normal[dir]=1.0;
-        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+        get_wall_forces(walldist,normal,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5]; 
     }
     
     if(collided)

@@ -50,6 +50,9 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 
         for (int i = 0; i < np; i++) 
         {
+            std::array<double, soa_realData::count> real_attribs;
+            std::array<int, soa_intData::count> int_attribs;
+            
             ParticleType p;
             // Set id and cpu for this particle
             p.id()  = ParticleType::NextID();
@@ -57,95 +60,96 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
 
             // Read from input file
             // NOTE: Assumed that all glued sphere particle radii are equal for time being
-            ifs >> p.idata(intData::phase);
+            ifs >> int_attribs[soa_intData::phase];
             ifs >> p.pos(0);
             ifs >> p.pos(1);
             ifs >> p.pos(2);
-            ifs >> p.rdata(realData::radius);
-            ifs >> p.rdata(realData::density);
+            ifs >> p.rdata(aos_realData::radius);
+            ifs >> p.rdata(aos_realData::density);
             if(contact_law == 1){
-                ifs >> p.rdata(realData::E);
-                ifs >> p.rdata(realData::nu);
+                ifs >> p.rdata(aos_realData::E);
+                ifs >> p.rdata(aos_realData::nu);
             } else {
-                p.rdata(realData::E) = 100.0;
-                p.rdata(realData::nu) = 0.3;
+                p.rdata(aos_realData::E) = 100.0;
+                p.rdata(aos_realData::nu) = 0.3;
             }
-            ifs >> p.rdata(realData::xvel);
-            ifs >> p.rdata(realData::yvel);
-            ifs >> p.rdata(realData::zvel);
+            ifs >> p.rdata(aos_realData::xvel);
+            ifs >> p.rdata(aos_realData::yvel);
+            ifs >> p.rdata(aos_realData::zvel);
 
             if(do_heat_transfer)
             {
-                ifs >> p.rdata(realData::temperature);
+                ifs >> p.rdata(aos_realData::temperature);
 
                 // Overwrite temperature in file if a valid mean temperature and temp stdev are specified
                 if(temp_mean > 0.0 && temp_stdev > 0.0){
-                    p.rdata(realData::temperature) = max(amrex::RandomNormal(temp_mean, temp_stdev),1.0);
+                    p.rdata(aos_realData::temperature) = max(amrex::RandomNormal(temp_mean, temp_stdev),1.0);
                 }
             }
             else
             {
-               p.rdata(realData::temperature)=NTP_TEMP;
+               p.rdata(aos_realData::temperature)=NTP_TEMP;
             }
             
-            p.rdata(realData::euler_angle_x) = zero;
-            p.rdata(realData::euler_angle_y) = zero;
-            p.rdata(realData::euler_angle_z) = zero;
-            p.idata(intData::type_id) = 0;
+            real_attribs[soa_realData::euler_angle_x] = zero;
+            real_attribs[soa_realData::euler_angle_y] = zero;
+            real_attribs[soa_realData::euler_angle_z] = zero;
+            int_attribs[soa_intData::type_id] = 0;
 
             //set initial radius
-            p.rdata(realData::radinit)=p.rdata(realData::radius);
+            real_attribs[soa_realData::radinit]=p.rdata(aos_realData::radius);
 
             // Set other particle properties
             // NOTE: Calculation of particle mass for glued sphere particles assumes no component sphere overlap
-            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
-            p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
-            p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+            real_attribs[soa_realData::volume] = fourbythree*PI*pow(p.rdata(aos_realData::radius),three);
+            p.rdata(aos_realData::mass)  = p.rdata(aos_realData::density)*real_attribs[soa_realData::volume];
+            real_attribs[soa_realData::Iinv]        = 2.5/(p.rdata(aos_realData::mass)*pow(p.rdata(aos_realData::radius),two));
             
             // User input for angular velocity when using glued sphere particles (at least for testing purposes)
-            p.rdata(realData::xangvel)     = zero;
-            p.rdata(realData::yangvel)     = zero;
-            p.rdata(realData::zangvel)     = zero;
+            p.rdata(aos_realData::xangvel)     = zero;
+            p.rdata(aos_realData::yangvel)     = zero;
+            p.rdata(aos_realData::zangvel)     = zero;
 
-            p.rdata(realData::fx) = zero;
-            p.rdata(realData::fy) = zero;
-            p.rdata(realData::fz) = zero;
-            p.rdata(realData::taux) = zero;
-            p.rdata(realData::tauy) = zero;
-            p.rdata(realData::tauz) = zero;
-            p.rdata(realData::theta_x) = zero;
+            real_attribs[soa_realData::fx] = zero;
+            real_attribs[soa_realData::fy] = zero;
+            real_attribs[soa_realData::fz] = zero;
+            real_attribs[soa_realData::taux] = zero;
+            real_attribs[soa_realData::tauy] = zero;
+            real_attribs[soa_realData::tauz] = zero;
 
             // Set bond components to zero
             for(int b=0; b<MAXBONDS*9; b++){
-                p.rdata(realData::first_bond_v+b) = zero;
+                real_attribs[soa_realData::first_bond_v+b] = zero;
             }
 
             // Set bridge indices to -1 to indicate no existing bridges
-            for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
+            for(int br=0; br<MAXBRIDGES; br++) int_attribs[soa_intData::first_bond+br] = -1;
 
             // If using liquid bridging, calculate particle liquid and recalculate particle mass and density
             if(liquid_bridging){
                 Real MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
-                p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
-                p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
-                p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+                p.rdata(aos_realData::liquid_volume) = (MC > FSP) ? (p.rdata(aos_realData::density)*real_attribs[soa_realData::volume]/liquid_density)*(MC - FSP)/(1 - MC):0;
+                p.rdata(aos_realData::mass) = p.rdata(aos_realData::density)* real_attribs[soa_realData::volume] * (1.0 + MC/(1.0 - MC));
+                p.rdata(aos_realData::density) = p.rdata(aos_realData::mass) / real_attribs[soa_realData::volume];
             } else {
-                p.rdata(realData::liquid_volume) = zero;
+                p.rdata(aos_realData::liquid_volume) = zero;
             }
 
             // Keep track of how much particle liquid volume is already used to form bridges
-            p.rdata(realData::total_bridge_volume) = zero;
+            real_attribs[soa_realData::total_bridge_volume] = zero;
 
-            for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
+            for(int b=0; b<MAXBONDS; b++) int_attribs[soa_intData::first_bond+b] = -1;
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
             {
-                p.rdata(realData::firstspec+sp)=0.0;
+                real_attribs[soa_realData::firstspec+sp]=0.0;
             }
 
             // Add everything to the data structure
-            host_particles.push_back(p);
+            particle_tile.push_back(p);
+            particle_tile.push_back_real(real_attribs);
+            particle_tile.push_back_int(int_attribs);
 
             if (!ifs.good())
             {
@@ -153,14 +157,14 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             }
         }
         
-        auto old_size = particle_tile.GetArrayOfStructs().size();
-        auto new_size = old_size + host_particles.size();
-        particle_tile.resize(new_size);
+        // auto old_size = particle_tile.GetArrayOfStructs().size();
+        // auto new_size = old_size + host_particles.size();
+        // particle_tile.resize(new_size);
 
-        Gpu::copy(Gpu::hostToDevice,
-                  host_particles.begin(),
-                  host_particles.end(),
-                  particle_tile.GetArrayOfStructs().begin() + old_size);
+        // Gpu::copy(Gpu::hostToDevice,
+        //           host_particles.begin(),
+        //           host_particles.end(),
+        //           particle_tile.GetArrayOfStructs().begin() + old_size);
     }
     
     Redistribute();
@@ -179,6 +183,9 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
     {
         std::ifstream ifs;
         ifs.open(filename.c_str(), std::ios::in);
+        
+        std::array<double, soa_realData::count> real_attribs;
+        std::array<int, soa_intData::count> int_attribs;
 
         if (!ifs.good())
         {
@@ -273,8 +280,11 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                 p.id() = bp_ids[j];
                 if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
                 get_bonded_particle_pos(bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
-                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids, liquid_density, MC, FSP, bp_E, bp_nu);
-                host_particles.push_back(p);
+                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, 
+                        bp_ids, liquid_density, MC, FSP, bp_E, bp_nu, real_attribs, int_attribs);
+                particle_tile.push_back(p);
+                particle_tile.push_back_real(real_attribs);
+                particle_tile.push_back_int(int_attribs);
             } 
             if (!ifs.good())
             {
@@ -282,14 +292,14 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             }
         }
         
-        auto old_size = particle_tile.GetArrayOfStructs().size();
-        auto new_size = old_size + host_particles.size();
-        particle_tile.resize(new_size);
+        // auto old_size = particle_tile.GetArrayOfStructs().size();
+        // auto new_size = old_size + host_particles.size();
+        // particle_tile.resize(new_size);
 
-        Gpu::copy(Gpu::hostToDevice,
-                  host_particles.begin(),
-                  host_particles.end(),
-                  particle_tile.GetArrayOfStructs().begin() + old_size);
+        // Gpu::copy(Gpu::hostToDevice,
+        //           host_particles.begin(),
+        //           host_particles.end(),
+        //           particle_tile.GetArrayOfStructs().begin() + old_size);
     }
     
     Redistribute();
@@ -319,8 +329,12 @@ void BDEMParticleContainer::InitChemSpecies(amrex::Real Yis[MAXSPECIES])
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        Vector<Real*> spec_vec(MAXSPECIES);
+        for(int sp=0; sp<MAXSPECIES; sp++) spec_vec[sp] = soa.GetRealData(soa_realData::firstspec+sp).data();
 
         // now we move the particles
         amrex::ParallelFor(np,[=]
@@ -331,7 +345,7 @@ void BDEMParticleContainer::InitChemSpecies(amrex::Real Yis[MAXSPECIES])
                 for(int sp=0;sp<MAXSPECIES;sp++)
                 {
                     //p.rdata(realData::firstspec+i)=Yis[i];
-                    p.rdata(realData::firstspec+sp)=Yi_captured[sp];
+                    spec_vec[sp][i]=Yi_captured[sp];
                 }
         });
     }
@@ -355,8 +369,12 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
         ParticleType* pstruct = aos().dataPtr();
+
+        Vector<Real*> spec_vec(MAXSPECIES);
+        for(int sp=0; sp<MAXSPECIES; sp++) spec_vec[sp] = soa.GetRealData(soa_realData::firstspec+sp).data();
 
         // now we move the particles
         amrex::ParallelFor(np,[=]
@@ -376,7 +394,7 @@ void BDEMParticleContainer::InitChemSpecies(int ndomains, Real *mincoords,
                 {
                     for(int sp=0;sp<MAXSPECIES;sp++)
                     {
-                        p.rdata(realData::firstspec+sp)=spec_massfracs[d*MAXSPECIES+sp];
+                        spec_vec[sp][i]=spec_massfracs[d*MAXSPECIES+sp];
                     }
 
                 }
@@ -429,14 +447,14 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                   AMREX_GPU_DEVICE (int i) noexcept
             {
                 ParticleType& p = pstruct[i];
-                Real rp = p.rdata(realData::radius);
+                Real rp = p.rdata(aos_realData::radius);
                 Real ppos_inert[THREEDIM];
                 ppos_inert[XDIR] = p.pos(0);
                 ppos_inert[YDIR] = p.pos(1);
                 ppos_inert[ZDIR] = p.pos(2);
                 Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
                 // if(ls_value < 0.0)
-                if(ls_value < p.rdata(realData::radius))
+                if(ls_value < p.rdata(aos_realData::radius))
                 {
                     p.id()=-1;   
                 }
@@ -622,9 +640,14 @@ void BDEMParticleContainer::reassignParticleProperties(Real reinit_rad, Real rei
 
         auto& ptile = plev[index];
         auto& aos   = ptile.GetArrayOfStructs();
+        auto& soa   = ptile.GetStructOfArrays();
         const size_t np = aos.numParticles();
 
         ParticleType* pstruct = aos().dataPtr();
+
+        auto radinit_arr = soa.GetRealData(soa_realData::radinit).data();
+        auto volume_arr = soa.GetRealData(soa_realData::volume).data();
+        auto Iinv_arr = soa.GetRealData(soa_realData::Iinv).data();
 
         amrex::ParallelFor(np,[=]
                 AMREX_GPU_DEVICE (int i) noexcept
@@ -632,16 +655,16 @@ void BDEMParticleContainer::reassignParticleProperties(Real reinit_rad, Real rei
             ParticleType& p = pstruct[i];
 
             // Assign new particle parameters
-            p.rdata(realData::radius) = reinit_rad;
-            p.rdata(realData::density) = reinit_dens;
-            p.rdata(realData::E) = reinit_E;
-            p.rdata(realData::nu) = reinit_nu;
+            p.rdata(aos_realData::radius) = reinit_rad;
+            p.rdata(aos_realData::density) = reinit_dens;
+            p.rdata(aos_realData::E) = reinit_E;
+            p.rdata(aos_realData::nu) = reinit_nu;
 
             // Recalculate impacted quantities
-            p.rdata(realData::radinit)=p.rdata(realData::radius);
-            p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
-            p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
-            p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
+            radinit_arr[i] = p.rdata(aos_realData::radius);
+            volume_arr[i]      = fourbythree*PI*pow(p.rdata(aos_realData::radius),three);
+            p.rdata(aos_realData::mass)        = p.rdata(aos_realData::density)*volume_arr[i];
+            Iinv_arr[i]        = 2.5/(p.rdata(aos_realData::mass)*pow(p.rdata(aos_realData::radius),two));
         });
     }
 }
@@ -662,6 +685,9 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 {
     int lev = 0;
     Real x,y,z,x0,y0,z0;
+
+    std::array<double, soa_realData::count> real_attribs;
+    std::array<int, soa_intData::count> int_attribs;
 
     Real dx = Geom(lev).CellSize(0);
     Real dy = Geom(lev).CellSize(1);
@@ -757,20 +783,26 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                 ParticleType p;
                                 p.id() = bp_ids[j];
                                 get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                                bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
-                                host_particles.push_back(p);
+                                bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, 
+                                        liquid_density, MC, FSP, E, nu, real_attribs, int_attribs);
+                                particle_tile.push_back(p);
+                                particle_tile.push_back_real(real_attribs);
+                                particle_tile.push_back_int(int_attribs);
                             } 
                         } else {
                             // Calculate radius using random distribution if min and max values are specified
                             Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
-
+                            int ptype=0;
                             ParticleType p = generate_particle(x,y,z,
                                                                meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                dens, p_rad, E, nu, 
-                                                               temp, spec, liquid_density, MC, FSP);
-                            host_particles.push_back(p);
+                                                               temp, spec, liquid_density, MC, FSP, ptype,
+                                                               real_attribs, int_attribs);
+                            particle_tile.push_back(p);
+                            particle_tile.push_back_real(real_attribs);
+                            particle_tile.push_back_int(int_attribs);
                         }
                     }
                 }
@@ -842,20 +874,26 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                         ParticleType p;
                                         p.id() = bp_ids[pi];
                                         get_bonded_particle_pos(type, pi, rad, bp_pos, quats, pc_pos);
-                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, bp_ids, liquid_density, MC, FSP, E, nu);
-                                        host_particles.push_back(p);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, 
+                                                bp_ids, liquid_density, MC, FSP, E, nu, real_attribs, int_attribs);
+                                        particle_tile.push_back(p);
+                                        particle_tile.push_back_real(real_attribs);
+                                        particle_tile.push_back_int(int_attribs);
                                     } 
                                 } else {
                                     // Calculate radius using random distribution if min and max values are specified
                                     Real p_rad = (min_rad > 0.0 && max_rad > 0.0 && max_rad > min_rad) ? min_rad + (max_rad - min_rad)*amrex::Random():rad;
-
+                                    int ptype = 0;
                                     ParticleType p = generate_particle(x,y,z,
                                                                        meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                                        meanvel[YDIR] + fluctuation[YDIR]*(amrex::Random()-half),
                                                                        meanvel[ZDIR] + fluctuation[ZDIR]*(amrex::Random()-half),
                                                                        dens, p_rad, E, nu, 
-                                                                       temp, spec, liquid_density, MC, FSP);
-                                    host_particles.push_back(p);
+                                                                       temp, spec, liquid_density, MC, FSP, ptype,
+                                                                       real_attribs, int_attribs);
+                                    particle_tile.push_back(p);
+                                    particle_tile.push_back_real(real_attribs);
+                                    particle_tile.push_back_int(int_attribs);
                                 }
                             }
                         }
@@ -864,14 +902,14 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
             }
         }
 
-        auto old_size = particle_tile.GetArrayOfStructs().size();
-        auto new_size = old_size + host_particles.size();
-        particle_tile.resize(new_size);
+        // auto old_size = particle_tile.GetArrayOfStructs().size();
+        // auto new_size = old_size + host_particles.size();
+        // particle_tile.resize(new_size);
 
-        Gpu::copy(Gpu::hostToDevice,
-                  host_particles.begin(),
-                  host_particles.end(),
-                  particle_tile.GetArrayOfStructs().begin() + old_size);
+        // Gpu::copy(Gpu::hostToDevice,
+        //           host_particles.begin(),
+        //           host_particles.end(),
+        //           particle_tile.GetArrayOfStructs().begin() + old_size);
 
     }
 
@@ -885,7 +923,9 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
                                                                              Real dens, Real rad, Real E, Real nu,
                                                                              Real temp, Real spec[MAXSPECIES], 
                                                                              Real liquid_density, Real MC, Real FSP,
-                                                                             int p_type)
+                                                                             int p_type,
+                                                                             std::array<double, soa_realData::count> real_attribs,
+                                                                             std::array<int, soa_intData::count> int_attribs)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();
@@ -895,66 +935,65 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.pos(YDIR) = y;
     p.pos(ZDIR) = z;
 
-    p.idata(intData::phase) = 0;
-    p.rdata(realData::radius) = rad;
-    p.rdata(realData::radinit) = rad;
-    p.rdata(realData::E) = E;
-    p.rdata(realData::nu) = nu;
+    int_attribs[soa_intData::phase] = 0;
+    p.rdata(aos_realData::radius) = rad;
+    int_attribs[soa_realData::radinit] = rad;
+    p.rdata(aos_realData::E) = E;
+    p.rdata(aos_realData::nu) = nu;
 
-    p.rdata(realData::density) = dens;
-    p.rdata(realData::xvel) = velx;
-    p.rdata(realData::yvel) = vely;
-    p.rdata(realData::zvel) = velz;
-    p.rdata(realData::temperature)=temp;
+    p.rdata(aos_realData::density) = dens;
+    p.rdata(aos_realData::xvel) = velx;
+    p.rdata(aos_realData::yvel) = vely;
+    p.rdata(aos_realData::zvel) = velz;
+    p.rdata(aos_realData::temperature)=temp;
 
-    p.rdata(realData::fx) = zero;
-    p.rdata(realData::fy) = zero;
-    p.rdata(realData::fz) = zero;
-    p.rdata(realData::taux) = zero;
-    p.rdata(realData::tauy) = zero;
-    p.rdata(realData::tauz) = zero;
-    p.rdata(realData::theta_x) = zero;
+    real_attribs[soa_realData::fx] = zero;
+    real_attribs[soa_realData::fy] = zero;
+    real_attribs[soa_realData::fz] = zero;
+    real_attribs[soa_realData::taux] = zero;
+    real_attribs[soa_realData::tauy] = zero;
+    real_attribs[soa_realData::tauz] = zero;
 
-    p.rdata(realData::euler_angle_x) = PI/2.0;                 
-    p.rdata(realData::euler_angle_y) = amrex::Random()*PI/20.0;
-    p.rdata(realData::euler_angle_z) = amrex::Random()*PI/20.0;
+    real_attribs[soa_realData::euler_angle_x] = PI/2.0;                 
+    real_attribs[soa_realData::euler_angle_y] = amrex::Random()*PI/20.0;
+    real_attribs[soa_realData::euler_angle_z] = amrex::Random()*PI/20.0;
 
-    Real eax = p.rdata(realData::euler_angle_x);
-    Real eay = p.rdata(realData::euler_angle_y);
-    Real eaz = p.rdata(realData::euler_angle_z);
+    Real eax = real_attribs[soa_realData::euler_angle_x];
+    Real eay = real_attribs[soa_realData::euler_angle_y];
+    Real eaz = real_attribs[soa_realData::euler_angle_z];
 
-    p.idata(intData::type_id) = p_type;
+    int_attribs[soa_intData::type_id] = p_type;
 
     // Set other particle properties
-    p.rdata(realData::volume)      = fourbythree*PI*pow(p.rdata(realData::radius),three);
-    p.rdata(realData::mass)        = p.rdata(realData::density)*p.rdata(realData::volume);
-    p.rdata(realData::Iinv)        = 2.5/(p.rdata(realData::mass)*pow(p.rdata(realData::radius),two));
-    p.rdata(realData::xangvel)     = zero;
-    p.rdata(realData::yangvel)     = zero;
-    p.rdata(realData::zangvel)     = zero;
+    real_attribs[soa_realData::volume]      = fourbythree*PI*pow(p.rdata(aos_realData::radius),three);
+    p.rdata(aos_realData::mass)        = p.rdata(aos_realData::density)*real_attribs[soa_realData::volume];
+    real_attribs[soa_realData::Iinv]        = 2.5/(p.rdata(aos_realData::mass)*pow(p.rdata(aos_realData::radius),two));
+    p.rdata(aos_realData::xangvel)     = zero;
+    p.rdata(aos_realData::yangvel)     = zero;
+    p.rdata(aos_realData::zangvel)     = zero;
 
     // Set bond components to zero
     for(int b=0; b<MAXBONDS*9; b++){ 
-        p.rdata(realData::first_bond_v+b) = zero;
+        real_attribs[soa_realData::first_bond_v+b] = zero;
     }
 
-    for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
+    for(int br=0; br<MAXBRIDGES; br++) int_attribs[soa_intData::first_bridge+br] = -1;
 
     // If nonzero MC passed in, calculate liquid volume
     if(MC > 0.0){
-        p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;
-        p.rdata(realData::mass) = p.rdata(realData::density)*p.rdata(realData::volume) * (1.0 + MC/(1.0 - MC));
-        p.rdata(realData::density) = p.rdata(realData::mass) / p.rdata(realData::volume);
+        p.rdata(aos_realData::liquid_volume) = (MC > FSP) ? (p.rdata(aos_realData::density)*real_attribs[soa_realData::volume]/liquid_density)*(MC - FSP)/(1 - MC):0;
+        p.rdata(aos_realData::mass) = p.rdata(aos_realData::density)*real_attribs[soa_realData::volume] * (1.0 + MC/(1.0 - MC));
+        p.rdata(aos_realData::density) = p.rdata(aos_realData::mass) / real_attribs[soa_realData::volume];
     } else {
-        p.rdata(realData::liquid_volume) = zero;
+        p.rdata(aos_realData::liquid_volume) = zero;
     }
-    p.rdata(realData::total_bridge_volume) = zero;
+    real_attribs[soa_realData::total_bridge_volume] = zero;
 
-    for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
+    for(int b=0; b<MAXBONDS; b++) int_attribs[soa_intData::first_bond + b] = -1;
 
     for(int i=0;i<MAXSPECIES;i++)
     {
-        p.rdata(realData::firstspec+i)=spec[i];
+        real_attribs[soa_realData::firstspec+i]=spec[i];
     }
 
     return(p);

@@ -4,7 +4,7 @@ amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
 {
     ParticleType& p = pstruct[i];
-    Real rp = p.rdata(realData::radius);
+    Real rp = p.rdata(aos_realData::radius);
 
     Real ppos_inert[THREEDIM];
     ppos_inert[XDIR] = p.pos(0);
@@ -30,12 +30,20 @@ amrex::ParallelFor(np,[=]
         normal[1] *= -1;
         normal[2] *= -1;
 
-        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_law, liquid_bridging);
+        Real ftau_arr[6];
+        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_law, liquid_bridging, ftau_arr);
+
+        fx_arr[i] += ftau_arr[0];
+        fy_arr[i] += ftau_arr[1];
+        fz_arr[i] += ftau_arr[2];
+        taux_arr[i] += ftau_arr[3];
+        tauy_arr[i] += ftau_arr[4];
+        tauz_arr[i] += ftau_arr[5];
 
         if(do_heat_transfer)
         {
             Real walltemp=get_wall_temperature(p.pos(0),p.pos(1),p.pos(2),walltemp_vardir,walltemp_polynomial);
-            p.rdata(realData::temperature)=0.5*(walltemp+p.rdata(realData::temperature));
+            p.rdata(aos_realData::temperature)=0.5*(walltemp+p.rdata(aos_realData::temperature));
         }
 
     }

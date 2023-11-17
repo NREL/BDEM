@@ -66,7 +66,7 @@ amrex::ParallelFor(np,[=]
         Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
         mindist*=amrex::Math::copysign(1.0,dotpdt);
 
-        if(mindist<p.rdata(realData::radius) && amrex::Math::abs(mindist)<p.rdata(realData::radius))
+        if(mindist<p.rdata(aos_realData::radius) && amrex::Math::abs(mindist)<p.rdata(aos_realData::radius))
         //if(mindist<p.rdata(realData::radius))
         {
             /*if(amrex::Math::abs(mindist)>p.rdata(realData::radius))
@@ -82,7 +82,16 @@ amrex::ParallelFor(np,[=]
             norm[1]*=-1;
             norm[2]*=-1;
 
-            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+            Real ftau_arr[6];
+            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging, ftau_arr);
+
+            fx_arr[i] += ftau_arr[0];
+            fy_arr[i] += ftau_arr[1];
+            fz_arr[i] += ftau_arr[2];
+            taux_arr[i] += ftau_arr[3];
+            tauy_arr[i] += ftau_arr[4];
+            tauz_arr[i] += ftau_arr[5];
+
         }
     }
 });

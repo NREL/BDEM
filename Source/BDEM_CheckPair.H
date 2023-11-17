@@ -15,7 +15,7 @@ struct CheckPair
         bool not_pair = false;
 
         Real max_len; 
-        max_len = p1.rdata(realData::radius) + p2.rdata(realData::radius);
+        max_len = p1.rdata(aos_realData::radius) + p2.rdata(aos_realData::radius);
         amrex::Real d0 = (p1.pos(0) - p2.pos(0));
         amrex::Real d1 = (p1.pos(1) - p2.pos(1));
         amrex::Real d2 = (p1.pos(2) - p2.pos(2));
