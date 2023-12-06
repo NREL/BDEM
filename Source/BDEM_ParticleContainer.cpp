@@ -156,6 +156,41 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
     }
 }
 
+void BDEMParticleContainer::computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq,
+                                          Real forcing_amp, Real forcing_dir[THREEDIM])
+{
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+
+        auto nbor_data = m_neighbor_list[lev][index].data();
+        ParticleType* pstruct = aos().dataPtr();
+
+        amrex::ParallelFor(np,[=]
+                  AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+
+            Real forcing_f;
+            if(forcing_type == 1){
+                forcing_f = forcing_amp*sin(2*PI*(time+time_offset)*forcing_freq);
+                p.rdata(realData::fx) += forcing_f*forcing_dir[0]*p.rdata(realData::mass);
+                p.rdata(realData::fy) += forcing_f*forcing_dir[1]*p.rdata(realData::mass);
+                p.rdata(realData::fz) += forcing_f*forcing_dir[2]*p.rdata(realData::mass);
+            }
+        });
+    }
+
+}
 
 void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
         int do_chemistry,Real minradfrac, int verlet_scheme)

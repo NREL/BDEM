@@ -291,6 +291,8 @@ int main (int argc, char* argv[])
                                   specs.liquid_bridging, 
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
                                   cb_force, cb_torq, specs.cb_dir);
+                
+                bpc.computeForcing(time, specs.timeoffset, specs.forcing_type, specs.forcing_freq, specs.forcing_amp, specs.forcing_dir.data());
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 

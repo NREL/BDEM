@@ -181,6 +181,7 @@ class DEMspecs
         std::string restartfilename {""};
         std::string stlfilename {""};
 	std::string pltprefix {""};
+        Real timeoffset = 0.0;
 
         mechanism *chemptr;
         std::string chemistry;
@@ -242,6 +243,12 @@ class DEMspecs
         int calc_mass_flow = 0;
         int mass_flow_dir = 1;
         Real mass_flow_cutoff = 0.0;
+
+        // Options for introducing forcing to particles
+        int forcing_type = 0;
+        Real forcing_freq = 0.0;
+        Real forcing_amp = 0.0;
+        Vector<Real> forcing_dir; 
 
         void read_dem_specs()
         {
@@ -311,6 +318,7 @@ class DEMspecs
             pp.query("contact_law", contact_law);
         
             pp.query("stepoffset",stepoffset);
+            pp.query("timeoffset",timeoffset);
 
             pp.get("max_steps", maxsteps);
             pp.get("final_time",final_time);
@@ -642,6 +650,24 @@ class DEMspecs
             if(calc_mass_flow){
                 pp.get("mass_flow_dir", mass_flow_dir);
                 pp.get("mass_flow_cutoff", mass_flow_cutoff);
+            }
+
+            pp.query("forcing_type", forcing_type);
+            if(forcing_type == 1){
+                pp.get("forcing_freq", forcing_freq);
+                pp.get("forcing_amp", forcing_amp);
+                forcing_dir.resize(AMREX_SPACEDIM);
+                pp.getarr("forcing_dir", forcing_dir);
+                
+                // Normalize forcing dir array
+                Real forcing_dir_mag = sqrt(pow(forcing_dir[0],2) + pow(forcing_dir[1],2) + pow(forcing_dir[2],2));
+                if(forcing_dir_mag > 0.0){
+                    forcing_dir[0] *= 1.0/forcing_dir_mag;
+                    forcing_dir[1] *= 1.0/forcing_dir_mag;
+                    forcing_dir[2] *= 1.0/forcing_dir_mag;
+                } else {
+                    amrex::Abort("Invalid forcing dir chosen!\n");
+                }
             }
         }
         void clear()
