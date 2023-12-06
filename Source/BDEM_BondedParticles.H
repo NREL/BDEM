@@ -8,8 +8,8 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
              int comp, int type, int* ids, 
              Real liquid_density, Real MC, Real FSP,
              amrex::Real Emod, amrex::Real nu,
-             std::array<double, soa_realData::count> real_attribs,
-             std::array<int, soa_intData::count> int_attribs){
+             std::array<double, soa_realData::count> &real_attribs,
+             std::array<int, soa_intData::count> &int_attribs){
 
   // Set unique ID and assign CPU
   p.cpu() = ParallelDescriptor::MyProc();

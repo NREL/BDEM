@@ -126,8 +126,8 @@ public:
                 Real velx, Real vely, Real velz,
                 Real dens, Real E, Real nu, Real rad, Real temp,Real spec[MAXSPECIES], 
                 Real liquid_density, Real MC, Real FSP, int p_type,
-                std::array<double, soa_realData::count> real_attribs,
-                std::array<int, soa_intData::count> int_attribs);
+                std::array<double, soa_realData::count> &real_attribs,
+                std::array<int, soa_intData::count> &int_attribs);
 
     void redist_particles(const int local,bool using_softwalls)
     {

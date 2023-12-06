@@ -924,8 +924,8 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
                                                                              Real temp, Real spec[MAXSPECIES], 
                                                                              Real liquid_density, Real MC, Real FSP,
                                                                              int p_type,
-                                                                             std::array<double, soa_realData::count> real_attribs,
-                                                                             std::array<int, soa_intData::count> int_attribs)
+                                                                             std::array<double, soa_realData::count> &real_attribs,
+                                                                             std::array<int, soa_intData::count> &int_attribs)
 {
     ParticleType p;
     p.id()  = ParticleType::NextID();

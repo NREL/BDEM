@@ -621,43 +621,50 @@ void BDEMParticleContainer::Calculate_Total_Speed_MaterialPoints(Real &total_spe
 
 void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_particles, const std::string pltprefix)
 {
+
+    // NOTE: When using AoS + SoA, AoS components are stored first, followed by SoA components.
+    //       Ordering of variable names should reflect this.
+
     BL_PROFILE("BDEMParticleContainer::writeParticles");
     const std::string& pltfile = pltprefix + amrex::Concatenate("plt", n, 5);
 
-    Vector<int> writeflags_real(aos_realData::count+MAXSPECIES-1,0);
+    Vector<int> writeflags_real(aos_realData::count + soa_realData::count,0);
     Vector<int> writeflags_int(soa_intData::count,0);
 
     Vector<std::string> real_data_names;
     Vector<std::string>  int_data_names;
 
+    // AoS real data
     real_data_names.push_back("radius");
-    real_data_names.push_back("radinit");
     real_data_names.push_back("xvel");
     real_data_names.push_back("yvel");
     real_data_names.push_back("zvel");
-    real_data_names.push_back("fx");
-    real_data_names.push_back("fy");
-    real_data_names.push_back("fz");
     real_data_names.push_back("xangvel");
     real_data_names.push_back("yangvel");
     real_data_names.push_back("zangvel");
+    real_data_names.push_back("density");
+    real_data_names.push_back("mass");
+    real_data_names.push_back("E");
+    real_data_names.push_back("nu");
+    real_data_names.push_back("temperature");
+    real_data_names.push_back("liquid_volume");
+
+    // SoA real data
+    real_data_names.push_back("radinit");
+    real_data_names.push_back("fx");
+    real_data_names.push_back("fy");
+    real_data_names.push_back("fz");
     real_data_names.push_back("taux");
     real_data_names.push_back("tauy");
     real_data_names.push_back("tauz");
     real_data_names.push_back("Iinv");
     real_data_names.push_back("volume");
-    real_data_names.push_back("mass");
-    real_data_names.push_back("density");
-    real_data_names.push_back("E");
-    real_data_names.push_back("nu");
-    real_data_names.push_back("temperature");
     real_data_names.push_back("posx_prvs");
     real_data_names.push_back("posy_prvs");
     real_data_names.push_back("posz_prvs");
     real_data_names.push_back("euler_angle_x");
     real_data_names.push_back("euler_angle_y");
     real_data_names.push_back("euler_angle_z");
-    real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
 
     for(int i=0;i<MAXBONDS;i++)
@@ -709,38 +716,37 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         int_data_names.push_back(bondidx);
     }
 
-    // writeflags_real[realData::radius]=1;
-    // writeflags_real[realData::xvel]=1;
-    // writeflags_real[realData::yvel]=1;
-    // writeflags_real[realData::zvel]=1;
-    // writeflags_real[realData::fx]=1;
-    // writeflags_real[realData::fy]=1;
-    // writeflags_real[realData::fz]=1;
-    // writeflags_real[realData::xangvel]=1;
-    // writeflags_real[realData::yangvel]=1;
-    // writeflags_real[realData::zangvel]=1;
-    // writeflags_real[realData::taux]=1;
-    // writeflags_real[realData::tauy]=1;
-    // writeflags_real[realData::tauz]=1;
-    // writeflags_real[realData::mass]=1;
-    // writeflags_real[realData::temperature]=1;
-    // writeflags_real[realData::liquid_volume]=1;
-    // writeflags_real[realData::total_bridge_volume]=1;
-    // writeflags_real[realData::theta_x]=1;
+    // AoS real write flags
+    writeflags_real[aos_realData::radius]=1;
+    writeflags_real[aos_realData::xvel]=1;
+    writeflags_real[aos_realData::yvel]=1;
+    writeflags_real[aos_realData::zvel]=1;
+    writeflags_real[aos_realData::xangvel]=1;
+    writeflags_real[aos_realData::yangvel]=1;
+    writeflags_real[aos_realData::zangvel]=1;
+    writeflags_real[aos_realData::mass]=1;
+    writeflags_real[aos_realData::temperature]=1;
+    writeflags_real[aos_realData::liquid_volume]=1;
+
+    // SoA real write flags
+    writeflags_real[aos_realData::count + soa_realData::fx]=1;
+    writeflags_real[aos_realData::count + soa_realData::fy]=1;
+    writeflags_real[aos_realData::count + soa_realData::fz]=1;
+    writeflags_real[aos_realData::count + soa_realData::taux]=1;
+    writeflags_real[aos_realData::count + soa_realData::tauy]=1;
+    writeflags_real[aos_realData::count + soa_realData::tauz]=1;
+    writeflags_real[aos_realData::count + soa_realData::total_bridge_volume]=1;
 
     // for(int i=0;i<m_chemptr->nspecies;i++)
     // {
-    //     writeflags_real[realData::firstspec+i]=1;
+    //     writeflags_real[aos_realData::count + soa_realData::firstspec+i]=1;
     // }
     // if(bonded_sphere_particles){
-    //     writeflags_int[intData::type_id] = 1;
+    //     writeflags_int[soa_intData::type_id] = 1;
     // }
 
-    // WritePlotFile(pltfile, "particles",writeflags_real, 
-    //         writeflags_int, real_data_names, int_data_names);
-
-    WritePlotFile(pltfile, "particles");
-
+    WritePlotFile(pltfile, "particles",writeflags_real, 
+            writeflags_int, real_data_names, int_data_names);
 }
 
 void BDEMParticleContainer::removeEBOverlapParticles(EBFArrayBoxFactory *eb_factory,
