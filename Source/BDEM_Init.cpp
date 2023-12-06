@@ -123,7 +123,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             }
 
             // Set bridge indices to -1 to indicate no existing bridges
-            for(int br=0; br<MAXBRIDGES; br++) int_attribs[soa_intData::first_bond+br] = -1;
+            for(int br=0; br<MAXBRIDGES; br++) int_attribs[soa_intData::first_bridge+br] = -1;
 
             // If using liquid bridging, calculate particle liquid and recalculate particle mass and density
             if(liquid_bridging){
