@@ -27,42 +27,42 @@ public:
         m_chemptr=chemptr;
 
         // // Particle properties that need to be copied for neighbor updates
-        // setRealCommComp(0, true);   // posx
-        // setRealCommComp(1, true);   // posy
-        // setRealCommComp(2, true);   // posz
-        // setRealCommComp(3+realData::mass, true); 
-        // setRealCommComp(3+realData::radius, true); 
-        // setRealCommComp(3+realData::xvel, true); 
-        // setRealCommComp(3+realData::yvel, true); 
-        // setRealCommComp(3+realData::zvel, true); 
-        // setRealCommComp(3+realData::xangvel, true); 
-        // setRealCommComp(3+realData::yangvel, true); 
-        // setRealCommComp(3+realData::zangvel, true); 
-        // setRealCommComp(3+realData::liquid_volume, true); 
-        // setRealCommComp(3+realData::E, true); 
-        // setRealCommComp(3+realData::nu, true); 
-        // setRealCommComp(3+realData::temperature, true); 
+        setRealCommComp(0, true);   // posx
+        setRealCommComp(1, true);   // posy
+        setRealCommComp(2, true);   // posz
+        setRealCommComp(3+aos_realData::density, true); 
+        setRealCommComp(3+aos_realData::mass, true); 
+        setRealCommComp(3+aos_realData::radius, true); 
+        setRealCommComp(3+aos_realData::xvel, true); 
+        setRealCommComp(3+aos_realData::yvel, true); 
+        setRealCommComp(3+aos_realData::zvel, true); 
+        setRealCommComp(3+aos_realData::xangvel, true); 
+        setRealCommComp(3+aos_realData::yangvel, true); 
+        setRealCommComp(3+aos_realData::zangvel, true); 
+        setRealCommComp(3+aos_realData::liquid_volume, true); 
+        setRealCommComp(3+aos_realData::E, true); 
+        setRealCommComp(3+aos_realData::nu, true); 
+        setRealCommComp(3+aos_realData::temperature, true); 
 
-        // // Remaining particle properties don't need to be copied over
-        // setRealCommComp(3+realData::radinit, false); 
-        // setRealCommComp(3+realData::fx, false); 
-        // setRealCommComp(3+realData::fy, false); 
-        // setRealCommComp(3+realData::fz, false); 
-        // setRealCommComp(3+realData::taux, false);
-        // setRealCommComp(3+realData::tauy, false);
-        // setRealCommComp(3+realData::tauz, false);
-        // setRealCommComp(3+realData::Iinv, false);
-        // setRealCommComp(3+realData::volume, false);
-        // setRealCommComp(3+realData::density, false);
-        // setRealCommComp(3+realData::posx_prvs, false);
-        // setRealCommComp(3+realData::posy_prvs, false);
-        // setRealCommComp(3+realData::posz_prvs, false);
-        // setRealCommComp(3+realData::euler_angle_x, false);
-        // setRealCommComp(3+realData::euler_angle_y, false);
-        // setRealCommComp(3+realData::euler_angle_z, false);
-        // setRealCommComp(3+realData::total_bridge_volume, false);
-        // for(int i=0; i<MAXBONDS*9; i++) setRealCommComp(3+realData::first_bond_v+i, false);
-        // for(int i=0; i<MAXSPECIES; i++) setRealCommComp(3+realData::firstspec+i, false);
+        // Remaining particle properties don't need to be copied over
+        setRealCommComp(3+aos_realData::count+soa_realData::radinit, false); 
+        setRealCommComp(3+aos_realData::count+soa_realData::fx, false); 
+        setRealCommComp(3+aos_realData::count+soa_realData::fy, false); 
+        setRealCommComp(3+aos_realData::count+soa_realData::fz, false); 
+        setRealCommComp(3+aos_realData::count+soa_realData::taux, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::tauy, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::tauz, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::Iinv, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::volume, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::posx_prvs, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::posy_prvs, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::posz_prvs, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::euler_angle_x, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::euler_angle_y, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::euler_angle_z, false);
+        setRealCommComp(3+aos_realData::count+soa_realData::total_bridge_volume, false);
+        for(int i=0; i<MAXBONDS*9; i++) setRealCommComp(3+aos_realData::count+soa_realData::first_bond_v+i, false);
+        for(int i=0; i<MAXSPECIES; i++) setRealCommComp(3+aos_realData::count+soa_realData::firstspec+i, false);
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);
