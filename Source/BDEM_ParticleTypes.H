@@ -34,6 +34,12 @@ struct ParticleBondData {
   int Type24_bonds[BP_NP24][MAXBONDS];    // 8x4, single layer, offset
   int Type25_bonds[BP_NP25][MAXBONDS];    // 10x4, single layer, offset
 
+  // Particle interlocking shape types
+  int Type26_bonds[BP_NP26][MAXBONDS];    // Croissant 1
+  int Type27_bonds[BP_NP27][MAXBONDS];    // Croissant 2
+  int Type28_bonds[BP_NP28][MAXBONDS];    // Croissant 3
+  
+
   // Constructor to fill in bond info
   ParticleBondData(){
       // Manually adding particle bonds 
@@ -169,6 +175,21 @@ struct ParticleBondData {
       for(int i=0; i<BP_NP25; i++){
           for(int j=0; j<MAXBONDS; j++){
               Type25_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP26; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type26_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP27; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type27_bonds[i][j] = -1;
+          }
+      }
+      for(int i=0; i<BP_NP28; i++){
+          for(int j=0; j<MAXBONDS; j++){
+              Type28_bonds[i][j] = -1;
           }
       }
 
@@ -537,5 +558,49 @@ struct ParticleBondData {
         if((i>10 && i<19) || (i>20 && i<29)){Type25_bonds[i][0] = i-10; Type25_bonds[i][1] = i-1; Type25_bonds[i][2] = i+1; Type25_bonds[i][3] = i+10;}
         if(i>30 && i<39){ Type25_bonds[i][0] = i-10; Type25_bonds[i][1] = i-1; Type25_bonds[i][2] = i+1; }
       }
+
+      // Particle 26
+      Type26_bonds[0][0] = 1;   Type26_bonds[0][1] = 6;
+      Type26_bonds[1][0] = 0;   Type26_bonds[1][1] = 2;
+      Type26_bonds[2][0] = 1;   Type26_bonds[2][1] = 3;
+      Type26_bonds[3][0] = 2;   Type26_bonds[3][1] = 4;
+      Type26_bonds[4][0] = 3;   Type26_bonds[4][1] = 5;
+      Type26_bonds[5][0] = 4;   Type26_bonds[5][1] = 7;
+      Type26_bonds[6][0] = 0;   Type26_bonds[6][1] = 8;
+      Type26_bonds[7][0] = 5;   Type26_bonds[7][1] = 9;
+      Type26_bonds[8][0] = 6;
+      Type26_bonds[9][0] = 7;
+
+      // Particle 27
+      Type27_bonds[0][0] = 1;   Type27_bonds[0][1] = 10;
+      Type27_bonds[1][0] = 0;   Type27_bonds[1][1] = 2;
+      Type27_bonds[2][0] = 1;   Type27_bonds[2][1] = 3;
+      Type27_bonds[3][0] = 2;   Type27_bonds[3][1] = 4;
+      Type27_bonds[4][0] = 3;   Type27_bonds[4][1] = 5;
+      Type27_bonds[5][0] = 4;   Type27_bonds[5][1] = 6;
+      Type27_bonds[6][0] = 5;   Type27_bonds[6][1] = 7;
+      Type27_bonds[7][0] = 6;   Type27_bonds[7][1] = 9;
+      Type27_bonds[8][0] = 0;   Type27_bonds[8][1] = 10;
+      Type27_bonds[9][0] = 7;   Type27_bonds[9][1] = 11;
+      Type27_bonds[10][0] = 8;
+      Type27_bonds[11][0] = 9;
+
+      // Particle 28
+      Type28_bonds[0][0] = 1;   Type28_bonds[0][1] = 10;
+      Type28_bonds[1][0] = 0;   Type28_bonds[1][1] = 2;
+      Type28_bonds[2][0] = 1;   Type28_bonds[2][1] = 3;
+      Type28_bonds[3][0] = 2;   Type28_bonds[3][1] = 4;
+      Type28_bonds[4][0] = 3;   Type28_bonds[4][1] = 5;
+      Type28_bonds[5][0] = 4;   Type28_bonds[5][1] = 6;
+      Type28_bonds[6][0] = 5;   Type28_bonds[6][1] = 7;
+      Type28_bonds[7][0] = 6;   Type28_bonds[7][1] = 8;
+      Type28_bonds[8][0] = 7;   Type28_bonds[8][1] = 9;
+      Type28_bonds[9][0] = 8;   Type28_bonds[9][1] = 11;
+      Type28_bonds[10][0] = 0;   Type28_bonds[10][1] = 12;
+      Type28_bonds[11][0] = 9;   Type28_bonds[11][1] = 13;
+      Type28_bonds[12][0] = 10;   Type28_bonds[12][1] = 14;
+      Type28_bonds[13][0] = 11;   Type28_bonds[13][1] = 15;
+      Type28_bonds[14][0] = 12;
+      Type28_bonds[15][0] = 13;
   }
 };

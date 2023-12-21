@@ -46,7 +46,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                                  BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9,
                                  BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14,
                                  BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
-                                 BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25};
+                                 BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25,
+                                 BP_NP26, BP_NP27, BP_NP28};
 
         for (int i = 0; i < np; i++) 
         {
@@ -214,7 +215,8 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                                   BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
                                   BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
                                   BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
-                                  BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25};
+                                  BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25,
+                                  BP_NP26, BP_NP27, BP_NP28};
 
         Real pc_pos[THREEDIM];                    
         int bp_ids[200];
@@ -678,7 +680,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                              BP_NP5, BP_NP6, BP_NP7, BP_NP8, BP_NP9, 
                              BP_NP10, BP_NP11, BP_NP12, BP_NP13, BP_NP14, 
                              BP_NP15, BP_NP16, BP_NP17, BP_NP18, BP_NP19, 
-                             BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25};
+                             BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25,
+                             BP_NP26, BP_NP27, BP_NP28};
 
     Real pc_pos[THREEDIM];                    
     Real bp_pos[THREEDIM];

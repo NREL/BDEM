@@ -138,6 +138,21 @@ void get_bonded_particle_pos(int type, int comp, amrex::Real radius,
     amrex::Real yval = (j<10) ? 2.90473751:(j<20) ? 0.9682458:(j<30) ? -0.9682458:-2.90473751;
     pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
   }
+  if(type == 26){
+    amrex::Real xval = (j<6) ? 2.0*j:(j==6) ? 0.5:(j==7) ? 9.5:(j==8) ? 1.0:9.0;
+    amrex::Real yval = (j<6) ? 0.0:(j<8) ? 1.9365:3.8730;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+  }
+  if(type == 27){
+    amrex::Real xval = (j<8) ? 2.0*j:(j==8) ? 0.5:(j==9) ? 13.5:(j==10) ? 1.0:13.0;
+    amrex::Real yval = (j<8) ? 0.0:(j<10) ? 1.9365:3.8730;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+  }
+  if(type == 28){
+    amrex::Real xval = (j<10) ? 2.0*j:(j==10) ? 0.5:(j==11) ? 17.5:(j==12) ? 1.0:(j==13) ? 17.0:(j==14) ? 1.5:16.5;
+    amrex::Real yval = (j<10) ? 0.0:(j<12) ? 1.9365:(j<14) ? 3.8730:5.8095;
+    pos[XDIR] = xval; pos[YDIR] = yval; pos[ZDIR] = 0.0;
+  }
 
   // Calculate rotated particle position
   rotate_vector_to_inertial(quats, pos, pc_pos);
