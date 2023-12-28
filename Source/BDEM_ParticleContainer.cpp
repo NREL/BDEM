@@ -49,7 +49,8 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const int bonded_sphere_particles,
             const int liquid_bridging, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
-            const Real cb_force, const Real cb_torq, const int cb_dir)
+            const Real cb_force, const Real cb_torq, const int cb_dir,
+            const int ilbonds, const Real prob_ilbond, const Real break_ilbond)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -676,6 +677,28 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         real_data_names.push_back(bondval);
     }
 
+    for(int i=0;i<MAXILBONDS;i++)
+    {
+        std::string bondval = amrex::Concatenate("ilbval_fx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_fy",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_fz",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_tnx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_tny",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_tnz",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_ttx",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_tty",i,2);
+        real_data_names.push_back(bondval);
+        bondval = amrex::Concatenate("ilbval_ttz",i,2);
+        real_data_names.push_back(bondval);
+    }
+
     for(int i=0;i<MAXSPECIES;i++)
     {
         std::string chemname = amrex::Concatenate("chemspec",i,2);
@@ -700,6 +723,12 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     for(int i=0;i<MAXBONDS;i++)
     {
         std::string bondidx = amrex::Concatenate("bidx",i,2);
+        int_data_names.push_back(bondidx);
+    }
+
+    for(int i=0;i<MAXILBONDS;i++)
+    {
+        std::string bondidx = amrex::Concatenate("ilbidx",i,2);
         int_data_names.push_back(bondidx);
     }
 

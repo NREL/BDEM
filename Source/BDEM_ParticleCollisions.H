@@ -106,6 +106,18 @@ amrex::ParallelFor(np,[=]
                 }
             }
         }
+
+        // Check to see if particles are bonded
+        bool ilbond_exists = false;
+        int ilbond_index = 0;
+        if(ilbonds){
+            for(int b=0; b<MAXILBONDS; b++){
+                if(p1.idata(intData::first_ilbond+b) == (int)p2.id()){
+                    ilbond_exists = true;
+                    ilbond_index = b;
+                }
+            }
+        }
   
         // Initialize variables used for both contact and liquid bridge force calculations
         // Calculate effective quantities
@@ -127,9 +139,9 @@ amrex::ParallelFor(np,[=]
         Real angvel2[THREEDIM] = {p2.rdata(realData::xangvel), p2.rdata(realData::yangvel), p2.rdata(realData::zangvel)};
         Real cpdt1[THREEDIM];
         Real cpdt2[THREEDIM];
-    
+
         // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
-        if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists )
+        if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists || ilbond_exists)
         {
             // Normal vector pointing from center of component sphere 2 to component sphere 2
             normal[XDIR] = dist_x*distmag_inv;
@@ -200,10 +212,26 @@ amrex::ParallelFor(np,[=]
                     bridge_exists = true;
                 }
             }
+
+            // Check to see if we should create interlocking bond between particles in contact
+            if(ilbonds && !bond_exists && !ilbond_exists){
+                std::mt19937 mt(0451);
+                std::uniform_real_distribution<double> dist(0.0, 1.0);
+                if(dist(mt) > 1.0 - prob_ilbond){
+                    // Find first available bridge index (denoted with -1 value)
+                    while(p1.idata(intData::first_ilbond+ilbond_index) != -1){
+                        ilbond_index++;
+                        if(ilbond_index == MAXILBONDS) Abort("\nMaximum number of interlocking bonds reached, MAXILBONDS needs to be increased!\n");
+                    }
+
+                    p1.idata(intData::first_ilbond+ilbond_index) = (int)p2.id();
+                    ilbond_exists = true;
+                }
+            }
         }
 
         // Evaluate the bond force
-        if(bond_exists)
+        if(bond_exists || ilbond_exists)
         {
             // Bond area and moments
             Real bond_rad = std::min(rad1, rad2) * DEM::bond_radius_factor;
@@ -211,11 +239,16 @@ amrex::ParallelFor(np,[=]
             Real I_bond = PI * pow(bond_rad,4) / 4.0;
             Real I_p_bond = I_bond * 2.0;
 
+            Real E_bond = (bond_exists) ? DEM::E_bond:DEM::E_ilbond;
+            Real G_bond = (bond_exists) ? DEM::G_bond:DEM::G_ilbond;
+            Real nu_bond = (bond_exists) ? DEM::nu_bond:DEM::nu_ilbond;
+            Real beta_bond = (bond_exists) ? DEM::beta_bond:DEM::beta_ilbond;
+
             // Stiffnesses for Bernoulli beam model and bond damping calculations
-            Real k_n_bond = DEM::E_bond * A_bond / rad_sum;
-            Real k_t_bond = DEM::G_bond * A_bond / rad_sum;
-            Real k_tor_bond = DEM::G_bond * I_p_bond / rad_sum;
-            Real k_ben_bond = DEM::E_bond * I_bond / rad_sum;
+            Real k_n_bond = E_bond * A_bond / rad_sum;
+            Real k_t_bond = G_bond * A_bond / rad_sum;
+            Real k_tor_bond = G_bond * I_p_bond / rad_sum;
+            Real k_ben_bond = E_bond * I_bond / rad_sum;
 
             Real radsuminv = 1.0 / (rad1 + rad2);
             Real wr[THREEDIM] = {p1.rdata(realData::xangvel) - p2.rdata(realData::xangvel), 
@@ -240,14 +273,21 @@ amrex::ParallelFor(np,[=]
             Real multiplierX = amrex::Math::copysign(1.0,vrel_n[0]);
             Real multiplierY = amrex::Math::copysign(1.0,vrel_n[1]);
             Real multiplierZ = amrex::Math::copysign(1.0,vrel_n[2]);
-            nforce_damped[0] = nforce[0] - DEM::beta_bond*fabs(nforce[0])*multiplierX;
-            nforce_damped[1] = nforce[1] - DEM::beta_bond*fabs(nforce[1])*multiplierY;
-            nforce_damped[2] = nforce[2] - DEM::beta_bond*fabs(nforce[2])*multiplierZ;
+            nforce_damped[0] = nforce[0] - beta_bond*fabs(nforce[0])*multiplierX;
+            nforce_damped[1] = nforce[1] - beta_bond*fabs(nforce[1])*multiplierY;
+            nforce_damped[2] = nforce[2] - beta_bond*fabs(nforce[2])*multiplierZ;
 
             /* ------- Tangent bond force ------- */
-            Real force_tang[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+0), 
-                                         p1.rdata(realData::first_bond_v+bond_index*9+1), 
-                                         p1.rdata(realData::first_bond_v+bond_index*9+2)};
+            Real force_tang[THREEDIM];
+            if(bond_exists){
+                force_tang[0] = p1.rdata(realData::first_bond_v+bond_index*9+0); 
+                force_tang[1] = p1.rdata(realData::first_bond_v+bond_index*9+1); 
+                force_tang[2] = p1.rdata(realData::first_bond_v+bond_index*9+2);
+            } else {
+                force_tang[0] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+0); 
+                force_tang[1] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+1); 
+                force_tang[2] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+2);
+            }
             Real tforce_damped[THREEDIM] = {0.0, 0.0, 0.0};
             Real fdp = dotpdt(force_tang, normal);
             Real force_norm[THREEDIM] = {fdp*normal[XDIR], fdp*normal[YDIR], fdp*normal[ZDIR]};
@@ -267,18 +307,31 @@ amrex::ParallelFor(np,[=]
             multiplierX = amrex::Math::copysign(1.0,vrel_t[0]);
             multiplierY = amrex::Math::copysign(1.0,vrel_t[1]);
             multiplierZ = amrex::Math::copysign(1.0,vrel_t[2]);
-            tforce_damped[0] = force_tang[0] - DEM::beta_bond*fabs(force_tang[0])*multiplierX;
-            tforce_damped[1] = force_tang[1] - DEM::beta_bond*fabs(force_tang[1])*multiplierY;
-            tforce_damped[2] = force_tang[2] - DEM::beta_bond*fabs(force_tang[2])*multiplierZ;
+            tforce_damped[0] = force_tang[0] - beta_bond*fabs(force_tang[0])*multiplierX;
+            tforce_damped[1] = force_tang[1] - beta_bond*fabs(force_tang[1])*multiplierY;
+            tforce_damped[2] = force_tang[2] - beta_bond*fabs(force_tang[2])*multiplierZ;
 
-            p1.rdata(realData::first_bond_v+bond_index*9+0) = tforce_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+1) = tforce_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+2) = tforce_damped[2];
+            if(bond_exists){
+                p1.rdata(realData::first_bond_v+bond_index*9+0) = tforce_damped[0];
+                p1.rdata(realData::first_bond_v+bond_index*9+1) = tforce_damped[1];
+                p1.rdata(realData::first_bond_v+bond_index*9+2) = tforce_damped[2];
+            } else {
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+0) = tforce_damped[0];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+1) = tforce_damped[1];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+2) = tforce_damped[2];
+            }
 
             /* ------- Normal bond torque ------- */
-            Real torq_norm[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+3), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+4), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+5)};
+            Real torq_norm[THREEDIM]; 
+            if(bond_exists){
+                torq_norm[0] = p1.rdata(realData::first_bond_v+bond_index*9+3);
+                torq_norm[1] = p1.rdata(realData::first_bond_v+bond_index*9+4);
+                torq_norm[2] = p1.rdata(realData::first_bond_v+bond_index*9+5);
+            } else {
+                torq_norm[0] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+3);
+                torq_norm[1] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+4);
+                torq_norm[2] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+5);
+            }
             Real ntorq_damped[THREEDIM] = {0.0, 0.0, 0.0};
             Real tdp = dotpdt(torq_norm, normal);
             torq_norm[XDIR] = tdp*normal[XDIR];
@@ -289,18 +342,31 @@ amrex::ParallelFor(np,[=]
             torq_norm[XDIR] += dntorque[XDIR];
             torq_norm[YDIR] += dntorque[YDIR];
             torq_norm[ZDIR] += dntorque[ZDIR];
-            ntorq_damped[0] = torq_norm[0] - DEM::beta_bond*fabs(torq_norm[0])*amrex::Math::copysign(1.0,wn[0]);
-            ntorq_damped[1] = torq_norm[1] - DEM::beta_bond*fabs(torq_norm[1])*amrex::Math::copysign(1.0,wn[1]);
-            ntorq_damped[2] = torq_norm[2] - DEM::beta_bond*fabs(torq_norm[2])*amrex::Math::copysign(1.0,wn[2]);
+            ntorq_damped[0] = torq_norm[0] - beta_bond*fabs(torq_norm[0])*amrex::Math::copysign(1.0,wn[0]);
+            ntorq_damped[1] = torq_norm[1] - beta_bond*fabs(torq_norm[1])*amrex::Math::copysign(1.0,wn[1]);
+            ntorq_damped[2] = torq_norm[2] - beta_bond*fabs(torq_norm[2])*amrex::Math::copysign(1.0,wn[2]);
 
-            p1.rdata(realData::first_bond_v+bond_index*9+3) = ntorq_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+4) = ntorq_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+5) = ntorq_damped[2];
+            if(bond_exists){
+                p1.rdata(realData::first_bond_v+bond_index*9+3) = ntorq_damped[0];
+                p1.rdata(realData::first_bond_v+bond_index*9+4) = ntorq_damped[1];
+                p1.rdata(realData::first_bond_v+bond_index*9+5) = ntorq_damped[2];
+            } else  {
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+3) = ntorq_damped[0];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+4) = ntorq_damped[1];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+5) = ntorq_damped[2];
+            }
 
             /* ------- Tangential bond torque ------- */
-            Real torq_tang[THREEDIM] = {p1.rdata(realData::first_bond_v+bond_index*9+6), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+7), 
-                                        p1.rdata(realData::first_bond_v+bond_index*9+8)};
+            Real torq_tang[THREEDIM];
+            if(bond_exists){
+                torq_tang[0] = p1.rdata(realData::first_bond_v+bond_index*9+6);
+                torq_tang[1] = p1.rdata(realData::first_bond_v+bond_index*9+7);
+                torq_tang[2] = p1.rdata(realData::first_bond_v+bond_index*9+8);
+            } else {
+                torq_tang[0] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+6);
+                torq_tang[1] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+7);
+                torq_tang[2] = p1.rdata(realData::first_ilbond_v+ilbond_index*9+8);
+            }
             Real ttorq_damped[THREEDIM] = {0.0, 0.0, 0.0};
             tdp = dotpdt(torq_tang, normal);
             torq_tang[XDIR] -= tdp*normal[XDIR];
@@ -311,13 +377,19 @@ amrex::ParallelFor(np,[=]
             torq_tang[XDIR] += dttorque[XDIR];
             torq_tang[YDIR] += dttorque[YDIR];
             torq_tang[ZDIR] += dttorque[ZDIR];
-            ttorq_damped[0] = torq_tang[0] - DEM::beta_bond*fabs(torq_tang[0])*amrex::Math::copysign(1.0,wt[0]);
-            ttorq_damped[1] = torq_tang[1] - DEM::beta_bond*fabs(torq_tang[1])*amrex::Math::copysign(1.0,wt[1]);
-            ttorq_damped[2] = torq_tang[2] - DEM::beta_bond*fabs(torq_tang[2])*amrex::Math::copysign(1.0,wt[2]);
+            ttorq_damped[0] = torq_tang[0] - beta_bond*fabs(torq_tang[0])*amrex::Math::copysign(1.0,wt[0]);
+            ttorq_damped[1] = torq_tang[1] - beta_bond*fabs(torq_tang[1])*amrex::Math::copysign(1.0,wt[1]);
+            ttorq_damped[2] = torq_tang[2] - beta_bond*fabs(torq_tang[2])*amrex::Math::copysign(1.0,wt[2]);
 
-            p1.rdata(realData::first_bond_v+bond_index*9+6) = ttorq_damped[0];
-            p1.rdata(realData::first_bond_v+bond_index*9+7) = ttorq_damped[1];
-            p1.rdata(realData::first_bond_v+bond_index*9+8) = ttorq_damped[2];
+            if(bond_exists){
+                p1.rdata(realData::first_bond_v+bond_index*9+6) = ttorq_damped[0];
+                p1.rdata(realData::first_bond_v+bond_index*9+7) = ttorq_damped[1];
+                p1.rdata(realData::first_bond_v+bond_index*9+8) = ttorq_damped[2];
+            } else {
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+6) = ttorq_damped[0];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+7) = ttorq_damped[1];
+                p1.rdata(realData::first_ilbond_v+ilbond_index*9+8) = ttorq_damped[2];
+            }
 
             // Add on cross product term (should not be included in tau_bond_t update)
             Real tor[THREEDIM] = {0.0, 0.0, 0.0};
@@ -332,11 +404,22 @@ amrex::ParallelFor(np,[=]
             p1.rdata(realData::taux) += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri*tor[XDIR];
             p1.rdata(realData::tauy) += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri*tor[YDIR];
             p1.rdata(realData::tauz) += ntorq_damped[ZDIR] + ttorq_damped[ZDIR] - cri*tor[ZDIR];
+
+            // Check to see if interlocking bond force magnitude exceeds breakage force
+            if(ilbond_exists){
+                Real ilbond_forcemag = pow(pow(nforce_damped[XDIR] + tforce_damped[XDIR],2.0) + 
+                                           pow(nforce_damped[YDIR] + tforce_damped[YDIR],2.0) + 
+                                           pow(nforce_damped[ZDIR] + tforce_damped[ZDIR],2.0),0.5);
+                if(ilbond_forcemag > break_ilbond){
+                    p1.idata(intData::first_ilbond+ilbond_index) = -1;
+                    for(int b=0; b<9; b++) p1.rdata(realData::first_ilbond_v+9*ilbond_index+b) = 0.0;
+                }
+            }
         }
 
         // Evaluate the contact force if p1 and p2 don't have a bond between them
         // if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()))
-        if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) && !bond_exists)
+        if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) && !bond_exists && !ilbond_exists)
         {
             Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
             if (contact_law == CONTACT_HERTZ)

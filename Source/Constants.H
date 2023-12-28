@@ -11,6 +11,7 @@
 #define MAXSPECIES 1
 #define MAXBRIDGES 8
 #define MAXBONDS 4
+#define MAXILBONDS 8
 
 #define BP_TYPES 29
 #define BP_NP0 1

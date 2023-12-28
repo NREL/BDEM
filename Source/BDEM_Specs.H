@@ -41,7 +41,8 @@ struct realData
     liquid_volume,   
     total_bridge_volume,
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
-    theta_x = first_bond_v + MAXBONDS*9,
+    first_ilbond_v = first_bond_v + MAXBONDS*9,
+    theta_x = first_ilbond_v + MAXILBONDS*9,
     firstspec,
     count
   };
@@ -56,7 +57,8 @@ struct intData
     type_id = 2,
     first_bridge=3,
     first_bond = first_bridge + MAXBRIDGES,
-    count = first_bond + MAXBONDS
+    first_ilbond = first_bond + MAXBONDS,
+    count = first_ilbond + MAXILBONDS
   };
 };
 
@@ -91,6 +93,10 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real bond_radius_factor;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real E_ilbond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_ilbond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_ilbond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_ilbond;
 }
 
 class DEMspecs
@@ -249,6 +255,11 @@ class DEMspecs
         Real forcing_freq = 0.0;
         Real forcing_amp = 0.0;
         Vector<Real> forcing_dir; 
+
+        // Options for interlocking bond model
+        int ilbonds = 0;
+        Real prob_ilbond = 0.0;
+        Real break_ilbond = 0.0;
 
         void read_dem_specs()
         {
@@ -611,6 +622,23 @@ class DEMspecs
                       pp.get("cb_hold_time", cb_hold_time);
                     }
                 }
+            }
+
+            pp.query("ilbonds", ilbonds);
+            if(ilbonds){
+                pp.get("prob_ilbond", prob_ilbond);
+                pp.get("break_ilbond", break_ilbond);
+
+                DEM::E_ilbond = DEM::E_bond;
+                DEM::G_ilbond = DEM::G_bond;
+                DEM::nu_ilbond = DEM::nu_bond;
+                DEM::beta_ilbond = DEM::beta_bond;
+                
+                // Check to see if default values overridden
+                pp.query("young_mod_ilbond", DEM::E_ilbond);
+                pp.query("poisson_rat_ilbond", DEM::nu_ilbond);
+                pp.query("ilbond_damping_factor", DEM::beta_ilbond);
+                DEM::G_ilbond = DEM::E_ilbond / (2.0 * (1.0 + DEM::nu_ilbond));
             }
 
             if(bonded_sphere_particles){

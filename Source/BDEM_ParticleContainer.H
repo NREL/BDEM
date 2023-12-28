@@ -109,7 +109,8 @@ public:
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
-            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0);
+            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0,
+            const int il_bonds = 0, const Real prob_il_bond = 0.0, const Real break_il_bond = 0.0);
 
     void computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq, 
                         Real forcing_amp, Real forcing_dir[THREEDIM]);

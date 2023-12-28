@@ -61,6 +61,11 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   // Set bridge indices to -1 to indicate no existing bridges
   for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
 
+  for(int b=0; b<MAXILBONDS; b++) p.idata(intData::first_ilbond+b) = -1;
+  for(int b=0; b<MAXILBONDS*9; b++){
+      p.rdata(realData::first_ilbond_v+b) = zero;
+  }
+
   // If nonzero MC passed in, calculate liquid volume
   if(MC > 0.0){
       p.rdata(realData::liquid_volume) = (MC > FSP) ? (p.rdata(realData::density)*p.rdata(realData::volume)/liquid_density)*(MC - FSP)/(1 - MC):0;

@@ -33,6 +33,10 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::force_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::angv_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::bond_radius_factor  = one;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_ilbond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_ilbond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_ilbond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_ilbond  = zero;
 
 using namespace amrex;
 
@@ -290,7 +294,8 @@ int main (int argc, char* argv[])
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, cb_torq, specs.cb_dir);
+                                  cb_force, cb_torq, specs.cb_dir,
+                                  specs.ilbonds, specs.prob_ilbond, specs.break_ilbond);
                 
                 bpc.computeForcing(time, specs.timeoffset, specs.forcing_type, specs.forcing_freq, specs.forcing_amp, specs.forcing_dir.data());
             }

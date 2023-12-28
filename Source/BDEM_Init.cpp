@@ -120,6 +120,9 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             for(int b=0; b<MAXBONDS*9; b++){
                 p.rdata(realData::first_bond_v+b) = zero;
             }
+            for(int b=0; b<MAXILBONDS*9; b++){
+                p.rdata(realData::first_ilbond_v+b) = zero;
+            }
 
             // Set bridge indices to -1 to indicate no existing bridges
             for(int br=0; br<MAXBRIDGES; br++) p.idata(intData::first_bridge+br) = -1;
@@ -138,6 +141,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             p.rdata(realData::total_bridge_volume) = zero;
 
             for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
+
+            for(int b=0; b<MAXILBONDS; b++) p.idata(intData::first_ilbond + b) = -1;
             
             //FIXME: get chemistry data from inputs file
             for(int sp=0;sp<MAXSPECIES;sp++)
@@ -954,6 +959,11 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::total_bridge_volume) = zero;
 
     for(int b=0; b<MAXBONDS; b++) p.idata(intData::first_bond + b) = -1;
+
+    for(int b=0; b<MAXILBONDS; b++) p.idata(intData::first_ilbond + b) = -1;
+    for(int b=0; b<MAXILBONDS*9; b++){ 
+        p.rdata(realData::first_ilbond_v+b) = zero;
+    }
 
     for(int i=0;i<MAXSPECIES;i++)
     {
