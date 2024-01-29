@@ -22,6 +22,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::e_t_wall = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::muR_wall  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::tcoll    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_liq   = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::hminf   = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::wall_gamma    = zero;
@@ -33,6 +34,8 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::force_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::angv_damping  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::bond_radius_factor  = one;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_c  = one;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::sigma_max  = zero;
 
 using namespace amrex;
 
@@ -289,6 +292,7 @@ int main (int argc, char* argv[])
                                   specs.gravity,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
+                                  specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
                                   cb_force, cb_torq, specs.cb_dir);
                 

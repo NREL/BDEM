@@ -424,6 +424,16 @@ amrex::ParallelFor(np,[=]
                 ft[ZDIR] = zero;
             }
 
+            // Modify normal force to account for generic cohesion model
+            if(particle_cohesion){
+                Real fn_mag = pow((fn[XDIR]*fn[XDIR] + fn[YDIR]*fn[YDIR] + fn[ZDIR]*fn[ZDIR]),0.5);
+                Real sigma_c = std::min(fn_mag * DEM::k_c/(PI*Reff*Reff), DEM::sigma_max);                
+                Real fc = fn_mag * PI * Reff * Reff;
+                fn[XDIR] += fc*normal[XDIR];
+                fn[YDIR] += fc*normal[YDIR];
+                fn[ZDIR] += fc*normal[ZDIR];
+            }
+
             // Total force on composite particle is just a sum across the forces on all component spheres
             p1.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
             p1.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
@@ -491,14 +501,36 @@ amrex::ParallelFor(np,[=]
                   Fcap = PI*DEM::gamma*sqrt(rad1*rad2)*(ccoef + exp(acoef*Sdist/rad2 + bcoef));
                 }
                 
-                Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
-                Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
+                // Viscosity model from Washino et al., 2017
+                Real S_nd = Sdist / Reff;
+                Real hmin = DEM::hminf*Reff;
+                Real Vr3 = Vtot/pow(rad1,3);
+                if(Sdist < hmin) S_nd = hmin/Reff;    // Force becomes infinite when Sdist -> 0
+                Real gamma_v = Reff / rad1;
+                Real cvt = pow((1.0 + 2.0*Vr3/(PI*pow(S_nd,2))),0.5) - 1.0;
+                Real Hv = pow(S_nd*S_nd + 2.0*Vr3/PI,0.5);
+                Real Avn = 0.72*pow(S_nd,4) + 1.8*pow(S_nd,3);
+                Real Avt = ((1.0/10.0) + (1.0/40.0)*exp(-0.076*cvt))*((gamma_v - 1.0)/(1 + cvt));
+                Real Bv = -1.0*pow(S_nd,4) + 2.5*pow(S_nd,3) - 2.4*pow(S_nd,2);
+                Real Fvisc_n[THREEDIM];
+                Real Fvisc_t[THREEDIM];
+
+                Fvisc_n[XDIR] = 3.0*PI*DEM::mu_liq*Reff*vrel_n[XDIR] / (2.0*S_nd) * (pow(1.0 - S_nd/Hv,2) + (Avn/S_nd)*(1.0/S_nd - 1.0/Hv) + (Bv/S_nd)*(Hv-S_nd));
+                Fvisc_n[YDIR] = 3.0*PI*DEM::mu_liq*Reff*vrel_n[YDIR] / (2.0*S_nd) * (pow(1.0 - S_nd/Hv,2) + (Avn/S_nd)*(1.0/S_nd - 1.0/Hv) + (Bv/S_nd)*(Hv-S_nd));
+                Fvisc_n[ZDIR] = 3.0*PI*DEM::mu_liq*Reff*vrel_n[ZDIR] / (2.0*S_nd) * (pow(1.0 - S_nd/Hv,2) + (Avn/S_nd)*(1.0/S_nd - 1.0/Hv) + (Bv/S_nd)*(Hv-S_nd));
+
+                Fvisc_t[XDIR] = 6.0*PI*DEM::mu_liq*Reff*vrel_t[XDIR] * (4.0*Avt*cvt*(1.0-gamma_v) + (2.0*Avt*(gamma_v-1.0)*(cvt+2.0*Avt) + 1.0/3.0)*log(1.0+cvt));
+                Fvisc_t[YDIR] = 6.0*PI*DEM::mu_liq*Reff*vrel_t[YDIR] * (4.0*Avt*cvt*(1.0-gamma_v) + (2.0*Avt*(gamma_v-1.0)*(cvt+2.0*Avt) + 1.0/3.0)*log(1.0+cvt));
+                Fvisc_t[ZDIR] = 6.0*PI*DEM::mu_liq*Reff*vrel_t[ZDIR] * (4.0*Avt*cvt*(1.0-gamma_v) + (2.0*Avt*(gamma_v-1.0)*(cvt+2.0*Avt) + 1.0/3.0)*log(1.0+cvt));
+
+                // Real Fvisc_n = (Sdist > 0.0) ? 6.0*PI*DEM::mu_liq*Reff*vrel_trans_norm*(Reff/Sdist):0.0;
+                // Real Fvisc_t = (Sdist > 0.0) ?  6.0*PI*DEM::mu_liq*Reff*vrel_trans_tan*(8.0/15.0 * log(Reff/Sdist) + 0.9588): 0.0;
 
                 Real bridge_force[THREEDIM];
                 Real torq[THREEDIM];
-                bridge_force[XDIR] = (Fcap - Fvisc_n)*normal[XDIR] - Fvisc_t*tangent[XDIR];
-                bridge_force[YDIR] = (Fcap - Fvisc_n)*normal[YDIR] - Fvisc_t*tangent[YDIR];
-                bridge_force[ZDIR] = (Fcap - Fvisc_n)*normal[ZDIR] - Fvisc_t*tangent[ZDIR];
+                bridge_force[XDIR] = Fcap*normal[XDIR] - Fvisc_n[XDIR] - Fvisc_t[XDIR];
+                bridge_force[YDIR] = Fcap*normal[YDIR] - Fvisc_n[YDIR] - Fvisc_t[YDIR];
+                bridge_force[ZDIR] = Fcap*normal[ZDIR] - Fvisc_n[ZDIR] - Fvisc_t[ZDIR];
 
                 p1.rdata(realData::fx) += bridge_force[XDIR];
                 p1.rdata(realData::fy) += bridge_force[YDIR];

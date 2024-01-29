@@ -82,6 +82,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real angv_damping;
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real hminf;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real gamma;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real wall_gamma;
@@ -91,6 +92,9 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_bond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real bond_radius_factor;
+
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_c;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real sigma_max;
 }
 
 class DEMspecs
@@ -205,13 +209,12 @@ class DEMspecs
         int use_type_dist = 0;
         Vector<Real> particle_dist_list;  // List of percentages for each particle type
 
-        // Options for modeling liquid bridging
+        // Options for modeling liquid bridging and viscous liquid forces
         int liquid_bridging = 0;
         Real moisture_content = 0.0;
         Real moisture_content_stdev = 0.0;
         Real FSP = 23.0;     // Fiber saturation point of pine chips by default
         Real contact_angle = 0.0;
-        Real liquid_viscosity = 0.0;
         Real surface_tension = 0.0;
         Real liquid_density = 1000.0;   // Assume water density by default
         int recalculate_MC = 0;
@@ -249,6 +252,11 @@ class DEMspecs
         Real forcing_freq = 0.0;
         Real forcing_amp = 0.0;
         Vector<Real> forcing_dir; 
+
+        // Generic cohesion model variables
+        int particle_cohesion = 0;
+        Real k_c = 0.2;     // Ratio of normal to cohesive forces
+        Real sigma_max = 10.0;    // Maximum cohesive stress
 
         void read_dem_specs()
         {
@@ -566,6 +574,7 @@ class DEMspecs
                 pp.query("surface_tension", DEM::gamma);
                 pp.query("wall_surface_tension", DEM::wall_gamma);
                 pp.query("recalculate_MC", recalculate_MC);
+                pp.query("hminf", DEM::hminf);
 
                 // Convert contact angle to rad
                 DEM::contact_angle *= PI/180.0;
@@ -669,6 +678,14 @@ class DEMspecs
                     amrex::Abort("Invalid forcing dir chosen!\n");
                 }
             }
+
+            pp.query("particle_cohesion", particle_cohesion);
+            if(particle_cohesion){
+                pp.get("cohesion_coefficient", DEM::k_c);
+                pp.get("cohesion_max_stress", DEM::sigma_max);
+            }
+
+
         }
         void clear()
         {

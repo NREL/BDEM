@@ -108,6 +108,7 @@ public:
             RealVect &gravity,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
+            const int particle_cohesion=0,
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
             const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0);
 

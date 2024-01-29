@@ -47,7 +47,8 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
             RealVect &gravity,
             const int bonded_sphere_particles,
-            const int liquid_bridging, 
+            const int liquid_bridging,
+            const int particle_cohesion, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
             const Real cb_force, const Real cb_torq, const int cb_dir)
 {
