@@ -83,6 +83,7 @@ namespace DEM
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_liq;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real hminf;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real CED;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real contact_angle;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real gamma;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real wall_gamma;
@@ -575,6 +576,7 @@ class DEMspecs
                 pp.query("wall_surface_tension", DEM::wall_gamma);
                 pp.query("recalculate_MC", recalculate_MC);
                 pp.query("hminf", DEM::hminf);
+                pp.query("cohesion_energy_density", DEM::CED);
 
                 // Convert contact angle to rad
                 DEM::contact_angle *= PI/180.0;

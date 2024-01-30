@@ -23,6 +23,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::muR_wall  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::tcoll    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_liq   = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::hminf   = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::CED   = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::contact_angle = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::gamma    = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::wall_gamma    = zero;

@@ -428,7 +428,8 @@ amrex::ParallelFor(np,[=]
             if(particle_cohesion){
                 Real fn_mag = pow((fn[XDIR]*fn[XDIR] + fn[YDIR]*fn[YDIR] + fn[ZDIR]*fn[ZDIR]),0.5);
                 Real sigma_c = std::min(fn_mag * DEM::k_c/(PI*Reff*Reff), DEM::sigma_max);                
-                Real fc = fn_mag * PI * Reff * Reff;
+                if(DEM::CED > 0.0) sigma_c = DEM::CED;
+                Real fc = sigma_c * PI * Reff * Reff;
                 fn[XDIR] += fc*normal[XDIR];
                 fn[YDIR] += fc*normal[YDIR];
                 fn[ZDIR] += fc*normal[ZDIR];
