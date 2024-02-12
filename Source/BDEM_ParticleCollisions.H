@@ -425,7 +425,7 @@ amrex::ParallelFor(np,[=]
             }
 
             // Modify normal force to account for generic cohesion model
-            if(particle_cohesion){
+            if(particle_cohesion && !bond_exists){
                 Real fn_mag = pow((fn[XDIR]*fn[XDIR] + fn[YDIR]*fn[YDIR] + fn[ZDIR]*fn[ZDIR]),0.5);
                 Real sigma_c = std::min(fn_mag * DEM::k_c/(PI*Reff*Reff), DEM::sigma_max);                
                 if(DEM::CED > 0.0) sigma_c = DEM::CED;
