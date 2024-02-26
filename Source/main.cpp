@@ -137,6 +137,7 @@ int main (int argc, char* argv[])
         Real output_time=zero;
         Real particle_sourcing_time=zero;
         Real output_timeMass=zero;
+        Real output_timeSumSTL=zero;
         Real output_timePrint=zero;
         int output_it=0;
         amrex::Print() << "Time step dt = " << dt << "\n";
@@ -182,6 +183,8 @@ int main (int argc, char* argv[])
         amrex::Real mass_flow_next;
         amrex::Real total_speed=1e10;
         amrex::Real t_prev=0.0;
+        amrex::Real stl_force_norm = 0.0; 
+        amrex::Real stl_force_tang = 0.0; 
         if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
 
         Real cb_force = 0.0;
@@ -194,6 +197,7 @@ int main (int argc, char* argv[])
             time += dt;
             output_time += dt;
             output_timeMass += dt;
+            output_timeSumSTL += dt;
             output_timePrint += dt;
             particle_sourcing_time += dt;
         
@@ -295,7 +299,7 @@ int main (int argc, char* argv[])
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, cb_torq, specs.cb_dir);
+                                  cb_force, cb_torq, specs.cb_dir, specs.sum_stl_forces);
                 
                 bpc.computeForcing(time, specs.timeoffset, specs.forcing_type, specs.forcing_freq, specs.forcing_amp, specs.forcing_dir.data());
             }
@@ -306,7 +310,7 @@ int main (int argc, char* argv[])
             bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
             BL_PROFILE_VAR_STOP(movepart);
 
-            if(specs.dynamicstl!=0)
+            if(specs.dynamicstl!=0 && (stl_force_norm/specs.stl_area) < specs.stl_pressure_threshold)
             {
                 if(specs.dynamicstl==1)
                 {
@@ -347,6 +351,23 @@ int main (int argc, char* argv[])
                     }
                     PrintToFile("Total_Mass") << time << "\t" << bpc.TotalNumberOfParticles() <<"\n";
                     output_timeMass=zero;
+                }
+            }
+
+            if (specs.sum_stl_forces)
+            {
+                if (output_timeSumSTL > specs.sum_stl_output_time)
+                {
+                    bpc.redist_particles(0,specs.using_softwalls);
+                    if(specs.using_softwalls)
+                    {
+                        bpc.reassignParticles_softwall(); 
+                    }
+                    stl_force_norm = 0.0;
+                    stl_force_tang = 0.0;
+                    bpc.Calculate_Total_STL_Force_MaterialPoints(stl_force_norm, stl_force_tang);
+                    PrintToFile("STL_Forces.dat") << time << "\t" << stl_force_norm << "\t" << stl_force_tang <<"\n";
+                    output_timeSumSTL=zero;
                 }
             }
 

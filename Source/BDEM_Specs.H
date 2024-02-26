@@ -38,6 +38,8 @@ struct realData
     euler_angle_x,
     euler_angle_y,
     euler_angle_z,
+    stl_norm_f,
+    stl_tang_f,
     liquid_volume,   
     total_bridge_volume,
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
@@ -145,6 +147,9 @@ class DEMspecs
         Vector<Real> dynstl_center;
         Real dynstl_rot_vel=0.0;
         int sum_stl_forces=0;
+        Real sum_stl_output_time=1.0;
+        Real stl_area = 1.0;
+        Real stl_pressure_threshold = 1e10;
 
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
@@ -480,6 +485,13 @@ class DEMspecs
             if(!stlfilename.empty())
             {
                 stl_geom_present=true;
+                pp.query("sum_stl_forces", sum_stl_forces);
+                if(sum_stl_forces){
+		                sum_stl_output_time=write_output_time/10.0;
+		                pp.query("write_output_time_sum_stl", sum_stl_output_time);
+		                pp.query("stl_area", stl_area);
+		                pp.query("stl_pressure_threshold", stl_pressure_threshold);
+                }
             }
             pp.query("dynamicstl",dynamicstl);
             pp.query("pltprefix",pltprefix);

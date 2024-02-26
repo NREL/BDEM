@@ -115,6 +115,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             p.rdata(realData::tauy) = zero;
             p.rdata(realData::tauz) = zero;
             p.rdata(realData::theta_x) = zero;
+            p.rdata(realData::stl_norm_f) = zero;
+            p.rdata(realData::stl_tang_f) = zero;
 
             // Set bond components to zero
             for(int b=0; b<MAXBONDS*9; b++){
@@ -437,8 +439,8 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
                 ppos_inert[YDIR] = p.pos(1);
                 ppos_inert[ZDIR] = p.pos(2);
                 Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
-                // if(ls_value < 0.0)
-                if(ls_value < p.rdata(realData::radius))
+                if(ls_value < 0.0)
+                // if(ls_value < p.rdata(realData::radius))
                 {
                     p.id()=-1;   
                 }
@@ -917,6 +919,8 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     p.rdata(realData::tauy) = zero;
     p.rdata(realData::tauz) = zero;
     p.rdata(realData::theta_x) = zero;
+    p.rdata(realData::stl_norm_f) = zero;
+    p.rdata(realData::stl_tang_f) = zero;
 
     p.rdata(realData::euler_angle_x) = PI/2.0;                 
     p.rdata(realData::euler_angle_y) = amrex::Random()*PI/20.0;

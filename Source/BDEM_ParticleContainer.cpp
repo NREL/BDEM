@@ -50,7 +50,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const int liquid_bridging,
             const int particle_cohesion, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
-            const Real cb_force, const Real cb_torq, const int cb_dir)
+            const Real cb_force, const Real cb_torq, const int cb_dir, const int sum_stl_forces)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
@@ -115,6 +115,9 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             p.rdata(realData::taux) = zero;
             p.rdata(realData::tauy) = zero;
             p.rdata(realData::tauz) = zero;
+
+            p.rdata(realData::stl_norm_f) = zero;
+            p.rdata(realData::stl_tang_f) = zero;
         });
     }
 
@@ -575,6 +578,53 @@ void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass
   #endif
 }
 
+void BDEMParticleContainer::Calculate_Total_STL_Force_MaterialPoints(Real &stl_force_norm, Real &stl_force_tang)
+{
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    auto& plev  = GetParticles(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+    const auto domain = geom.Domain();
+
+    stl_force_norm=0.0;
+    stl_force_tang=0.0;
+
+    using PType = typename BDEMParticleContainer::SuperParticleType;
+    stl_force_norm = amrex::ReduceSum(*this, [=]
+        AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
+        {
+            if(p.idata(intData::phase)==0)
+            {
+              return(p.rdata(realData::stl_norm_f));
+            }
+            else
+            {
+              return(0.0);
+            }
+        });
+
+    using PType = typename BDEMParticleContainer::SuperParticleType;
+    stl_force_tang = amrex::ReduceSum(*this, [=]
+        AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
+        {
+            if(p.idata(intData::phase)==0)
+            {
+              return(p.rdata(realData::stl_tang_f));
+            }
+            else
+            {
+              return(0.0);
+            }
+        });
+
+  #ifdef BL_USE_MPI
+      ParallelDescriptor::ReduceRealSum(stl_force_norm);
+      ParallelDescriptor::ReduceRealSum(stl_force_tang);
+  #endif
+}
+
 void BDEMParticleContainer::Calculate_Total_Speed_MaterialPoints(Real &total_speed)
 {
     const int lev = 0;
@@ -638,6 +688,8 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     real_data_names.push_back("euler_angle_x");
     real_data_names.push_back("euler_angle_y");
     real_data_names.push_back("euler_angle_z");
+    real_data_names.push_back("stl_norm_f");
+    real_data_names.push_back("stl_tang_f");
     real_data_names.push_back("liquid_volume");
     real_data_names.push_back("total_bridge_volume");
     real_data_names.push_back("theta_x");

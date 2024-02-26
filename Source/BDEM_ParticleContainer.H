@@ -110,7 +110,7 @@ public:
             const int liquid_bridging=0, 
             const int particle_cohesion=0,
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
-            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0);
+            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0, const int sum_stl_forces = 0);
 
     void computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq, 
                         Real forcing_amp, Real forcing_dir[THREEDIM]);
@@ -175,6 +175,8 @@ public:
     void Calculate_Total_Mass_MaterialPoints(Real &total_mass, int cdir, Real cutoff);
 
     void Calculate_Total_Speed_MaterialPoints(Real &total_speed);
+
+    void Calculate_Total_STL_Force_MaterialPoints(Real &stl_force_norm, Real &stl_force_tang);
 
     void reassignParticleProperties(Real reinit_rad, Real reinit_dens, Real reinit_E, Real reinit_nu);
 

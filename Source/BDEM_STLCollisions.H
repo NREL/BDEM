@@ -83,6 +83,11 @@ amrex::ParallelFor(np,[=]
             norm[2]*=-1;
 
             get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+
+            if(sum_stl_forces){
+                p.rdata(realData::stl_norm_f) = sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
+                p.rdata(realData::stl_tang_f) = sqrt(ft[0]*ft[0] + ft[1]*ft[1] + ft[2]*ft[2]);
+            }
         }
     }
 });

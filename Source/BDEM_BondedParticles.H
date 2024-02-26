@@ -52,6 +52,8 @@ void bp_init(BDEMParticleContainer::ParticleType& p,
   p.rdata(realData::tauy) = zero;
   p.rdata(realData::tauz) = zero;  
   p.rdata(realData::theta_x) = zero;  
+  p.rdata(realData::stl_norm_f) = zero;
+  p.rdata(realData::stl_tang_f) = zero;
 
    // Set bond components to zero
    for(int b=0; b<MAXBONDS*9; b++){
