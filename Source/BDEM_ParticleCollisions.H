@@ -426,10 +426,15 @@ amrex::ParallelFor(np,[=]
 
             // Modify normal force to account for generic cohesion model
             if(particle_cohesion && !bond_exists){
+                // Cohesive force scales with CED if specified, otherwise it is based on the normal force
                 Real fn_mag = pow((fn[XDIR]*fn[XDIR] + fn[YDIR]*fn[YDIR] + fn[ZDIR]*fn[ZDIR]),0.5);
                 Real sigma_c = std::min(fn_mag * DEM::k_c/(PI*Reff*Reff), DEM::sigma_max);                
                 if(DEM::CED > 0.0) sigma_c = DEM::CED;
-                Real fc = sigma_c * PI * Reff * Reff;
+
+                // Contact area
+                Real A_c = - PI/4.0 * ( (distmag-rad1-rad2)*(distmag+rad1-rad2)*(distmag-rad1+rad2)*(distmag+rad1+rad2) )/(dist2);
+
+                Real fc = sigma_c * A_c;
                 fn[XDIR] += fc*normal[XDIR];
                 fn[YDIR] += fc*normal[YDIR];
                 fn[ZDIR] += fc*normal[ZDIR];
