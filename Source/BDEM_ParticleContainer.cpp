@@ -369,6 +369,47 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
     }
 }
 
+void BDEMParticleContainer::shearParticles(Real time, Real shear_height, int shear_dir, Real shear_vel, Real shear_time)
+{
+    BL_PROFILE("BDEMParticleContainer::moveParticles");
+
+    const int lev = 0;
+    const Geometry& geom = Geom(lev);
+    const auto plo = Geom(lev).ProbLoArray();
+    const auto phi = Geom(lev).ProbHiArray();
+    const auto dx = Geom(lev).CellSizeArray();
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        ParticleType* pstruct = aos().dataPtr();
+
+        // Calculate the shear velocity
+        Real velocity = (time < shear_time) ? (time/shear_time)*shear_vel:shear_vel;
+
+        // now we move the particles
+        amrex::ParallelFor(np,[=]
+        AMREX_GPU_DEVICE (int i) noexcept
+        {
+            ParticleType& p = pstruct[i];
+            if(p.pos(1) < shear_height){
+                // Set force in the shear dir to zero 
+                p.rdata(realData::fx + shear_dir) = zero;
+
+                // Set the velocity in the shear direction
+                p.rdata(realData::xvel + shear_dir) = velocity;
+            }
+        });
+    }
+}
+
 void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_particle_val)
 {
     const int lev = 0;

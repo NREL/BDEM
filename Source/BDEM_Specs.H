@@ -149,7 +149,13 @@ class DEMspecs
         int sum_stl_forces=0;
         Real sum_stl_output_time=1.0;
         Real stl_area = 1.0;
-        Real stl_pressure_threshold = 1e10;
+        Real stl_compression_pressure = 1e10;
+        int shear_test = 0;
+        Real shear_height = 0.0;
+        int shear_dir = 0;
+        Real shear_vel = 0.0;
+        Real shear_time = 1.0;
+        Real shear_rest = 0.0;
 
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
@@ -489,8 +495,16 @@ class DEMspecs
                 if(sum_stl_forces){
 		                sum_stl_output_time=write_output_time/10.0;
 		                pp.query("write_output_time_sum_stl", sum_stl_output_time);
-		                pp.query("stl_area", stl_area);
-		                pp.query("stl_pressure_threshold", stl_pressure_threshold);
+		                pp.get("stl_area", stl_area);
+		                pp.get("stl_compression_pressure", stl_compression_pressure);
+                    pp.query("shear_test", shear_test);
+                    if(shear_test){
+                        pp.get("shear_height", shear_height);
+                        pp.get("shear_dir", shear_dir);
+                        pp.get("shear_vel", shear_vel);
+                        pp.get("shear_time", shear_time);
+                        pp.get("shear_rest", shear_rest);
+                    }
                 }
             }
             pp.query("dynamicstl",dynamicstl);

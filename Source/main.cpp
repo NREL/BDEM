@@ -139,6 +139,7 @@ int main (int argc, char* argv[])
         Real output_timeMass=zero;
         Real output_timeSumSTL=zero;
         Real output_timePrint=zero;
+        Real shear_restTime = zero;
         int output_it=0;
         amrex::Print() << "Time step dt = " << dt << "\n";
 
@@ -185,6 +186,8 @@ int main (int argc, char* argv[])
         amrex::Real t_prev=0.0;
         amrex::Real stl_force_norm = 0.0; 
         amrex::Real stl_force_tang = 0.0; 
+        bool stop_lid = false;
+        bool start_shear = false;
         if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
 
         Real cb_force = 0.0;
@@ -305,13 +308,21 @@ int main (int argc, char* argv[])
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 
+            // Once the lid stops, rest for user-specified interval before beginning shearing
+            if(stop_lid){
+                shear_restTime += dt;
+                if(shear_restTime > specs.shear_rest) start_shear = true;
+            } 
+            if(specs.shear_test && start_shear) bpc.shearParticles(time, specs.shear_height, specs.shear_dir, specs.shear_vel, specs.shear_time);
+
             BL_PROFILE_VAR("MOVE_PART",movepart);
             if(specs.verlet_scheme) specs.verlet_scheme = 2;
             bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
             BL_PROFILE_VAR_STOP(movepart);
 
-            if(specs.dynamicstl!=0 && (stl_force_norm/specs.stl_area) < specs.stl_pressure_threshold)
+            if(specs.dynamicstl!=0 && !stop_lid)
             {
+                if((stl_force_norm/specs.stl_area) > specs.stl_compression_pressure) stop_lid = true;
                 if(specs.dynamicstl==1)
                 {
                     STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_transl_dir,
@@ -366,7 +377,7 @@ int main (int argc, char* argv[])
                     stl_force_norm = 0.0;
                     stl_force_tang = 0.0;
                     bpc.Calculate_Total_STL_Force_MaterialPoints(stl_force_norm, stl_force_tang);
-                    PrintToFile("STL_Forces.dat") << time << "\t" << stl_force_norm << "\t" << stl_force_tang <<"\n";
+                    PrintToFile("STL_Forces.dat") << time << "\t" << stl_force_norm << "\t" << stl_force_tang << "\t" << stl_force_norm/specs.stl_area << "\t" << stl_force_tang/specs.stl_area << "\n";
                     output_timeSumSTL=zero;
                 }
             }

@@ -115,6 +115,8 @@ public:
     void computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq, 
                         Real forcing_amp, Real forcing_dir[THREEDIM]);
 
+    void shearParticles(Real time, Real shear_height, int shear_dir, Real shear_vel, Real shear_time);
+
     Real compute_coll_timescale(int bonded_sphere_particles);
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
