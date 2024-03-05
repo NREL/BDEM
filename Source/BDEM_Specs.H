@@ -97,6 +97,7 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_ilbond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_ilbond;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_ilbond;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real ovlp_fact_ilbond;
 }
 
 class DEMspecs
@@ -638,6 +639,7 @@ class DEMspecs
                 pp.query("young_mod_ilbond", DEM::E_ilbond);
                 pp.query("poisson_rat_ilbond", DEM::nu_ilbond);
                 pp.query("ilbond_damping_factor", DEM::beta_ilbond);
+                pp.query("ilbond_overlap_factor", DEM::ovlp_fact_ilbond);
                 DEM::G_ilbond = DEM::E_ilbond / (2.0 * (1.0 + DEM::nu_ilbond));
             }
 

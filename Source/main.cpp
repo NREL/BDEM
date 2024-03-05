@@ -37,6 +37,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_ilbond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_ilbond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_ilbond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_ilbond  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::ovlp_fact_ilbond  = zero;
 
 using namespace amrex;
 

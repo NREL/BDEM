@@ -217,15 +217,28 @@ amrex::ParallelFor(np,[=]
             if(ilbonds && !bond_exists && !ilbond_exists){
                 std::mt19937 mt(0451);
                 std::uniform_real_distribution<double> dist(0.0, 1.0);
-                if(dist(mt) > 1.0 - prob_ilbond){
-                    // Find first available bridge index (denoted with -1 value)
-                    while(p1.idata(intData::first_ilbond+ilbond_index) != -1){
-                        ilbond_index++;
-                        if(ilbond_index == MAXILBONDS) Abort("\nMaximum number of interlocking bonds reached, MAXILBONDS needs to be increased!\n");
-                    }
+                if(DEM::ovlp_fact_ilbond > zero){
+                    if(overlap_n > std::max(rad1, rad2)*DEM::ovlp_fact_ilbond){
+                        // Find first available bridge index (denoted with -1 value)
+                        while(p1.idata(intData::first_ilbond+ilbond_index) != -1){
+                            ilbond_index++;
+                            if(ilbond_index == MAXILBONDS) Abort("\nMaximum number of interlocking bonds reached, MAXILBONDS needs to be increased!\n");
+                        }
 
-                    p1.idata(intData::first_ilbond+ilbond_index) = (int)p2.id();
-                    ilbond_exists = true;
+                        p1.idata(intData::first_ilbond+ilbond_index) = (int)p2.id();
+                        ilbond_exists = true;
+                    }
+                } else {
+                    if(dist(mt) > 1.0 - prob_ilbond){
+                        // Find first available bridge index (denoted with -1 value)
+                        while(p1.idata(intData::first_ilbond+ilbond_index) != -1){
+                            ilbond_index++;
+                            if(ilbond_index == MAXILBONDS) Abort("\nMaximum number of interlocking bonds reached, MAXILBONDS needs to be increased!\n");
+                        }
+
+                        p1.idata(intData::first_ilbond+ilbond_index) = (int)p2.id();
+                        ilbond_exists = true;
+                    }
                 }
             }
         }
