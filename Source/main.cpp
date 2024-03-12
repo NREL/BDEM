@@ -186,7 +186,7 @@ int main (int argc, char* argv[])
         amrex::Real t_prev=0.0;
         amrex::Real stl_force_norm = 0.0; 
         amrex::Real stl_force_tang = 0.0; 
-        bool stop_lid = false;
+        bool start_rest = false;
         bool start_shear = false;
         if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
 
@@ -309,7 +309,7 @@ int main (int argc, char* argv[])
             BL_PROFILE_VAR_STOP(forceCalc);
 
             // Once the lid stops, rest for user-specified interval before beginning shearing
-            if(stop_lid){
+            if(start_rest){
                 shear_restTime += dt;
                 if(shear_restTime > specs.shear_rest) start_shear = true;
             } 
@@ -320,9 +320,10 @@ int main (int argc, char* argv[])
             bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
             BL_PROFILE_VAR_STOP(movepart);
 
-            if(specs.dynamicstl!=0 && !stop_lid)
+            // As soon as pressure threshold is reached, begin rest period before shear
+            if((stl_force_norm/specs.stl_area) > specs.stl_compression_pressure) start_rest = true;
+            if(specs.dynamicstl!=0 && !start_shear && (stl_force_norm/specs.stl_area) < specs.stl_compression_pressure)
             {
-                if((stl_force_norm/specs.stl_area) > specs.stl_compression_pressure) stop_lid = true;
                 if(specs.dynamicstl==1)
                 {
                     STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_transl_dir,
