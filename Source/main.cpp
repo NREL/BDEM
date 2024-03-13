@@ -309,7 +309,7 @@ int main (int argc, char* argv[])
             BL_PROFILE_VAR_STOP(forceCalc);
 
             // Once the lid stops, rest for user-specified interval before beginning shearing
-            if(start_rest){
+            if(start_rest && specs.shear_test){
                 shear_restTime += dt;
                 if(shear_restTime > specs.shear_rest) start_shear = true;
             } 
