@@ -522,6 +522,9 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     p.rdata(realData::fx) += fn[XDIR] + ft[XDIR];
     p.rdata(realData::fy) += fn[YDIR] + ft[YDIR];
     p.rdata(realData::fz) += fn[ZDIR] + ft[ZDIR];
+    p.rdata(realData::fx_wall) += fn[XDIR] + ft[XDIR];
+    p.rdata(realData::fy_wall) += fn[YDIR] + ft[YDIR];
+    p.rdata(realData::fz_wall) += fn[ZDIR] + ft[ZDIR];
 
     Real ftot[THREEDIM] = {fn[XDIR]+ft[XDIR], fn[YDIR]+ft[YDIR], fn[ZDIR]+ft[ZDIR]};
     Real torq[THREEDIM];
@@ -550,5 +553,8 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
       p.rdata(realData::fx) += Fcap*normal[XDIR];
       p.rdata(realData::fy) += Fcap*normal[YDIR];
       p.rdata(realData::fz) += Fcap*normal[ZDIR];
+      p.rdata(realData::fx_LB) += Fcap*normal[XDIR];
+      p.rdata(realData::fy_LB) += Fcap*normal[YDIR];
+      p.rdata(realData::fz_LB) += Fcap*normal[ZDIR];
     }
 }

@@ -328,6 +328,9 @@ amrex::ParallelFor(np,[=]
             p1.rdata(realData::fx) += nforce_damped[XDIR] + tforce_damped[XDIR];
             p1.rdata(realData::fy) += nforce_damped[YDIR] + tforce_damped[YDIR];
             p1.rdata(realData::fz) += nforce_damped[ZDIR] + tforce_damped[ZDIR];
+            p1.rdata(realData::fx_BS) += nforce_damped[XDIR] + tforce_damped[XDIR];
+            p1.rdata(realData::fy_BS) += nforce_damped[YDIR] + tforce_damped[YDIR];
+            p1.rdata(realData::fz_BS) += nforce_damped[ZDIR] + tforce_damped[ZDIR];
 
             p1.rdata(realData::taux) += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri*tor[XDIR];
             p1.rdata(realData::tauy) += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri*tor[YDIR];
@@ -424,6 +427,9 @@ amrex::ParallelFor(np,[=]
                 ft[ZDIR] = zero;
             }
 
+            p1.rdata(realData::fx_con) += fn[XDIR] + ft[XDIR];
+            p1.rdata(realData::fy_con) += fn[YDIR] + ft[YDIR];
+            p1.rdata(realData::fz_con) += fn[ZDIR] + ft[ZDIR];
             // Modify normal force to account for generic cohesion model
             if(particle_cohesion && !bond_exists){
                 Real fn_mag = pow((fn[XDIR]*fn[XDIR] + fn[YDIR]*fn[YDIR] + fn[ZDIR]*fn[ZDIR]),0.5);
@@ -433,6 +439,9 @@ amrex::ParallelFor(np,[=]
                 fn[XDIR] += fc*normal[XDIR];
                 fn[YDIR] += fc*normal[YDIR];
                 fn[ZDIR] += fc*normal[ZDIR];
+                p1.rdata(realData::fx_sjkr) += fc*normal[XDIR];
+                p1.rdata(realData::fy_sjkr) += fc*normal[YDIR];
+                p1.rdata(realData::fz_sjkr) += fc*normal[ZDIR];
             }
 
             // Total force on composite particle is just a sum across the forces on all component spheres
@@ -536,6 +545,9 @@ amrex::ParallelFor(np,[=]
                 p1.rdata(realData::fx) += bridge_force[XDIR];
                 p1.rdata(realData::fy) += bridge_force[YDIR];
                 p1.rdata(realData::fz) += bridge_force[ZDIR];
+                p1.rdata(realData::fx_LB) += bridge_force[XDIR];
+                p1.rdata(realData::fy_LB) += bridge_force[YDIR];
+                p1.rdata(realData::fz_LB) += bridge_force[ZDIR];
 
                 crosspdt(contact_vect1, bridge_force, torq);
                 p1.rdata(realData::taux) += torq[XDIR];
