@@ -399,6 +399,41 @@ void BDEMParticleContainer::clipParticles(int clip_particle_dir, Real clip_parti
     Redistribute();
 }
 
+void BDEMParticleContainer::clearSourcingVolume(Real mincoords[THREEDIM],Real maxcoords[THREEDIM])
+{
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+
+        ParticleType* pstruct = aos().dataPtr();
+        const Box & bx = mfi.tilebox();
+        amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
+            ParticleType& p = pstruct[i];
+            amrex::Real x = p.pos(0);
+            amrex::Real y = p.pos(1);
+            amrex::Real z = p.pos(2);
+            amrex::Real rad = p.rdata(realData::radius);
+
+            if(x+rad>=mincoords[XDIR] && x-rad<=maxcoords[XDIR] &&
+               y+rad>=mincoords[YDIR] && y-rad<=maxcoords[YDIR] &&
+               z+rad>=mincoords[ZDIR] && z-rad<=maxcoords[ZDIR])
+            {
+                p.id()=-1;
+            }
+        });
+    }
+    Redistribute();
+}
+
 void BDEMParticleContainer::saveParticles_softwall()
 {
     BL_PROFILE("BDEMParticleContainer::saveParticles_softwall");

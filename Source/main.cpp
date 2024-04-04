@@ -216,6 +216,9 @@ int main (int argc, char* argv[])
                && time < specs.stop_sourcing_time)
 
             {
+                // Remove any particles in particle sourcing area
+                bpc.clearSourcingVolume(specs.particle_sourcing_mincoords.data(), specs.particle_sourcing_maxcoords.data());
+
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens,

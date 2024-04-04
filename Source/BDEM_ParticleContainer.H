@@ -87,6 +87,8 @@ public:
         Vector<Real> dist_list,int liquid_bridging, 
         Real liquid_density, Real MC_avg, Real MC_stdev, Real FSP);
 
+    void clearSourcingVolume(Real mincoords[THREEDIM],Real maxcoords[THREEDIM]);
+
     void InitBondedParticles (const std::string & filename,
                               bool &do_heat_transfer,
                               int contact_law,
