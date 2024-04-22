@@ -188,6 +188,7 @@ int main (int argc, char* argv[])
         amrex::Real stl_force_tang = 0.0; 
         bool start_rest = false;
         bool start_shear = false;
+        amrex::Real start_shear_time = 0.0;
         if(specs.calc_mass_flow) bpc.Calculate_Total_Mass_MaterialPoints(mass_flow_prev, specs.mass_flow_dir, specs.mass_flow_cutoff);
 
         Real cb_force = 0.0;
@@ -203,6 +204,7 @@ int main (int argc, char* argv[])
             output_timeSumSTL += dt;
             output_timePrint += dt;
             particle_sourcing_time += dt;
+            if(start_shear) start_shear_time += dt;
         
             if(steps>0) specs.init_force = 0.0;
             if(specs.cantilever_beam_test){ 
@@ -313,7 +315,7 @@ int main (int argc, char* argv[])
                 shear_restTime += dt;
                 if(shear_restTime > specs.shear_rest) start_shear = true;
             } 
-            if(specs.shear_test && start_shear) bpc.shearParticles(time, specs.shear_height, specs.shear_dir, specs.shear_vel, specs.shear_time);
+            if(specs.shear_test && start_shear) bpc.shearParticles(start_shear_time, specs.shear_height, specs.shear_dir, specs.shear_vel, specs.shear_time);
 
             BL_PROFILE_VAR("MOVE_PART",movepart);
             if(specs.verlet_scheme) specs.verlet_scheme = 2;
