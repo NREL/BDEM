@@ -55,6 +55,8 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             // Set id and cpu for this particle
             p.id()  = ParticleType::NextID();
             p.cpu() = ParallelDescriptor::MyProc();
+            // Unique id for each particle across all procs created using id, cpu, and Cantor pairing function
+            p.idata(intData::unique_id) = (int)((p.id() + p.cpu())*(p.id() + p.cpu() + 1) + p.cpu());
 
             // Read from input file
             // NOTE: Assumed that all glued sphere particle radii are equal for time being
@@ -218,8 +220,10 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
                                   BP_NP20, BP_NP21, BP_NP22, BP_NP23, BP_NP24, BP_NP25,
                                   BP_NP26, BP_NP27, BP_NP28};
 
-        Real pc_pos[THREEDIM];                    
-        int bp_ids[200];
+        Real pc_pos[THREEDIM];     
+        // NOTE: size of arrays should be increased if larger particles are introduced        
+        int bp_ids[40];
+        int bp_unique_ids[40];
 
         for (int i = 0; i < np; i++) 
         {
@@ -268,16 +272,21 @@ void BDEMParticleContainer::InitBondedParticles (const std::string& filename,
             Real MC = 0.0;
             if(liquid_bridging) MC = (MC_stdev > 0.0) ? min(max(amrex::RandomNormal(MC_avg, MC_stdev),0.0),0.9):MC_avg;
 
-            // TODO: checks: appropriate particle for cantilever, valid ID selected, max bonds is sufficient
-            for(int j = 0; j<bp_types[bp_type]; j++) bp_ids[j] = ParticleType::NextID();
+            for(int j = 0; j<bp_types[bp_type]; j++){
+                // // Unique id for each particle across all procs created using id, cpu, and Cantor pairing function
+                bp_ids[j] = ParticleType::NextID();
+                int cpu_id = ParallelDescriptor::MyProc();
+                bp_unique_ids[j] = (int)((bp_ids[j] + cpu_id)*(bp_ids[j] + cpu_id + 1) + cpu_id);
+            }
             for(int j = 0; j<bp_types[bp_type]; j++){
                 ParticleType p;
                 p.id() = bp_ids[j];
+                p.idata(intData::unique_id) = bp_unique_ids[j];
                 if(cantilever_beam_test && j == bp_types[bp_type]-1) bp_phase = -1;    // Left-most particle is held inert
                 get_bonded_particle_pos(bp_type, j, bp_radius, bp_pos, bp_q, pc_pos);
-                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_ids, liquid_density, MC, FSP, bp_E, bp_nu);
+                bp_init(p, bp_data, bp_phase, pc_pos, bp_radius, bp_density, bp_vel, bp_temperature, j, bp_type, bp_unique_ids, liquid_density, MC, FSP, bp_E, bp_nu);
                 host_particles.push_back(p);
-            } 
+            }
             if (!ifs.good())
             {
                 amrex::Abort("Error initializing particles from Ascii file. \n");
@@ -685,7 +694,8 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
 
     Real pc_pos[THREEDIM];                    
     Real bp_pos[THREEDIM];
-    int bp_ids[200];
+    int bp_ids[40];
+    int bp_unique_ids[40];
     int bp_phase = 0;
 
     for (MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi) 
@@ -755,12 +765,18 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                             Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                      meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                      meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
-                            for(int j = 0; j<p_types[type]; j++) bp_ids[j] = ParticleType::NextID();
+                            for(int j = 0; j<p_types[type]; j++){
+                                // Unique id for each particle across all procs created using id, cpu, and Cantor pairing function
+                                bp_ids[j] = ParticleType::NextID();
+                                int cpu_id = ParallelDescriptor::MyProc();
+                                bp_unique_ids[j] = (int)((bp_ids[j] + cpu_id)*(bp_ids[j] + cpu_id + 1) + cpu_id);
+                            }
                             for(int j = 0; j<p_types[type]; j++){
                                 ParticleType p;
                                 p.id() = bp_ids[j];
+                                p.idata(intData::unique_id) = bp_unique_ids[j];
                                 get_bonded_particle_pos(type, j, rad, bp_pos, quats, pc_pos);
-                                bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_ids, liquid_density, MC, FSP, E, nu);
+                                bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, j, type, bp_unique_ids, liquid_density, MC, FSP, E, nu);
                                 host_particles.push_back(p);
                             } 
                         } else {
@@ -840,12 +856,18 @@ void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoor
                                     Real bp_vel[THREEDIM] = {meanvel[XDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                              meanvel[YDIR] + fluctuation[XDIR]*(amrex::Random()-half),
                                                              meanvel[ZDIR] + fluctuation[XDIR]*(amrex::Random()-half)};
-                                    for(int pi = 0; pi<p_types[type]; pi++) bp_ids[pi] = ParticleType::NextID();
+                                    for(int pi = 0; pi<p_types[type]; pi++){
+                                        // Unique id for each particle across all procs created using id, cpu, and Cantor pairing function
+                                        bp_ids[pi] = ParticleType::NextID();
+                                        int cpu_id = ParallelDescriptor::MyProc();
+                                        bp_unique_ids[pi] = (int)((bp_ids[pi] + cpu_id)*(bp_ids[pi] + cpu_id + 1) + cpu_id);
+                                    }
                                     for(int pi = 0; pi<p_types[type]; pi++){
                                         ParticleType p;
                                         p.id() = bp_ids[pi];
+                                        p.idata(intData::unique_id) = bp_unique_ids[pi];
                                         get_bonded_particle_pos(type, pi, rad, bp_pos, quats, pc_pos);
-                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, bp_ids, liquid_density, MC, FSP, E, nu);
+                                        bp_init(p, p_data, bp_phase, pc_pos, rad, dens, bp_vel, temp, pi, type, bp_unique_ids, liquid_density, MC, FSP, E, nu);
                                         host_particles.push_back(p);
                                     } 
                                 } else {

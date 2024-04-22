@@ -54,7 +54,8 @@ struct intData
     phase = 0,
     near_softwall = 1,
     type_id = 2,
-    first_bridge=3,
+    unique_id = 3,
+    first_bridge=4,
     first_bond = first_bridge + MAXBRIDGES,
     count = first_bond + MAXBONDS
   };

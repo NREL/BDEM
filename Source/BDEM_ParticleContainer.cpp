@@ -726,6 +726,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
     int_data_names.push_back("type_id");
+    int_data_names.push_back("unique_id");
 
     for(int i=0;i<MAXBRIDGES;i++)
     {

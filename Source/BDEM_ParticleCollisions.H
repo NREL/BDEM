@@ -88,7 +88,7 @@ amrex::ParallelFor(np,[=]
         if(liquid_bridging){
             // Check to see if a liquid bridge exists between the component spheres
             for(int br=0; br<MAXBRIDGES; br++){
-                if(p1.idata(intData::first_bridge+br) == (int)p2.id()){
+                if(p1.idata(intData::first_bridge+br) == p2.idata(intData::unique_id)){
                     bridge_exists = true;
                     bridge_index = br;
                 }
@@ -100,7 +100,7 @@ amrex::ParallelFor(np,[=]
         int bond_index = 0;
         if(bonded_sphere_particles){
             for(int b=0; b<MAXBONDS; b++){
-                if(p1.idata(intData::first_bond+b) == (int)p2.id()){
+                if(p1.idata(intData::first_bond+b) == p2.idata(intData::unique_id)){
                     bond_exists = true;
                     bond_index = b;
                 }
@@ -129,7 +129,7 @@ amrex::ParallelFor(np,[=]
         Real cpdt2[THREEDIM];
     
         // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
-        if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id())) || bridge_exists || bond_exists )
+        if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.idata(intData::unique_id) != p2.idata(intData::unique_id))) || bridge_exists || bond_exists )
         {
             // Normal vector pointing from center of component sphere 2 to component sphere 2
             normal[XDIR] = dist_x*distmag_inv;
@@ -196,7 +196,7 @@ amrex::ParallelFor(np,[=]
                     p1.rdata(realData::total_bridge_volume) += Vtot;
 
                     // Fill in relevant bridge indices (p2 id, particle 1 component sphere, particle 2 component sphere)
-                    p1.idata(intData::first_bridge+bridge_index) = (int)p2.id();
+                    p1.idata(intData::first_bridge+bridge_index) = p2.idata(intData::unique_id);
                     bridge_exists = true;
                 }
             }
@@ -336,7 +336,7 @@ amrex::ParallelFor(np,[=]
 
         // Evaluate the contact force if p1 and p2 don't have a bond between them
         // if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()))
-        if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.id() != p2.id()) && !bond_exists)
+        if ( dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.idata(intData::unique_id) != p2.idata(intData::unique_id)) && !bond_exists)
         {
             Real kn_dem, kt_dem, eta_n_dem, eta_t_dem;
             if (contact_law == CONTACT_HERTZ)
