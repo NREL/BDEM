@@ -260,6 +260,11 @@ class DEMspecs
         Real k_c = 0.2;     // Ratio of normal to cohesive forces
         Real sigma_max = 10.0;    // Maximum cohesive stress
 
+        // Options for creating particle color stripes
+        int coloring_striation = 0;
+        Real coloring_striation_len = 1.0;
+        int coloring_striation_dir = 1;
+
         void read_dem_specs()
         {
             plo.resize(AMREX_SPACEDIM);
@@ -515,6 +520,11 @@ class DEMspecs
 
             // Reassign particle properties for a restarted case using autogen particle parameters
             pp.query("reassign_particle_properties", reassign_particle_properties);
+            pp.query("coloring_striation", coloring_striation);
+            if(coloring_striation){
+                pp.get("coloring_striation_len", coloring_striation_len);
+                pp.get("coloring_striation_dir", coloring_striation_dir);
+            }
 
             pp.query("do_heat_transfer",do_heat_transfer);
 

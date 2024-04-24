@@ -180,6 +180,8 @@ public:
 
     void reassignParticleProperties(Real reinit_rad, Real reinit_dens, Real reinit_E, Real reinit_nu);
 
+    void particleColoringStriation(Real striation_len, int striation_dir);
+
 private:
 
     int domain_bc[6]={0};

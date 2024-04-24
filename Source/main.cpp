@@ -112,6 +112,8 @@ int main (int argc, char* argv[])
             if(specs.reassign_particle_properties) bpc.reassignParticleProperties(specs.autogen_radius, specs.autogen_dens, specs.autogen_E, specs.autogen_nu);
         }
 
+        if(specs.coloring_striation) bpc.particleColoringStriation(specs.coloring_striation_len, specs.coloring_striation_dir);
+
         if(specs.modify_species)
         {
             bpc.InitChemSpecies(specs.modified_species_massfracs.data());

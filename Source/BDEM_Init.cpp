@@ -657,6 +657,44 @@ void BDEMParticleContainer::reassignParticleProperties(Real reinit_rad, Real rei
     }
 }
 
+void BDEMParticleContainer::particleColoringStriation(Real striation_len, int striation_dir)
+{
+    const int lev = 0;
+    auto& plev  = GetParticles(lev);
+    const Geometry& geom = Geom(lev);
+    const auto dxi = geom.InvCellSizeArray();
+    const auto dx = geom.CellSizeArray();
+    const auto plo = geom.ProbLoArray();
+    
+    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
+    {
+        int gid = mfi.index();
+        int tid = mfi.LocalTileIndex();
+        auto index = std::make_pair(gid, tid);
+        
+        auto& ptile = plev[index];
+        auto& aos   = ptile.GetArrayOfStructs();
+        const size_t np = aos.numParticles();
+        
+        ParticleType* pstruct = aos().dataPtr();
+
+        amrex::ParallelFor(np,[=]
+                AMREX_GPU_DEVICE (int i) noexcept
+        {   
+            ParticleType& p = pstruct[i];
+
+            amrex::Real rem = fmod(p.pos(striation_dir), 2.0*striation_len);
+            
+            if(rem < striation_len) {
+                p.idata(intData::phase) = 1;
+            } else {
+                p.idata(intData::phase) = 2;
+            }
+        
+        });
+    }
+}
+
 void BDEMParticleContainer::InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
                                            Real meanvel[THREEDIM], Real fluctuation[THREEDIM], Real rad, Real dens,
                                            Real E, Real nu, Real temp,
@@ -915,6 +953,7 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     ParticleType p;
     p.id()  = ParticleType::NextID();
     p.cpu() = ParallelDescriptor::MyProc();                
+    p.idata(intData::unique_id) = (int)((p.id() + p.cpu())*(p.id() + p.cpu() + 1) + p.cpu());
 
     p.pos(XDIR) = x;
     p.pos(YDIR) = y;

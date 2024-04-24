@@ -539,6 +539,7 @@ void BDEMParticleContainer::reassignParticles_softwall()
     }
 }
 
+
 void BDEMParticleContainer::computeMoistureContent(Real MC_avg, Real MC_stdev, Real liquid_density, Real FSP)
 {
     BL_PROFILE("BDEMParticleContainer::computeMoistureContent");
@@ -595,7 +596,7 @@ void BDEMParticleContainer::Calculate_Total_Mass_MaterialPoints(Real &total_mass
         AMREX_GPU_HOST_DEVICE (const PType& p) -> Real
         {
             Real ppos[3] = {p.pos(0), p.pos(1), p.pos(2)};
-            if(p.idata(intData::phase)==0 && ppos[cdir] > cutoff)
+            if(p.idata(intData::phase)>=0 && ppos[cdir] > cutoff)
             {
               return(p.rdata(realData::mass));
             }
@@ -740,6 +741,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         int_data_names.push_back(bondidx);
     }
 
+    writeflags_int[intData::phase] = 1;
     writeflags_real[realData::radius]=1;
     writeflags_real[realData::xvel]=1;
     writeflags_real[realData::yvel]=1;
