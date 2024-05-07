@@ -114,9 +114,6 @@ public:
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
             const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0);
 
-    void computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq, 
-                        Real forcing_amp, Real forcing_dir[THREEDIM]);
-
     Real compute_coll_timescale(int bonded_sphere_particles);
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,

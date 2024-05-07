@@ -146,6 +146,10 @@ class DEMspecs
         Vector<Real> dynstl_center;
         Real dynstl_rot_vel=0.0;
         int sum_stl_forces=0;
+        Real stl_vib_freq = 0.0;
+        Real stl_vib_amp = 0.0;
+        int stl_vib_dir = 0; 
+        Real stl_timeoffset = 0.0;
 
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
@@ -187,7 +191,6 @@ class DEMspecs
         std::string restartfilename {""};
         std::string stlfilename {""};
 	std::string pltprefix {""};
-        Real timeoffset = 0.0;
 
         mechanism *chemptr;
         std::string chemistry;
@@ -248,12 +251,6 @@ class DEMspecs
         int calc_mass_flow = 0;
         int mass_flow_dir = 1;
         Real mass_flow_cutoff = 0.0;
-
-        // Options for introducing forcing to particles
-        int forcing_type = 0;
-        Real forcing_freq = 0.0;
-        Real forcing_amp = 0.0;
-        Vector<Real> forcing_dir; 
 
         // Generic cohesion model variables
         int particle_cohesion = 0;
@@ -333,7 +330,6 @@ class DEMspecs
             pp.query("contact_law", contact_law);
         
             pp.query("stepoffset",stepoffset);
-            pp.query("timeoffset",timeoffset);
 
             pp.get("max_steps", maxsteps);
             pp.get("final_time",final_time);
@@ -505,17 +501,23 @@ class DEMspecs
                     pp.query("dynamicstl_transl_dir",dynstl_transl_dir);
                     pp.query("dynamicstl_transl_vel",dynstl_transl_vel);
                 }
+                else if(dynamicstl==2)
+                {
+                    pp.query("dynamicstl_rot_dir",dynstl_rot_dir);
+                    pp.queryarr("dynamicstl_rot_center",dynstl_center);
+                    pp.query("dynamicstl_rot_vel",dynstl_rot_vel);
+                } 
+                else if(dynamicstl==3)
+                {  
+                    pp.get("stl_vib_freq", stl_vib_freq);
+                    pp.get("stl_vib_amp", stl_vib_amp);
+                    pp.get("stl_vib_dir", stl_vib_dir);
+                    pp.get("stl_timeoffset", stl_timeoffset);
+                }
                 else
-                    if(dynamicstl==2)
-                    {
-                        pp.query("dynamicstl_rot_dir",dynstl_rot_dir);
-                        pp.queryarr("dynamicstl_rot_center",dynstl_center);
-                        pp.query("dynamicstl_rot_vel",dynstl_rot_vel);
-                    }
-                    else
-                    {
-                        amrex::Abort("dynamic stl movement function not implemented yet\n");
-                    }
+                {
+                    amrex::Abort("dynamic stl movement function not implemented yet\n");
+                }
             }
 
             // Reassign particle properties for a restarted case using autogen particle parameters
@@ -672,24 +674,6 @@ class DEMspecs
             if(calc_mass_flow){
                 pp.get("mass_flow_dir", mass_flow_dir);
                 pp.get("mass_flow_cutoff", mass_flow_cutoff);
-            }
-
-            pp.query("forcing_type", forcing_type);
-            if(forcing_type == 1){
-                pp.get("forcing_freq", forcing_freq);
-                pp.get("forcing_amp", forcing_amp);
-                forcing_dir.resize(AMREX_SPACEDIM);
-                pp.getarr("forcing_dir", forcing_dir);
-                
-                // Normalize forcing dir array
-                Real forcing_dir_mag = sqrt(pow(forcing_dir[0],2) + pow(forcing_dir[1],2) + pow(forcing_dir[2],2));
-                if(forcing_dir_mag > 0.0){
-                    forcing_dir[0] *= 1.0/forcing_dir_mag;
-                    forcing_dir[1] *= 1.0/forcing_dir_mag;
-                    forcing_dir[2] *= 1.0/forcing_dir_mag;
-                } else {
-                    amrex::Abort("Invalid forcing dir chosen!\n");
-                }
             }
 
             pp.query("particle_cohesion", particle_cohesion);

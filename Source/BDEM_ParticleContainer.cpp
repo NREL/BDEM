@@ -157,42 +157,6 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
     }
 }
 
-void BDEMParticleContainer::computeForcing(Real time, Real time_offset, int forcing_type, Real forcing_freq,
-                                          Real forcing_amp, Real forcing_dir[THREEDIM])
-{
-    const int lev = 0;
-    auto& plev  = GetParticles(lev);
-
-    for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
-    {
-        int gid = mfi.index();
-        int tid = mfi.LocalTileIndex();
-        auto index = std::make_pair(gid, tid);
-
-        auto& ptile = plev[index];
-        auto& aos   = ptile.GetArrayOfStructs();
-        const size_t np = aos.numParticles();
-
-        auto nbor_data = m_neighbor_list[lev][index].data();
-        ParticleType* pstruct = aos().dataPtr();
-
-        amrex::ParallelFor(np,[=]
-                  AMREX_GPU_DEVICE (int i) noexcept
-        {
-            ParticleType& p = pstruct[i];
-
-            Real forcing_f;
-            if(forcing_type == 1){
-                forcing_f = forcing_amp*sin(2*PI*(time+time_offset)*forcing_freq);
-                p.rdata(realData::fx) += forcing_f*forcing_dir[0]*p.rdata(realData::mass);
-                p.rdata(realData::fy) += forcing_f*forcing_dir[1]*p.rdata(realData::mass);
-                p.rdata(realData::fz) += forcing_f*forcing_dir[2]*p.rdata(realData::mass);
-            }
-        });
-    }
-
-}
-
 void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
         int do_chemistry,Real minradfrac, int verlet_scheme)
 {
@@ -249,11 +213,6 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
 
               Real verlet_factor = (verlet_scheme) ? 0.5:1.0;
 
-              // Global damping of particle forces
-              p.rdata(realData::fx) -= DEM::global_damping * p.rdata(realData::xvel);
-              p.rdata(realData::fy) -= DEM::global_damping * p.rdata(realData::yvel);
-              p.rdata(realData::fz) -= DEM::global_damping * p.rdata(realData::zvel);
-
               // Force-based damping
               Real vel_vect[THREEDIM] = {p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel)};
               Real f_vect[THREEDIM] = {p.rdata(realData::fx), p.rdata(realData::fy), p.rdata(realData::fz)};
@@ -265,20 +224,15 @@ void BDEMParticleContainer::moveParticles(const amrex::Real& dt,
                   p.rdata(realData::fz) -= DEM::force_damping * fmag * (p.rdata(realData::zvel)/vmag);
               }
 
-              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt * verlet_factor;
-              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt * verlet_factor;
-              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt * verlet_factor;
+              p.rdata(realData::xvel) += (p.rdata(realData::fx)/p.rdata(realData::mass)) * dt * verlet_factor - DEM::global_damping * p.rdata(realData::xvel);
+              p.rdata(realData::yvel) += (p.rdata(realData::fy)/p.rdata(realData::mass)) * dt * verlet_factor - DEM::global_damping * p.rdata(realData::yvel);
+              p.rdata(realData::zvel) += (p.rdata(realData::fz)/p.rdata(realData::mass)) * dt * verlet_factor - DEM::global_damping * p.rdata(realData::zvel);
 
               if(verlet_scheme != 2){
                   p.pos(0) += p.rdata(realData::xvel) * dt;
                   p.pos(1) += p.rdata(realData::yvel) * dt;
                   p.pos(2) += p.rdata(realData::zvel) * dt;
               }
-
-              // Global damping of particle torques
-              p.rdata(realData::taux) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::xangvel);
-              p.rdata(realData::tauy) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::yangvel);
-              p.rdata(realData::tauz) -= pow(p.rdata(realData::radius),two)*DEM::global_damping*p.rdata(realData::zangvel);
 
               // Torque-based damping
               Real angvel_vect[THREEDIM] = {p.rdata(realData::xangvel), p.rdata(realData::yangvel), p.rdata(realData::zangvel)};

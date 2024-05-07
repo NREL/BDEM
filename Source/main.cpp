@@ -301,8 +301,6 @@ int main (int argc, char* argv[])
                                   specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
                                   cb_force, cb_torq, specs.cb_dir);
-                
-                bpc.computeForcing(time, specs.timeoffset, specs.forcing_type, specs.forcing_freq, specs.forcing_amp, specs.forcing_dir.data());
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 
@@ -318,16 +316,22 @@ int main (int argc, char* argv[])
                     STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_transl_dir,
                                        specs.dynstl_center.data(),specs.dynstl_transl_vel);
                 }
+                else if(specs.dynamicstl==2)
+                {
+                    STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_rot_dir,
+                                       specs.dynstl_center.data(),specs.dynstl_rot_vel);
+                }
+                else if(specs.dynamicstl==3)
+                {
+                    amrex::Real stl_pos_prv = specs.stl_vib_amp*sin((time+specs.stl_timeoffset)*specs.stl_vib_freq);
+                    amrex::Real stl_pos_nxt = specs.stl_vib_amp*sin((time+dt+specs.stl_timeoffset)*specs.stl_vib_freq);
+                    amrex::Real stl_vel = (stl_pos_nxt - stl_pos_prv)/dt;
+                    STLtools::move_stl(dt,specs.dynamicstl,specs.stl_vib_dir,specs.dynstl_center.data(),stl_vel);
+                }
                 else
-                    if(specs.dynamicstl==2)
-                    {
-                        STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_rot_dir,
-                                           specs.dynstl_center.data(),specs.dynstl_rot_vel);
-                    }
-                    else
-                    {
-                        amrex::Abort("STL motion not implemented\n");
-                    }
+                {
+                    amrex::Abort("STL motion not implemented\n");
+                }
                 if (steps % specs.num_redist == 0)
                 {
                     STLtools::boxmap.clear();

@@ -131,7 +131,7 @@ amrex::ParallelFor(np,[=]
         // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
         if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.idata(intData::unique_id) != p2.idata(intData::unique_id))) || bridge_exists || bond_exists )
         {
-            // Normal vector pointing from center of component sphere 2 to component sphere 2
+            // Normal vector pointing from center of component sphere 1 to component sphere 2
             normal[XDIR] = dist_x*distmag_inv;
             normal[YDIR] = dist_y*distmag_inv;
             normal[ZDIR] = dist_z*distmag_inv;

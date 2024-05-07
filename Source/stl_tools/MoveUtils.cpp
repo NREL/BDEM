@@ -6,7 +6,7 @@ void move_this_point(amrex::Real coord[3],amrex::Real newcoord[3],amrex::Real ti
   newcoord[0]=coord[0];
   newcoord[1]=coord[1];
   newcoord[2]=coord[2];
-   if(movetype==1)
+   if(movetype==1 || movetype==3)
    {
         newcoord[movedir] += movevel*timestep;
    }
