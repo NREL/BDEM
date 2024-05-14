@@ -1,7 +1,15 @@
 # BDEM
+<div align="center">
+<img src="https://github.com/NREL/BDEM/blob/main/images/screw_feeder_discharge_types_noletter_vertical.png" alt="BDEM Logo">
+</div>
+
 ## A discrete-element method tool for modeling granular flows
 
 BDEM is a massively-parallel discrete-element method (DEM) solver capable of simulating a wide array of granular flow problems. BDEM is implemented on top of the AMReX framework and can support parallel particle data structires on hybrid CPU/GPU HPC architectures. Our solver can represent highly-variable granular material using models that capture complex particle shapes, moisture content, and particle force interactions. Level-set and STL boundary formulations allow for the inclusing of complex moving geometries. 
+
+<div align="center">
+<img src="https://github.com/NREL/BDEM/blob/main/images/BDEM_functionality.png" alt="BDEM Functionality">
+</div>
 
 ## Models and Features
 
