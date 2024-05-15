@@ -5,7 +5,7 @@
 
 ## A discrete-element method tool for modeling granular flows
 
-BDEM is a massively-parallel discrete-element method (DEM) solver capable of simulating a wide array of granular flow problems. It has been extensively used for biomass material, hence the B in the name. BDEM is implemented using the AMReX framework and can support parallel particle data structires on hybrid CPU/GPU HPC architectures. Our solver can represent highly-variable granular material using models that capture complex particle shapes, moisture content, and particle force interactions. Level-set and STL boundary formulations allow for the inclusing of complex moving geometries. 
+BDEM is a massively-parallel discrete-element method (DEM) solver capable of simulating a wide array of granular flow problems. It has been extensively used for biomass material, hence the B in the name. BDEM is implemented using the AMReX framework and can support parallel particle data structures on hybrid CPU/GPU HPC architectures. Our solver can represent highly-variable granular material using models that capture complex particle shapes, moisture content, and particle force interactions. Level-set and STL boundary formulations allow for the inclusion of complex moving geometries. 
 
 <div align="center">
 <img src="https://github.com/NREL/BDEM/blob/main/images/BDEM_functionality.png" alt="BDEM Functionality">
@@ -32,6 +32,6 @@ BDEM is a massively-parallel discrete-element method (DEM) solver capable of sim
 # Visualization instructions
 
 * The outputs for a case are in the form of AMReX plotfiles
-* These plot files can be open usine AMReX grid reader in ParaView (see https://amrex-codes.github.io/amrex/docs_html/Visualization.html#paraview)
+* These plot files can be open using AMReX grid reader in ParaView (see https://amrex-codes.github.io/amrex/docs_html/Visualization.html#paraview)
 * Alternatively visit can be used after converting to vtp format. see https://amrex-codes.github.io/amrex/docs_html/Visualization_Chapter.html
 * We also provide python scripts to access particle data as numpy arrays. see https://github.com/NREL/BDEM/blob/main/tests/read_and_avg_particle_data.py
