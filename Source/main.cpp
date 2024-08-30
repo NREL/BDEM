@@ -37,6 +37,9 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::bond_radius_factor  = one;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_c  = one;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::sigma_max  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::eps_g  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::rho_g  = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_g  = zero;
 
 using namespace amrex;
 
@@ -300,7 +303,7 @@ int main (int argc, char* argv[])
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, cb_torq, specs.cb_dir);
+                                  cb_force, cb_torq, specs.cb_dir, specs.drag_model);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
 

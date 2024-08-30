@@ -97,6 +97,10 @@ namespace DEM
 
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_c;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real sigma_max;
+
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real eps_g;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real rho_g;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_g;
 }
 
 class DEMspecs
@@ -261,6 +265,9 @@ class DEMspecs
         int coloring_striation = 0;
         Real coloring_striation_len = 1.0;
         int coloring_striation_dir = 1;
+
+        // One-way drag modeling
+        int drag_model = 0;
 
         void read_dem_specs()
         {
@@ -682,6 +689,12 @@ class DEMspecs
                 pp.get("cohesion_max_stress", DEM::sigma_max);
             }
 
+            pp.query("drag_model", drag_model);
+            if(drag_model == 1){
+                pp.get("gas_vfrac", DEM::eps_g);
+                pp.get("gas_visc", DEM::mu_g);
+                pp.get("gas_density", DEM::rho_g);
+            }
 
         }
         void clear()

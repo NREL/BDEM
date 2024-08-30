@@ -548,5 +548,42 @@ amrex::ParallelFor(np,[=]
                 p1.rdata(realData::tauz) += torq[ZDIR];
             }
         }
+        
+    }
+
+    // Compute drag forces
+    // Assumptions: - gas velocity and bouyancy term both neglected
+    //              - gas volume fraction is prescribed by the user
+    if(drag_model){
+        // Readability variables
+        Real eps_g = DEM::eps_g;
+        Real rho_g = DEM::rho_g;
+        Real mu_g = DEM::mu_g;
+        Real rad1 = p1.rdata(realData::radius);
+        Real diam1 = 2.0*rad1;
+
+        // Calculate the particle velocity magnitude
+        Real vmag2 = p1.rdata(realData::xvel)*p1.rdata(realData::xvel) + 
+                      p1.rdata(realData::yvel)*p1.rdata(realData::yvel) + 
+                      p1.rdata(realData::zvel)*p1.rdata(realData::zvel);
+        Real vmag = sqrt(vmag2);
+
+        // Gidaspow drag model
+        if(drag_model == 1){
+            // Calculate the particle Re
+            Real Re_p = eps_g * rho_g * vmag * diam1 / mu_g;
+
+            // Calculate the drag coefficient
+            Real Cd = (Re_p < 1000.0) ? (24.0/Re_p) * (1.0 + 0.15*pow(Re_p, 0.687)) : 0.44*Re_p;
+
+            // Calculate the interphase momentum exchange term
+            Real beta_mom = (eps_g <= 0.8) ? (150.0*pow(1.0-eps_g,2.0)*mu_g) / (eps_g * diam1 * diam1) + 1.75*(1.0 - eps_g)*rho_g*vmag/diam1: 
+                                        (3.0/4.0)*eps_g*(1.0-eps_g)*rho_g*vmag/diam1 * Cd * pow(eps_g, -2.65);
+
+            // Add on the particle drag forces
+            p1.rdata(realData::fx) -= beta_mom * p1.rdata(realData::volume) / (1 - eps_g) * p1.rdata(realData::xvel);
+            p1.rdata(realData::fy) -= beta_mom * p1.rdata(realData::volume) / (1 - eps_g) * p1.rdata(realData::yvel);
+            p1.rdata(realData::fz) -= beta_mom * p1.rdata(realData::volume) / (1 - eps_g) * p1.rdata(realData::zvel);
+        }     
     }
 });

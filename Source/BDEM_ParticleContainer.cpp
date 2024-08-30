@@ -50,7 +50,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             const int liquid_bridging,
             const int particle_cohesion, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
-            const Real cb_force, const Real cb_torq, const int cb_dir)
+            const Real cb_force, const Real cb_torq, const int cb_dir, const int drag_model)
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
 
