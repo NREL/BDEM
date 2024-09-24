@@ -563,8 +563,8 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point)
             ParticleType& p = pstruct[i];
             Real ploc[THREEDIM];
             ploc[XDIR] = p.pos(0);
-            ploc[XDIR] = p.pos(1);
-            ploc[XDIR] = p.pos(2);
+            ploc[YDIR] = p.pos(1);
+            ploc[ZDIR] = p.pos(2);
             Real ploc_t[3]={0.0};
             Real t1[3],t2[3],t3[3];
             Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
