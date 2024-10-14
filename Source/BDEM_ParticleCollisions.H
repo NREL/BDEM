@@ -384,7 +384,57 @@ amrex::ParallelFor(np,[=]
 
             if (mag_overlap_t > zero)
             {
-                Real fnmd = DEM::mu * sqrt(dotpdt(fn, fn));
+                Real mu = DEM::mu;
+
+                // Correct for coarse grained particles
+                if ( DEM::particles_in_parcel > 1 )
+                {
+                    Real omega_p1[THREEDIM];
+                    omega_p1[XDIR] = p1.rdata(realData::xangvel);
+                    omega_p1[YDIR] = p1.rdata(realData::yangvel);
+                    omega_p1[ZDIR] = p1.rdata(realData::zangvel); 
+
+                    Real omega_p2[THREEDIM];
+                    omega_p2[XDIR] = p2.rdata(realData::xangvel);
+                    omega_p2[YDIR] = p2.rdata(realData::yangvel);
+                    omega_p2[ZDIR] = p2.rdata(realData::zangvel);
+
+                    Real omega_p1_cp [THREEDIM];
+                    Real omega_p2_cp [THREEDIM];
+                    Real omega_p1p2_cp [THREEDIM];
+
+                    CrossProd(omega_p1, normal, omega_p1_cp);
+                    CrossProd(omega_p2, normal, omega_p2_cp); 
+
+                    Real omega_p2p1[THREEDIM];
+                    omega_p2p1[XDIR] = p1.rdata(realData::xangvel) + p2.rdata(realData::xangvel);
+                    omega_p2p1[YDIR] = p1.rdata(realData::yangvel) + p2.rdata(realData::yangvel);
+                    omega_p2p1[ZDIR] = p1.rdata(realData::zangvel) + p2.rdata(realData::zangvel);
+                    CrossProd(omega_p2p1, normal, omega_p1p2_cp);
+
+                    Real oneOvera = 1./DEM::CG_ratio;
+                    Real beta = 1./std::sqrt(oneOvera*oneOvera + ( 1. -  oneOvera)*( 1. -  oneOvera));
+
+                    Real mag_overlap_orig = overlap_n*DEM::CG_ratio;
+                    Real dorig = p1.rdata(realData::radius)*DEM::CG_ratio*2.;
+                    Real denomVec[THREEDIM];
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        denomVec[i] = vrel_t[i] +  beta*mag_overlap_orig*omega_p1p2_cp[i];
+                    }
+
+                    Real num = (DEM::CG_ratio - 1.)*beta*dorig*( normVec(omega_p1_cp) + normVec(omega_p2_cp) );
+                    Real denom = normVec(denomVec);
+
+                    if (denom > TINYVAL) 
+                    {
+                        mu *= 1. + num/denom;  
+                    }
+
+                }
+
+                Real fnmd = mu * sqrt(dotpdt(fn, fn));
                 Real ftsp[THREEDIM];
                 Real ftn[THREEDIM];
                 Real mag_ftsp;

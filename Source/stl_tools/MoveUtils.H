@@ -10,6 +10,6 @@
 #include <AMReX_Box.H>
 
 void move_this_point(amrex::Real coord[3],amrex::Real newcoord[3],amrex::Real timestep,
-                     int movetype,int movedir,amrex::Real center[3],amrex::Real movevel);
+                     int movetype,amrex::Real movedir[3],amrex::Real center[3],amrex::Real movevel);
 
 #endif

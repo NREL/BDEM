@@ -1,63 +1,28 @@
 #include<STLtools.H>
 #include<MoveUtils.H>
 
-namespace STLtools
-{
-    AMREX_GPU_DEVICE_MANAGED Real *tri_pts=NULL;
-    AMREX_GPU_DEVICE_MANAGED Real *tri_normals=NULL;
-    AMREX_GPU_DEVICE_MANAGED Real *tri_mat=NULL;
-    AMREX_GPU_DEVICE_MANAGED int *domndir=NULL;
-    AMREX_GPU_DEVICE_MANAGED Real *rot_tri_pts=NULL;
-    
-    AMREX_GPU_DEVICE_MANAGED int *sorted_indexarray=NULL;
 
-    Gpu::ManagedVector<Real>* tri_pts_vec=NULL; 
-    Gpu::ManagedVector<Real>* tri_normals_vec=NULL; 
-    Gpu::ManagedVector<Real>* tri_mat_vec=NULL; 
-    Gpu::ManagedVector<int>* domndir_vec=NULL;
-    Gpu::ManagedVector<Real>* rot_tri_pts_vec=NULL;
-    Gpu::ManagedVector<int>* sorted_indexarray_vec=NULL;
 
-    AMREX_GPU_DEVICE_MANAGED int num_tri=0;
-    AMREX_GPU_DEVICE_MANAGED int ndata_per_tri=9;
-    AMREX_GPU_DEVICE_MANAGED int ndata_per_normal=3;
-    int nlines_per_facet=7;
-
-    Real eigdirs[9]={0.0};
-    Real bbox_lo[3]={0.0};
-    Real bbox_hi[3]={0.0};
-    Real expfac=2.0;
-    
-    std::map<std::pair<int,int>,Array<Real,6>> boxmap;
-
-    void read_stl_file(std::string fname)
+    void STLtools::read_stl_file(std::string fname)
     {
         std::string tmpline,tmp1,tmp2;
-        int nlines=0;
+        num_tri = 0;
 
         Real p[9],mat[9],rot_pts[9];
         int dndir;
 
         std::ifstream infile(fname.c_str());
+
         Print()<<"STL file name:"<<fname<<"\n";
-
-        std::getline(infile,tmpline); //solid <solidname>
-        while(!infile.eof())
+        while(std::getline(infile,tmpline))
         {
-            std::getline(infile,tmpline);
-            if(tmpline.find("endsolid")!=std::string::npos)
+
+            if(tmpline.find("endfacet")!=std::string::npos)
             {
-                break;
+                num_tri++;
             }
-            nlines++;
         }
 
-        if(nlines%nlines_per_facet!=0)
-        {
-            amrex::Abort("may be there are blank lines in the STL file\n");
-        }
-
-        num_tri=nlines/nlines_per_facet;
         Print()<<"number of triangles:"<<num_tri<<"\n";
 
         tri_pts_vec=new Gpu::ManagedVector<Real>;
@@ -74,45 +39,59 @@ namespace STLtools
         rot_tri_pts_vec->resize(num_tri*9);
         domndir_vec->resize(num_tri);
 
-        infile.seekg(0);
-        std::getline(infile,tmpline); //solid <solidname>
+        pressure_vec = new Gpu::ManagedVector<Real>;
+        shear_stress_vec = new Gpu::ManagedVector<Real>;
+        
+        pressure_vec->resize(num_tri);
+        shear_stress_vec->resize(num_tri*3);
+        
+        // Reopen file. It makes things easier
+        infile.close();
+        infile.open(fname.c_str());
 
-        for(int i=0;i<num_tri;i++)
+        int tri_id = -1;
+        int vertex_id = 0;
+
+        while(std::getline(infile,tmpline))
         {
-            std::getline(infile,tmpline);  //facet normal
-            std::istringstream fcnormal(tmpline);
-            fcnormal>>tmp1>>tmp2
-                >>(*tri_normals_vec)[i*ndata_per_normal+0]
-                >>(*tri_normals_vec)[i*ndata_per_normal+1]
-                >>(*tri_normals_vec)[i*ndata_per_normal+2];
 
-            std::getline(infile,tmpline); // outer loop
+            std::istringstream iss(tmpline);
+            std::string word;
+            iss >> word;
 
-            std::getline(infile,tmpline); //vertex 1
-            std::istringstream vertex1(tmpline);
-            vertex1>>tmp1
-                >>(*tri_pts_vec)[i*ndata_per_tri+0]
-                >>(*tri_pts_vec)[i*ndata_per_tri+1]
-                >>(*tri_pts_vec)[i*ndata_per_tri+2];
+            // Check if normal or vertex
+            if ( word == "facet" )
+            {
+                tri_id++; // This is the first entry for a triangle
+                iss >> word; // Ignore "normal"
+                iss >> (*tri_normals_vec)[tri_id*ndata_per_normal+0];
+                iss >> (*tri_normals_vec)[tri_id*ndata_per_normal+1];
+                iss >> (*tri_normals_vec)[tri_id*ndata_per_normal+2];
+            }
+            else if ( word == "vertex" )
+            {
 
-            std::getline(infile,tmpline); //vertex 2
-            std::istringstream vertex2(tmpline);
-            vertex2>>tmp1 
-                >>(*tri_pts_vec)[i*ndata_per_tri+3]
-                >>(*tri_pts_vec)[i*ndata_per_tri+4]
-                >>(*tri_pts_vec)[i*ndata_per_tri+5];
+                iss >> (*tri_pts_vec)[tri_id*ndata_per_tri + 0 + 3*vertex_id];
+                iss >> (*tri_pts_vec)[tri_id*ndata_per_tri + 1 + 3*vertex_id];
+                iss >> (*tri_pts_vec)[tri_id*ndata_per_tri + 2 + 3*vertex_id];
 
-            std::getline(infile,tmpline); //vertex 3
-            std::istringstream vertex3(tmpline);
-            vertex3>>tmp1 //vertex
-                >>(*tri_pts_vec)[i*ndata_per_tri+6]
-                >>(*tri_pts_vec)[i*ndata_per_tri+7]
-                >>(*tri_pts_vec)[i*ndata_per_tri+8];
+                vertex_id++;
 
-            std::getline(infile,tmpline); //end loop
-            std::getline(infile,tmpline); //end facet
+                if (vertex_id > 2)
+                {
+                    vertex_id = 0;
+                }                    
+            }
 
+            // No other check is required
         }
+
+        if ( tri_id != num_tri - 1 )
+        {
+            amrex::Abort("Something went wrong when reading the STL file\n");
+        }
+
+ 
         for(int i=0;i<num_tri;i++)
         {
             for(int n=0;n<9;n++)
@@ -137,6 +116,9 @@ namespace STLtools
         tri_mat  = tri_mat_vec->dataPtr();
 
         rot_tri_pts=rot_tri_pts_vec->dataPtr();
+
+        pressure = pressure_vec->dataPtr();
+        shear_stress = shear_stress_vec->dataPtr();
 
         update_bounding_box();
 
@@ -167,8 +149,32 @@ namespace STLtools
         
         orb_of_triangulation(0,num_tri-1,0,sorted_indexarray);
     }
+
+    void STLtools::getSTLGeoCenter(Real center[3])
+    {
+        center[0] = 0.;
+        center[1] = 0.;
+        center[2] = 0.;
+        
+        for(int i=0;i<STLtools::num_tri;i++)
+        {
+            for (int trinode = 0; trinode < 3; trinode++)
+            {
+                for (int dim = 0; dim < 3; dim++)
+                {
+                    center[dim] += (*tri_pts_vec)[i*ndata_per_tri + dim + 3*trinode];
+                }
+            }                
+        }        
+
+        for (int dim = 0; dim < 3; dim++)
+        {
+            center[dim] /= ( num_tri * 3. );
+        }
+
+    }
    
-   void boundingbox(int startindex,int endindex,int *indexarray,Real bx[6])
+   void STLtools::boundingbox(int startindex,int endindex,int *indexarray,Real bx[6])
    {
         // NOTE: Returns in min/max xyz coordinates across all stl elements?
        bx[0]=1e50;
@@ -196,7 +202,7 @@ namespace STLtools
        }
    }
 
-    Real getcentroid(int tri_id,int dir)
+    Real STLtools::getcentroid(int tri_id,int dir)
     {
         Real bx[6];
         bx[0]=1e50;
@@ -231,7 +237,7 @@ namespace STLtools
     }
 
 
-    void sort_triangle_ids(int start,int end,int dir,int *indexarray)
+    void STLtools::sort_triangle_ids(int start,int end,int dir,int *indexarray)
     {
         // NOTE, as coded sorts triangle IDs based on min/max xyz extents?
         
@@ -257,7 +263,7 @@ namespace STLtools
         }
     }
 
-    void orb_of_triangulation(int startindex,int endindex,
+    void STLtools::orb_of_triangulation(int startindex,int endindex,
                               int dir,int *indexarray)
     {
 
@@ -278,12 +284,12 @@ namespace STLtools
         }
     }
 
-    AMREX_GPU_HOST_DEVICE void brutesearch(int startindex,int endindex,int *indexarray,
-                     Real p[3],Real &mindist,int &idmin)
+    AMREX_GPU_HOST_DEVICE void STLtools::brutesearch(int startindex,int endindex,int *indexarray,
+                     Real p[3],Real &mindist,int &idmin) const
     {
         mindist=1e50;
         idmin=-1;
-        Real t1[3],t2[3],t3[3];
+        Real t1[3],t2[3],t3[3], distTri[3];
         for(int id=startindex;id<=endindex;id++)
         {
             int tri=indexarray[id];
@@ -293,7 +299,9 @@ namespace STLtools
                 t2[dim]=tri_pts[ndata_per_tri*tri+dim+3];
                 t3[dim]=tri_pts[ndata_per_tri*tri+dim+6];
             }
-            Real ptdist=point_tri_distance(p,t1,t2,t3);
+
+            int closestType = -1;
+            Real ptdist=point_tri_distance(p,t1,t2,t3,closestType,distTri);
             if(ptdist<mindist)
             {
                 mindist=ptdist;
@@ -302,7 +310,63 @@ namespace STLtools
         }
     }
 
-    Real getNormalComponent(int id,Real p[3])
+    AMREX_GPU_HOST_DEVICE void STLtools::brutesearch(int startindex,int endindex,int *indexarray,
+                     Real p[3],Real &mindist,int &idmin, Real dist[3]) const
+    {
+        mindist=1e50;
+        idmin=-1;
+        Real t1[3],t2[3],t3[3], distTri[3];
+        for(int id=startindex;id<=endindex;id++)
+        {
+            int tri=indexarray[id];
+            for(int dim=0;dim<3;dim++)
+            {
+                t1[dim]=tri_pts[ndata_per_tri*tri+dim+0];
+                t2[dim]=tri_pts[ndata_per_tri*tri+dim+3];
+                t3[dim]=tri_pts[ndata_per_tri*tri+dim+6];
+            }
+
+            int closestType = -1;
+            Real ptdist=point_tri_distance(p,t1,t2,t3,closestType,distTri);
+            //Real ptdist=point_tri_distance(p,t1,t2,t3,distTri);
+            if(ptdist<mindist)
+            {
+                mindist=ptdist;
+                idmin=id;
+                copyVector(dist,distTri)
+            }
+        }
+    }
+
+    AMREX_GPU_HOST_DEVICE void STLtools::brutesearch_with_intersections(int startindex,int endindex,int *indexarray,
+                     Real p[3],Real &mindist,int &idmin, Real outp[3], int &num_intersects) const
+    {
+        mindist=1e50;
+        idmin=-1;
+        Real t1[3],t2[3],t3[3], dist[3];
+        for(int id=startindex;id<=endindex;id++)
+        {
+            int tri=indexarray[id];
+            for(int dim=0;dim<3;dim++)
+            {
+                t1[dim]=tri_pts[ndata_per_tri*tri+dim+0];
+                t2[dim]=tri_pts[ndata_per_tri*tri+dim+3];
+                t3[dim]=tri_pts[ndata_per_tri*tri+dim+6];
+            }
+
+            int closestType = -1;
+            Real ptdist=point_tri_distance(p,t1,t2,t3,closestType,dist);
+            if(ptdist<mindist)
+            {
+                mindist=ptdist;
+                idmin=id;
+            }
+
+             num_intersects += (1-lineseg_tri_intersect(outp,p,t1,t2,t3));
+        }
+    }
+
+    Real STLtools::getNormalComponent(int id,Real p[3])
     {
         Real cent[3]={0.0};
         Real n[3]={0.0};
@@ -338,7 +402,7 @@ namespace STLtools
         return(returnval);
     }
 
-    Real boxdistsq(Real box[6],Real p[3])
+    Real boxdistsq(const Real box[6],Real p[3])
     {
         Real distsq;
         Real diff[3];
@@ -351,8 +415,8 @@ namespace STLtools
         return(diff[0]*diff[0]+diff[1]*diff[1]+diff[2]*diff[2]);
     }
 
-    void searchtriangulation(int startindex,int endindex,int *indexarray,
-                             Real p[3],Real &mindistsq,int &idmin,int &ndistcalcs)
+    void STLtools::searchtriangulation(int startindex,int endindex,int *indexarray,
+                             Real p[3],Real &mindistsq,int &idmin,int &ndistcalcs) const
     {
         Real bx0[6],bx1[6],bx2[6];
         Real d0sq,d1sq,d2sq,dmin2;
@@ -390,7 +454,7 @@ namespace STLtools
            }
        }
    }
-    void set_tri_mat_and_domndir(Real p[9],Real mat[9],Real rot_pts[9],int &dndir)
+    void STLtools::set_tri_mat_and_domndir(Real p[9],Real mat[9],Real rot_pts[9],int &dndir)
     {
         // Seems that mat is (essentially) a 3x3 matrix comprised of the normal vector components,
         // and two orthogonal matrix components
@@ -451,7 +515,7 @@ namespace STLtools
         }
         
     }
-    void update_bounding_box()
+    void STLtools::update_bounding_box()
     {
         Real c_of_mass[3]={0.0};
         Real centr[3],centr_t[3];
@@ -492,17 +556,18 @@ namespace STLtools
         inertia_mat[3]=inertia_mat[1];
         inertia_mat[6]=inertia_mat[2];
         inertia_mat[7]=inertia_mat[5];
-        
-        Print()<<"inertia matrix==================\n";
-        for(int i=0;i<3;i++)
-        {
-            for(int j=0;j<3;j++)
-            {
-                Print()<<inertia_mat[3*j+i]<<"\t";
-            }
-            Print()<<"\n";
-        }
-        Print()<<"==================\n";
+
+    
+        // Print()<<"inertia matrix==================\n";
+        // for(int i=0;i<3;i++)
+        // {
+        //     for(int j=0;j<3;j++)
+        //     {
+        //         Print()<<inertia_mat[3*j+i]<<"\t";
+        //     }
+        //     Print()<<"\n";
+        // }
+        // Print()<<"==================\n";
 
         geteigvectors(inertia_mat,eigen_vectors);
 
@@ -521,78 +586,96 @@ namespace STLtools
         bbox_hi[0]=-1e50;
         bbox_hi[1]=-1e50;
         bbox_hi[2]=-1e50;
+        
+        //! This does not make any sense to me 
+        //for(int i=0;i<num_tri;i++)
+        // {
+        //     for(int dim=0;dim<3;dim++)
+        //     {
+        //         centr[dim] = 0.3333333*( tri_pts[ndata_per_tri*i+dim+0]
+        //                                + tri_pts[ndata_per_tri*i+dim+3]
+        //                                + tri_pts[ndata_per_tri*i+dim+6]);
+        //     }
+
+        //     centr_t[0]=0.0;
+        //     centr_t[1]=0.0;
+        //     centr_t[2]=0.0;
+        //     for(int dim=0;dim<3;dim++)
+        //     {
+        //         for(int j=0;j<3;j++)
+        //         {
+        //             centr_t[dim] += eigdirs[3*dim+j]*centr[j];
+        //         }
+        //     }
+
+        //     for(int dim=0;dim<3;dim++)
+        //     {
+        //         if(centr_t[dim] < bbox_lo[dim])
+        //         {
+        //             bbox_lo[dim]=centr_t[dim];
+        //         }
+        //         if(centr_t[dim] > bbox_hi[dim])
+        //         {
+        //             bbox_hi[dim] = centr_t[dim];
+        //         }
+        //     }
+
+        // }
+
+        //! Let's compute the bb the old-fashioned way
+        // Loop over the triangle and take the max/min of the nodal values
         for(int i=0;i<num_tri;i++)
         {
-            for(int dim=0;dim<3;dim++)
+            for (int n = 0; n < 3; n++)
             {
-                centr[dim] = 0.3333333*( tri_pts[ndata_per_tri*i+dim+0]
-                                       + tri_pts[ndata_per_tri*i+dim+3]
-                                       + tri_pts[ndata_per_tri*i+dim+6]);
-            }
-
-            centr_t[0]=0.0;
-            centr_t[1]=0.0;
-            centr_t[2]=0.0;
-            for(int dim=0;dim<3;dim++)
-            {
-                for(int j=0;j<3;j++)
+                for(int dim=0;dim<3;dim++)
                 {
-                    centr_t[dim] += eigdirs[3*dim+j]*centr[j];
+                    bbox_lo[dim] = amrex::min( tri_pts[ndata_per_tri*i+dim+n*3], bbox_lo[dim] );
+                    bbox_hi[dim] = amrex::max( tri_pts[ndata_per_tri*i+dim+n*3], bbox_hi[dim] );
                 }
             }
-
-            for(int dim=0;dim<3;dim++)
-            {
-                if(centr_t[dim] < bbox_lo[dim])
-                {
-                    bbox_lo[dim]=centr_t[dim];
-                }
-                if(centr_t[dim] > bbox_hi[dim])
-                {
-                    bbox_hi[dim] = centr_t[dim];
-                }
-            }
-
+            
+ 
         }
 
-        //expand the bounding box
-        Real len[3],bbox_cent[3];
-        for(int dim=0;dim<3;dim++)
-        {
-            len[dim] = bbox_hi[dim]-bbox_lo[dim];
-            bbox_cent[dim] = 0.5*(bbox_hi[dim]+bbox_lo[dim]);
-        }
+        // //expand the bounding box
+        // Real len[3],bbox_cent[3];
+        // for(int dim=0;dim<3;dim++)
+        // {
+        //     len[dim] = bbox_hi[dim]-bbox_lo[dim];
+        //     bbox_cent[dim] = 0.5*(bbox_hi[dim]+bbox_lo[dim]);
+        // }
         
-        for(int dim=0;dim<3;dim++)
-        {
-            bbox_lo[dim] = bbox_cent[dim]-0.5*expfac*len[dim];
-            bbox_hi[dim] = bbox_cent[dim]+0.5*expfac*len[dim];
-        }
+        // for(int dim=0;dim<3;dim++)
+        // {
+        //     bbox_lo[dim] = bbox_cent[dim]-0.5*expfac*len[dim];
+        //     bbox_hi[dim] = bbox_cent[dim]+0.5*expfac*len[dim];
+        // }
 
-        Print()<<"inertia matrix==================\n";
-        for(int i=0;i<3;i++)
-        {
-            for(int j=0;j<3;j++)
-            {
-                Print()<<inertia_mat[3*j+i]<<"\t";
-            }
-            Print()<<"\n";
-        }
-        Print()<<"eigen vectors==================\n";
-        for(int i=0;i<3;i++)
-        {
-            for(int j=0;j<3;j++)
-            {
-                Print()<<eigen_vectors[3*j+i]<<"\t";
-            }
-            Print()<<"\n";
-        }
-        Print()<<"==================\n";
+        // Print()<<"inertia matrix==================\n";
+        // for(int i=0;i<3;i++)
+        // {
+        //     for(int j=0;j<3;j++)
+        //     {
+        //         Print()<<inertia_mat[3*j+i]<<"\t";
+        //     }
+        //     Print()<<"\n";
+        // }
+        // Print()<<"eigen vectors==================\n";
+        // for(int i=0;i<3;i++)
+        // {
+        //     for(int j=0;j<3;j++)
+        //     {
+        //         Print()<<eigen_vectors[3*j+i]<<"\t";
+        //     }
+        //     Print()<<"\n";
+        // }
+        // Print()<<"==================\n";
 
 
     }
     
-    void write_stl_file(std::string fname)
+    void STLtools::write_stl_file(std::string fname)
     {
         Real t1[3],t2[3],t3[3],n[3];
         std::ofstream outfile(fname.c_str());
@@ -625,11 +708,74 @@ namespace STLtools
         }
 
         outfile<<"endsolid bdemsolid";
+        outfile.close();
     }
 
-    void move_stl(Real timestep,int movetype,int movedir,amrex::Real movecenter[3],Real movevel)
+    void STLtools::writeVTK(std::string fname) const
     {
-     
+        // We do not have a list of points in the vtk file.
+        // Points will be duplicated.
+
+        Real t1[3],t2[3],t3[3],n[3];
+        std::ofstream vtkFile(fname.c_str());
+
+        vtkFile << "# vtk DataFile Version 3.0\n";
+        vtkFile << "Triangles with scalar and vector fields\n";
+        vtkFile << "ASCII\n";
+        vtkFile << "DATASET UNSTRUCTURED_GRID\n";
+
+        // Write points with duplicates
+        vtkFile << "POINTS " << num_tri*3 << " float\n";
+        for(int i=0;i<num_tri;i++)
+        {
+            vtkFile << tri_pts[i*ndata_per_tri+0] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+1] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+2] << "\n";
+            vtkFile << tri_pts[i*ndata_per_tri+3] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+4] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+5] << "\n";            
+            vtkFile << tri_pts[i*ndata_per_tri+6] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+7] << " ";
+            vtkFile << tri_pts[i*ndata_per_tri+8] << "\n";
+        }
+
+        // Write triangles
+        vtkFile << "\nCELLS " << num_tri << " " << num_tri * 4 << "\n";
+        for(int i=0;i<num_tri;i++)
+        {
+            vtkFile << "3 " << 3*i << " " << 3*i + 1 << " " << 3*i + 2 << "\n";
+        }
+
+        // Write cell types (5 corresponds to VTK_TRIANGLE)
+        vtkFile << "\nCELL_TYPES " << num_tri << "\n";
+        for (int i = 0; i < num_tri; i++) 
+        {
+            vtkFile << "5\n";
+        }
+
+        // Write scalar cell data
+        vtkFile << "\nCELL_DATA " << num_tri << "\n";
+        vtkFile << "SCALARS pressure float 1\n";
+        vtkFile << "LOOKUP_TABLE default\n";
+        for (int i = 0; i < num_tri; i++) 
+        {
+            vtkFile << pressure[i] << "\n";
+        }
+
+        // Write vector cell data
+        vtkFile << "\nVECTORS shear_stress float\n";
+        for (int i = 0; i < num_tri; i++) 
+        {
+            vtkFile << shear_stress[3*i] << " " << shear_stress[3*i + 1] << " " << shear_stress[3*i + 2] <<  "\n";
+        }
+
+        vtkFile.close();        
+
+    }
+
+    void STLtools::move_stl(Real timestep,int movetype,amrex::Real movedir[3],amrex::Real movecenter[3],Real movevel)
+    {
+    
         Real coord[3],newcoord[3],norm[3];
         Real P1[3],P2[3],P3[3];
 
@@ -663,4 +809,23 @@ namespace STLtools
             tri_normals[i*ndata_per_normal+2]=norm[2];
         }
     }
-}
+
+    void STLtools::printForces() const
+    {
+        Real ptot = 0.;
+        Real sstot[3] = {0., 0., 0.};
+
+        for (int i = 0; i < num_tri; i++)
+        {
+            ptot += pressure[i];
+            sstot[0] += shear_stress[3*i];
+            sstot[1] += shear_stress[3*i + 1];
+            sstot[2] += shear_stress[3*i + 2];
+        }
+        
+        Print() << "pressure = " << ptot << "   shear stress = ( " << sstot[0] << " " << sstot[1] << " " << sstot[2] << " )\n";
+
+    }
+
+
+

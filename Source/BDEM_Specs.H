@@ -4,6 +4,7 @@
 #include <AMReX_REAL.H>
 #include <AMReX_ParmParse.H>
 #include <AllChemistries.H>
+#include <STLtools.H>
 
 using namespace amrex;
 
@@ -61,6 +62,7 @@ struct intData
   };
 };
 
+
 namespace DEM
 {
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_n;
@@ -101,6 +103,9 @@ namespace DEM
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real eps_g;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real rho_g;
     extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_g;
+
+    extern AMREX_GPU_DEVICE_MANAGED int particles_in_parcel;
+    extern AMREX_GPU_DEVICE_MANAGED amrex::Real CG_ratio;
 }
 
 class DEMspecs
@@ -134,7 +139,6 @@ class DEMspecs
         int autogen_bp_type = 0;
 
         bool restartedcase=false;
-        bool stl_geom_present=false;
         bool do_heat_transfer=false;
         bool using_softwalls=false;
         bool remove_eb_overlaps=false;
@@ -143,17 +147,9 @@ class DEMspecs
         Vector<Real> walltemp_polynomial;
         int walltemp_vardir=0;
 
-        int dynamicstl=0;
-        int dynstl_transl_dir=0;
-        Real dynstl_transl_vel=0.0;
-        int dynstl_rot_dir=0;
-        Vector<Real> dynstl_center;
-        Real dynstl_rot_vel=0.0;
-        int sum_stl_forces=0;
-        Real stl_vib_freq = 0.0;
-        Real stl_vib_amp = 0.0;
-        int stl_vib_dir = 0; 
-        Real stl_timeoffset = 0.0;
+        // STL stuff
+        
+
 
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
@@ -193,7 +189,6 @@ class DEMspecs
         int num_upd_neighbor=1;
         int stepoffset=0;
         std::string restartfilename {""};
-        std::string stlfilename {""};
 	std::string pltprefix {""};
 
         mechanism *chemptr;
@@ -269,6 +264,10 @@ class DEMspecs
         // One-way drag modeling
         int drag_model = 0;
 
+        // List of STL files and their settings
+        Vector< stl_specs > stls;
+        bool stl_geom_present=false;
+
         void read_dem_specs()
         {
             plo.resize(AMREX_SPACEDIM);
@@ -295,7 +294,7 @@ class DEMspecs
             autogen_species_massfracs.resize(MAXSPECIES,0.0);
 
             walltemp_polynomial.resize(3,0.0);
-            dynstl_center.resize(3,0.0);
+
 
             ParmParse pp("bdem");
             pp.getarr("prob_lo",plo);
@@ -451,7 +450,7 @@ class DEMspecs
             pp.get("normal_spring_constant",DEM::k_n);
             pp.get("normal_restitution_coefficient",DEM::e_n);
             pp.get("friction_coefficient",DEM::mu);
-	    pp.get("tangential_spring_constant",DEM::k_t);
+	        pp.get("tangential_spring_constant",DEM::k_t);
             pp.get("tangential_restitution_coefficient",DEM::e_t);
             pp.get("rolling_friction_coefficient",DEM::muR);
             
@@ -460,7 +459,7 @@ class DEMspecs
             DEM::E_wall  = 100.0;  // Initial unrealistic value
             DEM::nu_wall  = 0.3;  // Default general nu_wall
             DEM::mu_wall  = DEM::mu;
-	    DEM::k_t_wall = DEM::k_t;
+	        DEM::k_t_wall = DEM::k_t;
             DEM::e_t_wall = DEM::e_t;
             DEM::muR_wall  = DEM::muR;
 	    
@@ -469,7 +468,7 @@ class DEMspecs
             pp.query("elastic_modulus_wall",DEM::E_wall);
             pp.query("poissons_ratio_wall",DEM::nu_wall);
             pp.query("wall_friction_coefficient",DEM::mu_wall);
-	    pp.query("wall_tangential_spring_constant",DEM::k_t_wall);
+	        pp.query("wall_tangential_spring_constant",DEM::k_t_wall);
             pp.query("wall_tangential_restitution_coefficient",DEM::e_t_wall);
             pp.query("wall_rolling_friction_coefficient",DEM::muR_wall);
 
@@ -485,47 +484,98 @@ class DEMspecs
             {
                 restartedcase=true;
             }
-            pp.query("stl_file",stlfilename);
-            if(!stlfilename.empty())
-            {
-                stl_geom_present=true;
-            }
-            pp.query("dynamicstl",dynamicstl);
-            pp.query("pltprefix",pltprefix);
-	    if(!pltprefix.empty()){
-	    	pltprefix = pltprefix + "/";
-	    }
 
-            if(!stl_geom_present)
+            /* STL related stuff -------------------------------*/
+            int number_of_stl_files(0);
+            pp.query("number_of_stl_files", number_of_stl_files);
+
+            if ( number_of_stl_files > 0 )
             {
-                dynamicstl=0;
+                stl_geom_present = true;
             }
 
-            if(dynamicstl>0)
+            stls.resize(number_of_stl_files);
+
+            //- Read stl file names
+            Vector<std::string> stlnames(number_of_stl_files);
+            pp.getarr("stl_names",stlnames);
+
+            //- Now read stl settings independently
+            for (int stli = 0; stli < number_of_stl_files; stli++)
             {
-                if(dynamicstl==1)
+                std::string stlname(stlnames[stli]);
+
+                stls[stli].name = stlname;
+
+                stls[stli].stlptr = new STLtools();
+                stls[stli].stlptr->read_stl_file(stls[stli].name + ".stl");
+
+                pp.query( ( stlname + "_dynamicstl" ).c_str(), stls[stli].dynamicstl );
+
+                pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );
+
+                amrex::Print()  << "Found STL named " << stls[stli].name << "\n";
+
+                if ( stls[stli].dynamicstl == 1 )
                 {
-                    pp.query("dynamicstl_transl_dir",dynstl_transl_dir);
-                    pp.query("dynamicstl_transl_vel",dynstl_transl_vel);
-                }
-                else if(dynamicstl==2)
+                    stls[stli].dynstl_transl_dir.resize(3,0.);
+                    pp.getarr( ( stlname + "_dynamicstl_transl_dir" ).c_str(), stls[stli].dynstl_transl_dir );
+                    pp.get( ( stlname + "_dynamicstl_transl_vel" ).c_str(), stls[stli].dynstl_transl_vel );
+
+                    amrex::Print()  << "STL has dynamic translation with velocity " 
+                                    << stls[stli].dynstl_transl_vel 
+                                    << ", and direction (" 
+                                    << stls[stli].dynstl_transl_dir[0] << " "
+                                    << stls[stli].dynstl_transl_dir[1] << " "
+                                    << stls[stli].dynstl_transl_dir[2] << ") "
+                                    << "\n";
+                }                
+                else if ( stls[stli].dynamicstl == 2 )
                 {
-                    pp.query("dynamicstl_rot_dir",dynstl_rot_dir);
-                    pp.queryarr("dynamicstl_rot_center",dynstl_center);
-                    pp.query("dynamicstl_rot_vel",dynstl_rot_vel);
-                } 
-                else if(dynamicstl==3)
-                {  
-                    pp.get("stl_vib_freq", stl_vib_freq);
-                    pp.get("stl_vib_amp", stl_vib_amp);
-                    pp.get("stl_vib_dir", stl_vib_dir);
-                    pp.get("stl_timeoffset", stl_timeoffset);
+                    stls[stli].dynstl_center.resize(3,0.);
+                    stls[stli].dynstl_rot_dir.resize(3,0.);
+                    bool use_geo_center;
+                    pp.query( ( stlname + "_dynamicstl_geo_rot_center" ).c_str(), use_geo_center );
+                    pp.get( ( stlname + "_dynamicstl_rot_vel" ).c_str(), stls[stli].dynstl_rot_vel );
+                    pp.getarr ( (stlname + "_dynamicstl_rot_dir" ).c_str(), stls[stli].dynstl_rot_dir );
+
+                    // Normalize the rotation direction
+                    amrex::Real mod = normVec(stls[stli].dynstl_rot_dir.data());
+                    for (int dir = 0; dir < 3; dir++)
+                    {
+                        stls[stli].dynstl_rot_dir.data()[dir] /= mod;
+                    }
+                
+                    // Check if the geometric center of the STL should be used as center of rotation
+                    if( use_geo_center )
+                    {
+                        stls[stli].stlptr->getSTLGeoCenter(stls[stli].dynstl_center.data());
+                    }
+                    else
+                    {
+                        pp.getarr( ( stlname + "_dynamicstl_rot_center" ).c_str(), stls[stli].dynstl_center );
+                    }
+
+                    amrex::Print()  << "STL has dynamic rotation with center ( " 
+                                    << stls[stli].dynstl_center[0] << " "
+                                    << stls[stli].dynstl_center[1] << " "
+                                    << stls[stli].dynstl_center[2] << " )"
+                                    << ", velocity " << stls[stli].dynstl_rot_vel 
+                                    << ", and direction (" 
+                                    << stls[stli].dynstl_rot_dir[0] << " "
+                                    << stls[stli].dynstl_rot_dir[1] << " "
+                                    << stls[stli].dynstl_rot_dir[2] << " )"<< "\n";
                 }
-                else
+                else if ( stls[stli].dynamicstl == 3 )
                 {
-                    amrex::Abort("dynamic stl movement function not implemented yet\n");
+                    stls[stli].stl_vib_dir.resize(3,0.);
+                    pp.get( ( stlname + "_stl_vib_amp" ).c_str(), stls[stli].stl_vib_amp );
+                    pp.get( ( stlname + "_stl_vib_freq" ).c_str(), stls[stli].stl_vib_freq );
+                    pp.getarr( ( stlname + "_stl_vib_dir" ).c_str(), stls[stli].stl_vib_dir );
                 }
+
             }
+            
 
             // Reassign particle properties for a restarted case using autogen particle parameters
             pp.query("reassign_particle_properties", reassign_particle_properties);
@@ -696,6 +746,42 @@ class DEMspecs
                 pp.get("gas_density", DEM::rho_g);
             }
 
+            //- CG options
+            // Ratio between the radius of the Coarse Grained particle and
+            // the radius of the original particle
+            //! Notice that the current implementation follow the work of
+            //! Nakamura et al., Coarse-Grained discrete element method
+            //! for shear granular flows, Chem. Eng. J. Adv. (2020)  
+
+            pp.query("CG_ratio",DEM::CG_ratio);      
+            
+            if ( DEM::CG_ratio > 1.0 )
+            {
+                DEM::particles_in_parcel = std::pow( DEM::CG_ratio, 3.0 );
+
+                amrex::Print()  << "Using Coarse Grained particles with one parcel representing "
+                                << DEM::particles_in_parcel << " particles.\n"
+                                << "The corresponding radius ratio is "
+                                << "( r_CG / r_p ) = " << DEM::CG_ratio << "\n";
+                amrex::Print()  << "WARNING: the CG model only works when the stiffness k is specified in the input! \n";
+
+                //! See table 1 of Nakamura et al.
+
+                //- Scale the stiffness
+                DEM::k_n        *= ( DEM::CG_ratio * DEM::CG_ratio ) / (  ( 2. * DEM::CG_ratio ) - 1. );
+                DEM::k_n_wall    = ( DEM::CG_ratio * DEM::CG_ratio ) / ( ( 1. / DEM::k_n_wall )  + ( ( DEM::CG_ratio - 1. ) / DEM::k_n ) );
+                DEM::k_t        *= ( DEM::CG_ratio * DEM::CG_ratio ) / (  ( 2. * DEM::CG_ratio ) - 1. );
+                DEM::k_t_wall    = ( DEM::CG_ratio * DEM::CG_ratio ) / ( ( 1. / DEM::k_t_wall )  + ( ( DEM::CG_ratio - 1. ) / DEM::k_t ) );
+                
+                //- Scale the restitution coefficient
+                DEM::e_n        =   std::sqrt( 1. - (1./DEM::CG_ratio) * ( 1. - (DEM::e_n*DEM::e_n) ) );
+                DEM::e_n_wall   =   std::sqrt( 1. - (1./DEM::CG_ratio) * ( 1. - (DEM::e_n_wall*DEM::e_n_wall) ) );
+                DEM::e_t        =   std::sqrt( 1. - (1./DEM::CG_ratio) * ( 1. - (DEM::e_t*DEM::e_t) ) );
+                DEM::e_t_wall   =   std::sqrt( 1. - (1./DEM::CG_ratio) * ( 1. - (DEM::e_t_wall*DEM::e_t_wall) ) );
+
+                //- The sliding friction coefficient cannot be pre-scaled and it is computed during collisions
+            }
+
         }
         void clear()
         {
@@ -706,7 +792,13 @@ class DEMspecs
             autogen_mincoords.clear(); 
             autogen_maxcoords.clear(); 
             autogen_meanvel.clear(); 
-            autogen_fluctuation.clear(); 
+            autogen_fluctuation.clear();
+            for (int stli = 0; stli < stls.size(); stli++)
+            {
+                delete stls[stli].stlptr;
+            }
+            stls.clear();
+             
             delete(chemptr);
         }
 };

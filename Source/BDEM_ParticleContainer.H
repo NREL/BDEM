@@ -8,6 +8,7 @@
 #include <Mechanism.H>
 #include <BDEM_CheckPair.H>
 #include <BDEM_ParticleTypes.H>
+#include <stl_tools/STLtools.H>
 
 
 class BDEMParticleContainer
@@ -107,7 +108,7 @@ public:
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
-            RealVect &gravity,
+            RealVect &gravity, amrex::Vector< stl_specs >& stls,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
             const int particle_cohesion=0,
@@ -119,8 +120,8 @@ public:
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
             const int ls_refinement);
     
-    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
-    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point);
+    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, STLtools* stl);
+    void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, STLtools* stl);
 
     void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0);
 

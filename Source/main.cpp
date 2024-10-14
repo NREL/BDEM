@@ -40,6 +40,8 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::sigma_max  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::eps_g  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::rho_g  = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_g  = zero;
+AMREX_GPU_DEVICE_MANAGED int DEM::particles_in_parcel = 1;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::CG_ratio  = 1.;
 
 using namespace amrex;
 
@@ -127,11 +129,12 @@ int main (int argc, char* argv[])
                                specs.strat_maxcoords.data(),specs.strat_spec_massfracs.data());
         }
 
-        if(specs.stl_geom_present)
-        {
-            STLtools::read_stl_file(specs.stlfilename);
-        }
-
+        //! Moved to specs
+        //! for (int stli = 0; stli < specs.stls.size(); stli++)
+        //! {
+        //!     specs.stls[stli].stlptr->read_stl_file(specs.stls[stli].name + ".stl");
+        //! }
+            
         //compute tcoll here over all particles
         DEM::tcoll=bpc.compute_coll_timescale(specs.bonded_sphere_particles);
         Print()<<"tcoll:"<<DEM::tcoll<<"\n";
@@ -155,11 +158,13 @@ int main (int argc, char* argv[])
                                                    EBtools::ebfactory,EBtools::ls_refinement);
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
             }
-            if(specs.stl_geom_present)
+
+            for (int stli = 0; stli < specs.stls.size(); stli++)
             {
-                bpc.removeParticlesInsideSTL(specs.outside_point);
+                bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
             }
+
             if(specs.remove_eb_overlaps) {
                 bpc.removeEBOverlapParticles(EBtools::ebfactory, EBtools::lsphi, EBtools::ls_refinement);
                 amrex::Print() << "Num particles after EB overlap removal " << bpc.TotalNumberOfParticles() << "\n";
@@ -173,11 +178,15 @@ int main (int argc, char* argv[])
         bpc.set_domain_bcs(specs.bclo,specs.bchi);
         bpc.writeParticles(steps+specs.stepoffset, specs.bonded_sphere_particles, specs.pltprefix);
 
-        if(specs.dynamicstl!=0)
+        for (int stli = 0; stli < specs.stls.size(); stli++)
         {
-            std::string stlpltfile = amrex::Concatenate("triplt", steps+specs.stepoffset, 5)+".stl";
-            STLtools::write_stl_file(stlpltfile);
-        }
+            if(specs.stls[stli].dynamicstl!=0)
+            {
+                std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".stl";
+                specs.stls[stli].stlptr->write_stl_file(stlpltfile);
+            }
+        }  
+
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
 
         // Calculate the moisture content for each particle
@@ -245,11 +254,13 @@ int main (int argc, char* argv[])
                                                        EBtools::ebfactory,EBtools::ls_refinement);
                 }
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
-                if(specs.stl_geom_present)
+                for (int stli = 0; stli < specs.stls.size(); stli++)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point);
+                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
                 }
+
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+
 
                 bpc.redist_particles(1,specs.using_softwalls);
                 amrex::Print()<<"adding particles\n";
@@ -291,14 +302,15 @@ int main (int argc, char* argv[])
                 bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
                 BL_PROFILE_VAR_STOP(movepart);
             }
-
+ 
             BL_PROFILE_VAR("FORCE_CALC",forceCalc);
             {
+
                 bpc.computeForces(dt,EBtools::ebfactory,EBtools::lsphi,
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present, specs.contact_law, steps,
-                                  specs.gravity,
+                                  specs.gravity, specs.stls,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,
@@ -306,41 +318,50 @@ int main (int argc, char* argv[])
                                   cb_force, cb_torq, specs.cb_dir, specs.drag_model);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
+            
 
+            
             BL_PROFILE_VAR("MOVE_PART",movepart);
             if(specs.verlet_scheme) specs.verlet_scheme = 2;
             bpc.moveParticles(dt,specs.do_chemistry,specs.minradius_frac,specs.verlet_scheme);
             BL_PROFILE_VAR_STOP(movepart);
 
-            if(specs.dynamicstl!=0)
+            for (int stli = 0; stli < specs.stls.size(); stli++)
             {
-                if(specs.dynamicstl==1)
+
+                if(specs.stls[stli].dynamicstl!=0)
                 {
-                    STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_transl_dir,
-                                       specs.dynstl_center.data(),specs.dynstl_transl_vel);
+                    if(specs.stls[stli].dynamicstl==1)
+                    {
+                        specs.stls[stli].stlptr->move_stl(dt,specs.stls[stli].dynamicstl,specs.stls[stli].dynstl_transl_dir.data(),
+                                            specs.stls[stli].dynstl_center.data(),specs.stls[stli].dynstl_transl_vel);
+                    }
+                    else if(specs.stls[stli].dynamicstl==2)
+                    {
+                        specs.stls[stli].stlptr->move_stl(dt,specs.stls[stli].dynamicstl,specs.stls[stli].dynstl_rot_dir.data(),
+                                            specs.stls[stli].dynstl_center.data(),specs.stls[stli].dynstl_rot_vel);
+                    }
+                    else if(specs.stls[stli].dynamicstl==3)
+                    {
+                        amrex::Real stl_pos_prv = specs.stls[stli].stl_vib_amp*sin((time+specs.stls[stli].stl_timeoffset)*specs.stls[stli].stl_vib_freq);
+                        amrex::Real stl_pos_nxt = specs.stls[stli].stl_vib_amp*sin((time+dt+specs.stls[stli].stl_timeoffset)*specs.stls[stli].stl_vib_freq);
+                        amrex::Real stl_vel = (stl_pos_nxt - stl_pos_prv)/dt;
+                        specs.stls[stli].stlptr->move_stl(dt,specs.stls[stli].dynamicstl,specs.stls[stli].stl_vib_dir.data(),specs.stls[stli].dynstl_center.data(),stl_vel);
+                    }
+                    else
+                    {
+                        amrex::Abort("STL motion not implemented\n");
+                    }
+                    if (steps % specs.num_redist == 0)
+                    {
+                        specs.stls[stli].stlptr->boxmap.clear();
+                        specs.stls[stli].stlptr->orb_of_triangulation(0,specs.stls[stli].stlptr->num_tri-1,0,specs.stls[stli].stlptr->sorted_indexarray);
+                    }
                 }
-                else if(specs.dynamicstl==2)
-                {
-                    STLtools::move_stl(dt,specs.dynamicstl,specs.dynstl_rot_dir,
-                                       specs.dynstl_center.data(),specs.dynstl_rot_vel);
-                }
-                else if(specs.dynamicstl==3)
-                {
-                    amrex::Real stl_pos_prv = specs.stl_vib_amp*sin((time+specs.stl_timeoffset)*specs.stl_vib_freq);
-                    amrex::Real stl_pos_nxt = specs.stl_vib_amp*sin((time+dt+specs.stl_timeoffset)*specs.stl_vib_freq);
-                    amrex::Real stl_vel = (stl_pos_nxt - stl_pos_prv)/dt;
-                    STLtools::move_stl(dt,specs.dynamicstl,specs.stl_vib_dir,specs.dynstl_center.data(),stl_vel);
-                }
-                else
-                {
-                    amrex::Abort("STL motion not implemented\n");
-                }
-                if (steps % specs.num_redist == 0)
-                {
-                    STLtools::boxmap.clear();
-                    STLtools::orb_of_triangulation(0,STLtools::num_tri-1,0,STLtools::sorted_indexarray);
-                }
+
             }
+            
+
 
             if (output_timePrint > specs.screen_output_time)
             {
@@ -372,12 +393,24 @@ int main (int argc, char* argv[])
                 const std::string& rstfile = specs.pltprefix + amrex::Concatenate("rst", output_it+specs.stepoffset, 5);
                 bpc.Checkpoint(rstfile, "particles");
                 output_time=zero;
-                if(specs.dynamicstl!=0)
+
+                for (int stli = 0; stli < specs.stls.size(); stli++)
                 {
-                    std::string stlpltfile = amrex::Concatenate("triplt", output_it+specs.stepoffset, 5)+".stl";
-                    STLtools::write_stl_file(stlpltfile);
-                    STLtools::update_bounding_box();
+                    // if(specs.stls[stli].dynamicstl!=0)
+                    // {
+                    //     std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".stl";
+                    //     specs.stls[stli].stlptr->write_stl_file(stlpltfile);
+                    //     specs.stls[stli].stlptr->update_bounding_box();
+                    // }
+                    Print() << "Writing STL " << specs.stls[stli].name;
+                    std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".vtk";
+                    specs.stls[stli].stlptr->writeVTK(stlpltfile);
+                    specs.stls[stli].stlptr->printForces();
+                    specs.stls[stli].stlptr->update_bounding_box();
+
+                    
                 }
+
                 if(specs.using_softwalls)
                 {
                     bpc.reassignParticles_softwall(); 

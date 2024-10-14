@@ -457,7 +457,42 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
 
     if (mag_overlap_t > zero)
     {
-        Real fnmd = DEM::mu_wall * sqrt(dotpdt(fn, fn));
+        Real mu_wall = DEM::mu_wall;
+
+        // Correct for coarse grained particles
+        if ( DEM::particles_in_parcel > 1 )
+        {
+            Real omega_p  [THREEDIM];
+            omega_p[XDIR] = p.rdata(realData::xangvel);
+            omega_p[YDIR] = p.rdata(realData::yangvel);
+            omega_p[ZDIR] = p.rdata(realData::zangvel); 
+
+
+            Real omega_p_cp [THREEDIM];
+            CrossProd(omega_p, normal, omega_p_cp);
+
+            Real oneOvera = 1./DEM::CG_ratio;
+            Real beta = 1./std::sqrt(oneOvera*oneOvera + ( 1. -  oneOvera)*( 1. -  oneOvera));
+
+            Real mag_overlap_orig = overlap_n*oneOvera;
+            Real dorig = rp*oneOvera*2.;
+            Real denomVec[THREEDIM];
+
+            for (int i = 0; i < 3; i++)
+            {
+                denomVec[i] = vrel_t[i] +  beta*mag_overlap_orig*omega_p_cp[i];
+            }
+
+            Real num = (DEM::CG_ratio - 1.)*beta*dorig*normVec(omega_p_cp);
+            Real denom = normVec(denomVec);
+
+            if (denom > TINYVAL) 
+            {
+                mu_wall += DEM::mu * num/denom;  
+            }
+        }
+
+        Real fnmd = mu_wall * sqrt(dotpdt(fn, fn));
         Real ftsp[THREEDIM];
         Real ftn[THREEDIM];
         Real mag_ftsp;

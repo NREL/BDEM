@@ -1,0 +1,20 @@
+ 0: amrex::BLBackTrace::print_backtrace_info(__sFILE*) (in bdem3d.gnu.ex) (AMReX_BLBackTrace.cpp:203)
+
+ 1: amrex::BLBackTrace::handler(int) (in bdem3d.gnu.ex) (AMReX_BLBackTrace.cpp:101)
+
+ 2: _sigtramp (in libsystem_platform.dylib) + 56
+
+ 3: STLtools::searchtriangulation(int, int, int*, double*, double&, int&, int&) const (in bdem3d.gnu.ex) (STLtools.cpp:345)
+
+ 4: STLtools::searchtriangulation(int, int, int*, double*, double&, int&, int&) const (in bdem3d.gnu.ex) (STLtools.cpp:0)
+
+ 5: STLtools::searchtriangulation(int, int, int*, double*, double&, int&, int&) const (in bdem3d.gnu.ex) (STLtools.cpp:0)
+
+ 6: STLtools::searchtriangulation(int, int, int*, double*, double&, int&, int&) const (in bdem3d.gnu.ex) (STLtools.cpp:362)
+
+ 7: BDEMParticleContainer::computeForces(double&, amrex::EBFArrayBoxFactory const*, amrex::MultiFab const*, bool, int, double*, int, bool, int, int, amrex::RealVect&, amrex::Vector<stl_specs, std::__1::allocator<stl_specs>>&, int, int, int, double, int, int, double, double, int, int) (in bdem3d.gnu.ex) (BDEM_STLCollisions.H:1)
+
+ 8: main (in bdem3d.gnu.ex) (main.cpp:324)
+
+ 9: start (in dyld) + 2476
+

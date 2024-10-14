@@ -45,14 +45,29 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
-            RealVect &gravity,
+            RealVect &gravity, amrex::Vector< stl_specs >& stls,
             const int bonded_sphere_particles,
             const int liquid_bridging,
             const int particle_cohesion, 
             const Real init_force, const int init_force_dir, const int init_force_comp,
-            const Real cb_force, const Real cb_torq, const int cb_dir, const int drag_model)
+            const Real cb_force, const Real cb_torq, const int cb_dir, const int drag_model
+            )
 {
     BL_PROFILE("BDEMParticleContainer::computeForces");
+
+    //- Re-initialize stl forces
+    for (int stli = 0; stli < stls.size(); stli++)
+    {
+        STLtools* stlptr = stls[stli].stlptr;
+
+        for (int i = 0; i < stlptr->num_tri; i++)
+        {
+            stlptr->pressure[i] = 0.;
+            stlptr->shear_stress[3*i] = 0.;
+            stlptr->shear_stress[3*i + 1] = 0.;
+            stlptr->shear_stress[3*i + 2] = 0.;
+        }
+    }
 
     const int lev = 0;
     const Geometry& geom = Geom(lev);
@@ -147,13 +162,54 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
         }
         if(stlpresent)
         {
-#include"BDEM_STLCollisions.H"
+            for (int stli = 0; stli < stls.size(); stli++)
+            {
+                STLtools* stlptr = stls[stli].stlptr;
+
+                #include"BDEM_STLCollisions.H"
+
+                /* Reduce forces */
+                detail::Reduce(detail::ReduceOp::sum,stlptr->pressure, stlptr->num_tri, -1, MPI_COMM_WORLD);
+                detail::Reduce(detail::ReduceOp::sum,stlptr->shear_stress, stlptr->num_tri*3, -1, MPI_COMM_WORLD);
+            }
+            
+
         }
         //at Cartesian walls
 #include"BDEM_CartWallCollisions.H"
   
 
 #include"BDEM_ParticleCollisions.H"
+    }
+
+    //- Convert forces to pressure and stress in STL geoms
+    for (int stli = 0; stli < stls.size(); stli++)
+    {
+        STLtools* stlptr = stls[stli].stlptr;
+        Real t1[3],t2[3],t3[3];
+        
+        for (int i = 0; i < stlptr->num_tri; i++)
+        {
+
+            t1[0]=stlptr->tri_pts[i*9+0];
+            t1[1]=stlptr->tri_pts[i*9+1];
+            t1[2]=stlptr->tri_pts[i*9+2];
+            
+            t2[0]=stlptr->tri_pts[i*9+3];
+            t2[1]=stlptr->tri_pts[i*9+4];
+            t2[2]=stlptr->tri_pts[i*9+5];
+            
+            t3[0]=stlptr->tri_pts[i*9+6];
+            t3[1]=stlptr->tri_pts[i*9+7];
+            t3[2]=stlptr->tri_pts[i*9+8];
+
+            Real one_over_area = 1.0/triangle_area(t1,t2,t3);
+
+            stlptr->pressure[i] *= one_over_area;
+            stlptr->shear_stress[3*i] *= one_over_area;
+            stlptr->shear_stress[3*i + 1] *= one_over_area;
+            stlptr->shear_stress[3*i + 2] *= one_over_area;
+        }
     }
 }
 
