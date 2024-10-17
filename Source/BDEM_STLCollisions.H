@@ -40,21 +40,20 @@ amrex::ParallelFor(np,[=]
         int ndistcalcs;
         Real dist[3];
 
-// #ifndef AMREX_USE_GPU
-//         //cpu version, need to figure out gpu version
-//         stlptr->searchtriangulation(0,stlptr->num_tri-1,
-//                         stlptr->sorted_indexarray,
-//                         pos,mindist,min_tri_id,ndistcalcs);
+#ifndef AMREX_USE_GPU
+         //cpu version, need to figure out gpu version
+         stlptr->searchtriangulation(0,stlptr->num_tri-1,
+                         stlptr->sorted_indexarray,
+                         pos,mindist,min_tri_id,ndistcalcs);
+         mindist=std::sqrt(mindist);
+         int min_tr=stlptr->sorted_indexarray[min_tri_id];
 
-//         mindist=std::sqrt(mindist);
-//         int min_tr=stlptr->sorted_indexarray[min_tri_id];
-
-// #else
+#else
         stlptr->brutesearch(0,stlptr->num_tri-1,
                               stlptr->sorted_indexarray,
                               pos,mindist,min_tri_id,dist);
         int min_tr=stlptr->sorted_indexarray[min_tri_id];
-//#endif
+#endif
 
         // Real distDir[3];
 
