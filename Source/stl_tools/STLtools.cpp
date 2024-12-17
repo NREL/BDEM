@@ -188,7 +188,7 @@ void STLtools::buildGridData()
     //- Now build the tree on the CPU on one core
     std::vector<std::vector<int>> tritree(grid.numberOfCells);
 
-    amrex::Print() << "\nBuilding stl tree\n";
+    amrex::Print() << "Building stl tree for " << name;
 
     for (int tri = 0; tri < num_tri; tri++)
     {
@@ -274,8 +274,67 @@ void STLtools::buildGridData()
     {
         amrex::Abort("\nError when building binned data structure for stl");
     }
+    // for (int i = 0; i < grid.numberOfCells; i++)
+    // {
+    //     Print() << "Cell " << i << " has: ";
+    //     for(int j=0; j< tris_per_cell[i]; j++)
+    //     {
+    //         Print() << " " << tris_in_grid[cell_start[i] + j];
+    //     }
+    //     Print() << "\n";
+    // }
+    
+    
 
-    amrex::Print() << "\nDone building stl tree\n";
+    #define WRITE_STL_GRID
+    #ifdef WRITE_STL_GRID
+    //- Write grid
+    std::ofstream gridFile((name + "_grid.vtk").c_str()); 
+    gridFile << "# vtk DataFile Version 2.0\n";
+    gridFile << "Simple Structured Points Example\n";
+    gridFile << "ASCII\n";
+    gridFile << "DATASET STRUCTURED_POINTS\n";   
+
+    // Write dimensions
+    gridFile << "DIMENSIONS " << grid.size[0] + 1 << " " << grid.size[1] + 1 << " " << grid.size[2] + 1 << "\n";
+
+    // Write origin
+    gridFile << "ORIGIN " << grid.bbmin[0] << " " << grid.bbmin[1] << " " << grid.bbmin[2] << "\n";
+    
+    // Write spacing
+    gridFile << "SPACING " << grid.delta[0] << " " << grid.delta[1] << " " << grid.delta[2] << "\n";
+
+    // Write point data header
+    gridFile << "CELL_DATA " << grid.numberOfCells << "\n";
+    
+    // Define a scalar field
+    gridFile << "SCALARS firstTri int 1\n";
+    gridFile << "LOOKUP_TABLE default\n";
+    for (int i = 0; i < grid.numberOfCells; i++)
+    {
+        if ( cell_start[i] > -1)
+        { 
+            gridFile << tris_in_grid[cell_start[i]] << "\n";
+        }
+        else 
+        {
+            gridFile << -1 << "\n";;
+        }
+    }
+    gridFile << "SCALARS nTri int 1\n";
+    gridFile << "LOOKUP_TABLE default\n";
+    for (int i = 0; i < grid.numberOfCells; i++)
+    {
+        gridFile << tris_per_cell[i] << "\n";
+    }
+
+    gridFile.close();    
+
+    #endif
+
+
+
+    amrex::Print() << "Done building stl tree for " << name;
 }
 
 void STLtools::getSTLGeoCenter(Real center[3])
@@ -430,8 +489,8 @@ AMREX_GPU_HOST_DEVICE void STLtools::get_closest_local_tri
     //- Move the point following the STL backward in time
     // !NOTE: this only works for simple motion, where the velocity and
     // !center do not change in time
-    Real pNew[3];
-    move_this_point(p,pNew,-time, movetype,u,center,movevel);
+    Real pNew[3] = {p[0],p[1],p[2]};
+   // move_this_point(p,pNew,0, movetype,u,center,movevel);
 //    std::printf("\nPoint moved");
     //- Check if the new point lies inside the original bounding box
     if  ( 
@@ -898,8 +957,13 @@ void STLtools::update_bounding_box()
 
 void STLtools::write_stl_file(std::string fname)
 {
+
+    std::string filename = fname + ".stl";
+    
+    if( fileExists(filename) ) return; // Never overwrite
+    
     Real t1[3],t2[3],t3[3],n[3];
-    std::ofstream outfile(fname.c_str());
+    std::ofstream outfile(filename.c_str());
 
     outfile<<"solid bdemsolid\n";
 
@@ -937,8 +1001,12 @@ void STLtools::writeVTK(std::string fname) const
     // We do not have a list of points in the vtk file.
     // Points will be duplicated.
 
+    std::string filename = fname + ".vtk";
+    
+    if( fileExists(filename) ) return; // Never overwrite
+
     Real t1[3],t2[3],t3[3],n[3];
-    std::ofstream vtkFile(fname.c_str());
+    std::ofstream vtkFile(filename.c_str());
 
     vtkFile << "# vtk DataFile Version 3.0\n";
     vtkFile << "Triangles with scalar and vector fields\n";
@@ -990,7 +1058,7 @@ void STLtools::writeVTK(std::string fname) const
         vtkFile << shear_stress[3*i] << " " << shear_stress[3*i + 1] << " " << shear_stress[3*i + 2] <<  "\n";
     }
 
-    vtkFile.close();        
+    vtkFile.close();
 
 }
 
@@ -1029,6 +1097,9 @@ void STLtools::move_stl(Real timestep,int movetype,amrex::Real movedir[3],amrex:
         tri_normals[i*ndata_per_normal+1]=norm[1];
         tri_normals[i*ndata_per_normal+2]=norm[2];
     }
+
+    move_this_point(grid.bbmin,newcoord,timestep,movetype,movedir,movecenter,movevel);
+    move_this_point(grid.bbmax,newcoord,timestep,movetype,movedir,movecenter,movevel);
 }
 
 void STLtools::printForces() const

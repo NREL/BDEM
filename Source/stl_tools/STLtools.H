@@ -18,6 +18,8 @@ struct stlgrid
 
 struct STLtools
 {
+    std::string name;
+
     AMREX_GPU_DEVICE_MANAGED Real *tri_pts=NULL;
     AMREX_GPU_DEVICE_MANAGED Real *tri_normals=NULL;
     AMREX_GPU_DEVICE_MANAGED Real *tri_mat=NULL;

@@ -508,11 +508,20 @@ class DEMspecs
                 stls[stli].name = stlname;
 
                 stls[stli].stlptr = new STLtools();
-                stls[stli].stlptr->read_stl_file(stls[stli].name + ".stl");
+                stls[stli].stlptr->name = stls[stli].name;
+                pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );
+
+                if (stls[stli].stl_timeoffset > 0)
+                {
+                    stls[stli].stlptr->read_stl_file(stls[stli].name + std::to_string(stls[stli].stl_timeoffset) + ".stl");
+                }
+                else
+                {
+                    stls[stli].stlptr->read_stl_file(stls[stli].name  + ".stl");
+                }
+
                 stls[stli].stlptr->buildGridData();
                 pp.query( ( stlname + "_dynamicstl" ).c_str(), stls[stli].dynamicstl );
-
-                pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );
 
                 amrex::Print()  << "Found STL named " << stls[stli].name << "\n";
 

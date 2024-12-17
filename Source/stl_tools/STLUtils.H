@@ -949,5 +949,17 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void geteigvectors(double A[9],double e
     }
 }
 
+//- Check if file exists
+AMREX_FORCE_INLINE bool fileExists(std::string filename)
+{
+    std::ifstream file(filename.c_str());
+
+    if (file.good()) 
+    {
+        return true;
+    } 
+    return false;
+}
+
 
 #endif

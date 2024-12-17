@@ -16,13 +16,16 @@ using namespace amrex;
 // TODO: this should be reorganized
 # define initV1MinusV2(V1, V2) { V1[0] - V2[0], V1[1] - V2[1], V1[2] - V2[2]  } 
 # define initV1PlusaByV2(V1, a, V2) { V1[0] + a*V2[0], V1[1] + a*V2[1], V1[2] + a*V2[2]  } 
-# define normVec(V1)  std::sqrt( V1[0]*V1[0] + V1[1]*V1[1] + V1[2]*V1[2] )
 # define subtractV2FromV1(V1,V2) { V1[0] -= V2[0]; V1[1] -= V2[1]; V1[2] -= V2[2]; }
 # define copyVector(V1,V2) { V1[0] = V2[0]; V1[1] = V2[1]; V1[2] = V2[2]; }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE Real DotProd(Real v1[3],Real v2[3])
 {
     return(v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]);
+}
+AMREX_GPU_HOST_DEVICE AMREX_INLINE Real normVec(Real v1[3])
+{
+    return std::sqrt(DotProd(v1,v1));
 }
 AMREX_GPU_HOST_DEVICE AMREX_INLINE Real side_op(Real L1[6],Real L2[6])
 {
