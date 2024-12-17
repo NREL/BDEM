@@ -108,7 +108,7 @@ public:
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
-            RealVect &gravity, amrex::Vector< stl_specs >& stls,
+            RealVect &gravity, amrex::Vector< stl_specs >& stls, Real time,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
             const int particle_cohesion=0,

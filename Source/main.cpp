@@ -310,7 +310,7 @@ int main (int argc, char* argv[])
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present, specs.contact_law, steps,
-                                  specs.gravity, specs.stls,
+                                  specs.gravity, specs.stls, time,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,

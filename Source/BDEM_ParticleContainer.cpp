@@ -1,7 +1,6 @@
 #include <BDEM_ParticleContainer.H>
 #include <BDEM_Collide_Utils.H>
 #include <stl_tools/STLtools.H>
-#include <MoveUtils.H>
 #include <WallTemp.H>
 
 using namespace amrex;
@@ -45,7 +44,7 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_present, int contact_law, int steps,
-            RealVect &gravity, amrex::Vector< stl_specs >& stls,
+            RealVect &gravity, amrex::Vector< stl_specs >& stls, Real time,
             const int bonded_sphere_particles,
             const int liquid_bridging,
             const int particle_cohesion, 
@@ -165,12 +164,36 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
             for (int stli = 0; stli < stls.size(); stli++)
             {
                 STLtools* stlptr = stls[stli].stlptr;
+                int movetype = stls[stli].dynamicstl;
+                Real movedir[3];
+                Real movecenter[3];
+
+                Real movevel = 0;
+
+                if (movetype == 2)
+                {
+                    movedir[0] = stls[stli].dynstl_rot_dir[0];
+                    movedir[1] = stls[stli].dynstl_rot_dir[1];
+                    movedir[2] = stls[stli].dynstl_rot_dir[2];
+                    movecenter[0] = stls[stli].dynstl_center[0];
+                    movecenter[1] = stls[stli].dynstl_center[1];   
+                    movecenter[2] = stls[stli].dynstl_center[2];
+                    movevel = stls[stli].dynstl_rot_vel; 
+                }
+                else if (movetype == 1)
+                {
+                    movedir[0] = stls[stli].dynstl_transl_dir[0];
+                    movedir[1] = stls[stli].dynstl_transl_dir[1];
+                    movedir[2] = stls[stli].dynstl_transl_dir[2];
+                    movevel = stls[stli].dynstl_transl_vel;
+                }
 
                 #include"BDEM_STLCollisions.H"
+//                amrex::Print() << "\nSTL collisions done";
 
                 /* Reduce forces */
-                detail::Reduce(detail::ReduceOp::sum,stlptr->pressure, stlptr->num_tri, -1, MPI_COMM_WORLD);
-                detail::Reduce(detail::ReduceOp::sum,stlptr->shear_stress, stlptr->num_tri*3, -1, MPI_COMM_WORLD);
+                //detail::Reduce(detail::ReduceOp::sum,stlptr->pressure, stlptr->num_tri, -1, MPI_COMM_WORLD);
+                //detail::Reduce(detail::ReduceOp::sum,stlptr->shear_stress, stlptr->num_tri*3, -1, MPI_COMM_WORLD);
             }
             
 

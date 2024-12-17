@@ -38,94 +38,66 @@ amrex::ParallelFor(np,[=]
         (p.pos(2)- p.rdata(realData::radius) < stlptr->bbox_hi[2]) )
     {
         int ndistcalcs;
-        Real dist[3];
 
-#ifndef AMREX_USE_GPU
-         //cpu version, need to figure out gpu version
-         stlptr->searchtriangulation(0,stlptr->num_tri-1,
-                         stlptr->sorted_indexarray,
-                         pos,mindist,min_tri_id,ndistcalcs);
-         mindist=std::sqrt(mindist);
-         int min_tr=stlptr->sorted_indexarray[min_tri_id];
+        stlptr->get_closest_local_tri(
+            pos,
+            mindist,
+            min_tri_id,
+            time,
+            movetype,
+            movedir,
+            movecenter,
+            movevel
+        );
 
-#else
-        stlptr->brutesearch(0,stlptr->num_tri-1,
-                              stlptr->sorted_indexarray,
-                              pos,mindist,min_tri_id,dist);
-        int min_tr=stlptr->sorted_indexarray[min_tri_id];
-#endif
+//        std::printf("\nDistance check complete %i", min_tri_id);
 
-        // Real distDir[3];
+        int min_tr = min_tri_id;
+        if(min_tr != -1)
+        {        // //Print()<<"tr:"<<tr<<"\n";
+            centpvec[0]=pos[0]-
+                0.3333*(stlptr->tri_pts[min_tr*9+0]+stlptr->tri_pts[min_tr*9+3]+stlptr->tri_pts[min_tr*9+6]);
+            centpvec[1]=pos[1]-
+                0.3333*(stlptr->tri_pts[min_tr*9+1]+stlptr->tri_pts[min_tr*9+4]+stlptr->tri_pts[min_tr*9+7]);
+            centpvec[2]=pos[2]-
+                0.3333*(stlptr->tri_pts[min_tr*9+2]+stlptr->tri_pts[min_tr*9+5]+stlptr->tri_pts[min_tr*9+8]);
 
-        // for (int i =0; i<3;i++)
-        // {
-        //     distDir[i] = -dist[i]/mindist;
-        // }
-        
-        // // Correct particles erroneously interacting with internal triangles.
-        // // norm should always point in the direction of dist.
-        // // If this check happens, some particles are in a place where they should definitely not be.
-        // // if ( normdist < 0 && mindist < p.rdata(realData::radius) )
-        // // {
-        // //     normdist *= -1.;
-        // //     distDir[0]  *= -1.;
-        // //     distDir[1]  *= -1.;
-        // //     distDir[2]  *= -1.;
-        // //     //p.rdata(realData::temperature) = 1;
+            norm[0]=stlptr->tri_normals[min_tr*3+0];
+            norm[1]=stlptr->tri_normals[min_tr*3+1];
+            norm[2]=stlptr->tri_normals[min_tr*3+2];
 
-        // //    // Print() << "Found misplaced particle!\n";
-        // // }
-
-        // if ( mindist <  p.rdata(realData::radius) )
-        // {
-            
-        //     Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
-
-        //     get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
-
-        // }
-
-
-
-        // //Print()<<"tr:"<<tr<<"\n";
-        centpvec[0]=pos[0]-
-            0.3333*(stlptr->tri_pts[min_tr*9+0]+stlptr->tri_pts[min_tr*9+3]+stlptr->tri_pts[min_tr*9+6]);
-        centpvec[1]=pos[1]-
-            0.3333*(stlptr->tri_pts[min_tr*9+1]+stlptr->tri_pts[min_tr*9+4]+stlptr->tri_pts[min_tr*9+7]);
-        centpvec[2]=pos[2]-
-            0.3333*(stlptr->tri_pts[min_tr*9+2]+stlptr->tri_pts[min_tr*9+5]+stlptr->tri_pts[min_tr*9+8]);
-
-        norm[0]=stlptr->tri_normals[min_tr*3+0];
-        norm[1]=stlptr->tri_normals[min_tr*3+1];
-        norm[2]=stlptr->tri_normals[min_tr*3+2];
-
-        Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
-        mindist*=amrex::Math::copysign(1.0,dotpdt);
-
-        //if(mindist<p.rdata(realData::radius) && amrex::Math::abs(mindist)<p.rdata(realData::radius))
-        if(amrex::Math::abs(mindist)<p.rdata(realData::radius))
-        {
-            /*if(amrex::Math::abs(mindist)>p.rdata(realData::radius))
+            Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
+            mindist*=amrex::Math::copysign(1.0,dotpdt);
+//        std::printf("\nMindist -- radius %f -- %f", mindist, p.rdata(realData::radius));
+            //if(mindist<p.rdata(realData::radius) && amrex::Math::abs(mindist)<p.rdata(realData::radius))
+            if(amrex::Math::abs(mindist)<p.rdata(realData::radius))
             {
-                amrex::Print()<<"mindist,rad:"<<mindist<<"\t"<<p.rdata(realData::radius)
-                <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)<<"\t"<<p.pos(2)<<
-                "\t"<<norm[0]<<"\t"<<norm[1]<<"\t"<<norm[2]<<"\t"<<dotpdt<<"\n";
-            }*/
-            
-            Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
+                /*if(amrex::Math::abs(mindist)>p.rdata(realData::radius))
+                {
+                    amrex::Print()<<"mindist,rad:"<<mindist<<"\t"<<p.rdata(realData::radius)
+                    <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)<<"\t"<<p.pos(2)<<
+                    "\t"<<norm[0]<<"\t"<<norm[1]<<"\t"<<norm[2]<<"\t"<<dotpdt<<"\n";
+                }*/
+                
+                Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
+                
+                norm[0]*=-1;
+                norm[1]*=-1;
+                norm[2]*=-1;
+//                std::printf("\nGetting wall forces");
+                get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+//                std::printf("\nWall forces gotten");
+                // stlptr->pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
+                // stlptr->shear_stress[3*min_tr]      += ft[0];
+                // stlptr->shear_stress[3*min_tr + 1]  += ft[1];
+                // stlptr->shear_stress[3*min_tr + 2]  += ft[2];
 
-            
-            norm[0]*=-1;
-            norm[1]*=-1;
-            norm[2]*=-1;
+            } 
+        }
 
-            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
-            
-            stlptr->pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
-            stlptr->shear_stress[3*min_tr]      += ft[0];
-            stlptr->shear_stress[3*min_tr + 1]  += ft[1];
-            stlptr->shear_stress[3*min_tr + 2]  += ft[2];
+//        std::printf("\nCollision STL complete");
 
-        } 
     }
+
+//    std::printf("\nCollision complete");
 });

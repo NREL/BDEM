@@ -509,7 +509,7 @@ class DEMspecs
 
                 stls[stli].stlptr = new STLtools();
                 stls[stli].stlptr->read_stl_file(stls[stli].name + ".stl");
-
+                stls[stli].stlptr->buildGridData();
                 pp.query( ( stlname + "_dynamicstl" ).c_str(), stls[stli].dynamicstl );
 
                 pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );

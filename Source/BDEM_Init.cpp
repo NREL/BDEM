@@ -474,6 +474,15 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
                     << stl->bbox_lo[1] << " " << stl->bbox_hi[1] << " "
                     << stl->bbox_lo[2] << " " << stl->bbox_hi[2] << "\n";
 
+    Real stlbbox_lo[3];
+    Real stlbbox_hi[3];
+    stlbbox_lo[0] = stl->bbox_lo[0];
+    stlbbox_lo[1] = stl->bbox_lo[1];
+    stlbbox_lo[2] = stl->bbox_lo[2];
+    stlbbox_hi[0] = stl->bbox_hi[0];
+    stlbbox_hi[1] = stl->bbox_hi[1];
+    stlbbox_hi[2] = stl->bbox_hi[2];
+
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
     {
         int gid = mfi.index();
@@ -485,7 +494,6 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
         const size_t np = aos.numParticles();
 
         ParticleType* pstruct = aos().dataPtr();
-
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
@@ -512,24 +520,25 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
             //  {
             //      p.id() = -1;
             //  }
-            for(int dim=0;dim<3;dim++)
+            // for(int dim=0;dim<3;dim++)
+            // {
+            //     for(int j=0;j<3;j++)
+            //     {
+            //         ploc_t[dim] += stl->eigdirs[3*dim+j]*ploc[j];
+            //     }
+            // }
+
+
+
+            if( (p.pos(0) + p.rdata(realData::radius) > stlbbox_lo[0]) && 
+               (p.pos(0) - p.rdata(realData::radius) <stlbbox_hi[0]) &&
+               (p.pos(1) + p.rdata(realData::radius) >stlbbox_lo[1]) &&
+               (p.pos(1)- p.rdata(realData::radius) <stlbbox_hi[1]) &&
+               (p.pos(2)+ p.rdata(realData::radius) >stlbbox_lo[2]) &&
+               (p.pos(2)- p.rdata(realData::radius) <stlbbox_hi[2]) )
             {
-                for(int j=0;j<3;j++)
-                {
-                    ploc_t[dim] += stl->eigdirs[3*dim+j]*ploc[j];
-                }
-            }
 
-
-
-            if( (p.pos(0) + p.rdata(realData::radius) > stl->bbox_lo[0]) && 
-               (p.pos(0) - p.rdata(realData::radius) <stl->bbox_hi[0]) &&
-               (p.pos(1) + p.rdata(realData::radius) >stl->bbox_lo[1]) &&
-               (p.pos(1)- p.rdata(realData::radius) <stl->bbox_hi[1]) &&
-               (p.pos(2)+ p.rdata(realData::radius) >stl->bbox_lo[2]) &&
-               (p.pos(2)- p.rdata(realData::radius) <stl->bbox_hi[2]) )
-            {
-
+                
                 #ifdef USE_INTERSECT
 
                     for(int tr=0;tr<stl->num_tri;tr++)
@@ -557,8 +566,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
                     Real mindist=BIGVAL;
                     stl->brutesearch_with_intersections(0,stl->num_tri-1,
                             stl->sorted_indexarray,
-                            ploc,mindist,min_tri_id,outp,num_intersects);
-            
+                            ploc,mindist,min_tri_id,outp,num_intersects);           
                     // int min_tr=stl->sorted_indexarray[min_tri_id];
 
                     // t1[0]=stl->tri_pts[min_tr*stl->ndata_per_tri+0];
