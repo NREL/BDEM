@@ -340,6 +340,7 @@ int main (int argc, char* argv[])
                     {
                         specs.stls[stli].stlptr->move_stl(dt,specs.stls[stli].dynamicstl,specs.stls[stli].dynstl_rot_dir.data(),
                                             specs.stls[stli].dynstl_center.data(),specs.stls[stli].dynstl_rot_vel);
+
                     }
                     else if(specs.stls[stli].dynamicstl==3)
                     {
@@ -402,8 +403,13 @@ int main (int argc, char* argv[])
                     //     specs.stls[stli].stlptr->write_stl_file(stlpltfile);
                     //     specs.stls[stli].stlptr->update_bounding_box();
                     // }
-                    Print() << "Writing STL " << specs.stls[stli].name;
-                    std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".vtk";
+                    
+                    std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5);
+                    if(specs.stls[stli].dynamicstl!=0)
+                    {
+                        specs.stls[stli].stlptr->write_stl_file(stlpltfile);
+                        Print() << "Writing STL " << specs.stls[stli].name;
+                    }
                     specs.stls[stli].stlptr->writeVTK(stlpltfile);
                     specs.stls[stli].stlptr->printForces();
                     specs.stls[stli].stlptr->update_bounding_box();
