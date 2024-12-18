@@ -14,6 +14,7 @@ amrex::ParallelFor(np,[=]
     pos_t[XDIR] = p.pos(0);
     pos_t[YDIR] = p.pos(1);
     pos_t[ZDIR] = p.pos(2);
+    int min_tr = -1;
 
     Real mindist=BIGVAL;
     if( (p.pos(0) + p.rdata(realData::radius) > stlptr->bbox_lo[0]) && 
@@ -25,24 +26,29 @@ amrex::ParallelFor(np,[=]
     {
         int ndistcalcs;
 
+    if ( movetype == 0 ) // This seems to work ok only for static stl files
+    {
         stlptr->get_closest_local_tri(
             pos,
             mindist,
             min_tri_id,
-            time,
+            time - dt,
             movetype,
             movedir,
             movecenter,
             movevel
         );
 
-        int min_tr = min_tri_id;
-        //  stlptr->searchtriangulation(0,stlptr->num_tri-1,
-        //                  stlptr->sorted_indexarray,
-        //                  pos,mindist,min_tri_id,ndistcalcs);
-        //  mindist=std::sqrt(mindist);
-        //  int min_tr=stlptr->sorted_indexarray[min_tri_id];
-
+        min_tr = min_tri_id;
+    }
+    else
+    {
+        stlptr->searchtriangulation(0,stlptr->num_tri-1,
+                    stlptr->sorted_indexarray,
+                    pos,mindist,min_tri_id,ndistcalcs);
+        mindist=std::sqrt(mindist);
+        min_tr=stlptr->sorted_indexarray[min_tri_id];
+    }
 //        std::printf("\nDistance check complete %i", min_tri_id);
 
         if(min_tr != -1)

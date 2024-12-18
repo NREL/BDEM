@@ -81,7 +81,7 @@ void STLtools::read_stl_file(std::string fname)
         }
 
         // No other check is required
-    }
+    }    
 
     if ( tri_id != num_tri - 1 )
     {
@@ -118,6 +118,12 @@ void STLtools::read_stl_file(std::string fname)
     shear_stress = shear_stress_vec->dataPtr();
 
     update_bounding_box();
+
+    // tri_pts_0.resize(num_tri*ndata_per_tri);
+    // for (int i = 0; i < tri_pts_0.size(); i++)
+    // {
+    //     tri_pts_0[i] = tri_pts[i];
+    // }
 
     /*for(int i=0;i<num_tri;i++)
         {
@@ -163,16 +169,16 @@ void STLtools::buildGridData()
     grid.delta[2] = (bbox_hi[2] - bbox_lo[2])/grid.size[2];
 
     //- Enlarge the bounding box
-    grid.bbmax[0] += grid.delta[0];
-    grid.bbmax[1] += grid.delta[1];
-    grid.bbmax[2] += grid.delta[2];
-    grid.bbmin[0] -= grid.delta[0];
-    grid.bbmin[1] -= grid.delta[1];
-    grid.bbmin[2] -= grid.delta[2];
+    grid.bbmax[0] += 2*grid.delta[0];
+    grid.bbmax[1] += 2*grid.delta[1];
+    grid.bbmax[2] += 2*grid.delta[2];
+    grid.bbmin[0] -= 2*grid.delta[0];
+    grid.bbmin[1] -= 2*grid.delta[1];
+    grid.bbmin[2] -= 2*grid.delta[2];
 
-    grid.size[0] += 2;
-    grid.size[1] += 2;
-    grid.size[2] += 2;
+    grid.size[0] += 4;
+    grid.size[1] += 4;
+    grid.size[2] += 4;
 
 
     grid.numberOfCells = grid.size[0]*grid.size[1]*grid.size[2];
@@ -478,7 +484,7 @@ AMREX_GPU_HOST_DEVICE void STLtools::get_closest_local_tri
     int& idmin,
     const Real time,
     const int movetype,
-    const Real u[3],
+    const Real dir[3],
     const Real center[3],
     const Real movevel
 ) const
@@ -487,11 +493,11 @@ AMREX_GPU_HOST_DEVICE void STLtools::get_closest_local_tri
     idmin = -1;
 
     //- Move the point following the STL backward in time
-    // !NOTE: this only works for simple motion, where the velocity and
-    // !center do not change in time
+    //! NOTE: this only works for simple motion, where the velocity and
+    //! center do not change in time
     Real pNew[3] = {p[0],p[1],p[2]};
-   // move_this_point(p,pNew,0, movetype,u,center,movevel);
-//    std::printf("\nPoint moved");
+    move_this_point(p,pNew,-time, movetype,dir,center,movevel);
+
     //- Check if the new point lies inside the original bounding box
     if  ( 
             pNew[0] < grid.bbmin[0] 
@@ -1098,8 +1104,8 @@ void STLtools::move_stl(Real timestep,int movetype,amrex::Real movedir[3],amrex:
         tri_normals[i*ndata_per_normal+2]=norm[2];
     }
 
-    move_this_point(grid.bbmin,newcoord,timestep,movetype,movedir,movecenter,movevel);
-    move_this_point(grid.bbmax,newcoord,timestep,movetype,movedir,movecenter,movevel);
+  //  move_this_point(grid.bbmin,newcoord,timestep,movetype,movedir,movecenter,movevel);
+  //  move_this_point(grid.bbmax,newcoord,timestep,movetype,movedir,movecenter,movevel);
 }
 
 void STLtools::printForces() const

@@ -25,6 +25,8 @@ struct STLtools
     AMREX_GPU_DEVICE_MANAGED Real *tri_mat=NULL;
     AMREX_GPU_DEVICE_MANAGED int *domndir=NULL;
     AMREX_GPU_DEVICE_MANAGED Real *rot_tri_pts=NULL;
+
+    // std::vector<Real> tri_pts_0;
     
     AMREX_GPU_DEVICE_MANAGED int *sorted_indexarray=NULL;
 
