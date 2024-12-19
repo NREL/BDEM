@@ -310,7 +310,8 @@ int main (int argc, char* argv[])
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, cb_torq, specs.cb_dir, specs.drag_model);
+                                  cb_force, cb_torq, specs.cb_dir, specs.drag_model,
+                                  specs.solve_fibrillation);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
             

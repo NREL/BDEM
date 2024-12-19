@@ -74,11 +74,65 @@ amrex::ParallelFor(np,[=]
                 
                 Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
 
-                get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
+                // Compute wall velocity
+                Real vw[3] = {0.,0.,0.};
+
+                if(movetype == 1)
+                {
+                    vw[0] = movedir[0]*movevel;
+                    vw[1] = movedir[1]*movevel;
+                    vw[2] = movedir[2]*movevel;
+                }
+                else if (movetype == 2)
+                {
+                    // Get contact point
+                    Real contact_point[3];
+                    contact_point[0] = pos[0] + norm[0]*dotpdt - movecenter[0];
+                    contact_point[1] = pos[1] + norm[1]*dotpdt - movecenter[1];
+                    contact_point[2] = pos[2] + norm[2]*dotpdt - movecenter[2];
+                
+                    // Get angular velocity vector
+                    Real omega[3];
+                    omega[0] = movevel*movedir[0];
+                    omega[1] = movevel*movedir[1];
+                    omega[2] = movevel*movedir[2];
+
+                    // Get velocity
+                    CrossProd(omega,contact_point,vw);
+                }
+
+                get_wall_forces
+                (
+                    mindist,
+                    norm,
+                    p,
+                    dt,
+                    fn,
+                    ft,
+                    rollfriqtorq_by_d,
+                    pos,
+                    contact_law, 
+                    liquid_bridging, 
+                    movetype, 
+                    vw
+                );
                 // stlptr->pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
                 // stlptr->shear_stress[3*min_tr]      += ft[0];
                 // stlptr->shear_stress[3*min_tr + 1]  += ft[1];
                 // stlptr->shear_stress[3*min_tr + 2]  += ft[2];
+                if(solve_fibrillation == 1)
+                {
+                    Real vp[3] = { p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel) };
+                    Real dx[3] = { norm[0]*mindist + TINYVAL, norm[1]*mindist + TINYVAL, norm[2]*mindist + TINYVAL};
+                    solve_fibrils_equation
+                    (
+                        dt,
+                        vp,
+                        vw,
+                        dx,
+                        p.rdata(realData::fraction_of_fibrils)
+                    );
+                }
 
             } 
         }

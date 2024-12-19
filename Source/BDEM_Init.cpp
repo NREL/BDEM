@@ -9,7 +9,7 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
                                            Real temp_mean, Real temp_stdev,
                                            int contact_law, int liquid_bridging,
                                            Real liquid_density, Real MC_avg, 
-                                           Real MC_stdev, Real FSP)
+                                           Real MC_stdev, Real FSP, const int solve_fibrils)
 {
 
     // only read the file on the IO proc
@@ -89,6 +89,15 @@ void BDEMParticleContainer::InitParticles (const std::string& filename,
             else
             {
                p.rdata(realData::temperature)=NTP_TEMP;
+            }
+
+            if(solve_fibrils == 1)
+            {
+                ifs >> p.rdata(realData::fraction_of_fibrils);
+            }
+            else
+            {
+                p.rdata(realData::fraction_of_fibrils) = 0.;
             }
             
             p.rdata(realData::euler_angle_x) = zero;
@@ -1080,6 +1089,8 @@ BDEMParticleContainer::ParticleType BDEMParticleContainer::generate_particle(Rea
     {
         p.rdata(realData::firstspec+i)=spec[i];
     }
+
+    p.rdata(realData::fraction_of_fibrils) = 0.;
 
     return(p);
 }

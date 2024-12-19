@@ -44,7 +44,7 @@ struct realData
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
     theta_x = first_bond_v + MAXBONDS*9,
     firstspec,
-    fraction_of_fibrils
+    fraction_of_fibrils,
     count
   };
 };
@@ -268,6 +268,9 @@ class DEMspecs
         // List of STL files and their settings
         Vector< stl_specs > stls;
         bool stl_geom_present=false;
+
+        // Switch to solve for fibrils
+        int solve_fibrillation = 0;
 
         void read_dem_specs()
         {
@@ -754,6 +757,12 @@ class DEMspecs
                 pp.get("gas_vfrac", DEM::eps_g);
                 pp.get("gas_visc", DEM::mu_g);
                 pp.get("gas_density", DEM::rho_g);
+            }
+
+            pp.query("solve_fibrillation",solve_fibrillation);
+            if(solve_fibrillation == 1)
+            {
+                amrex::Print() << "Solving for fibrillation.\n";
             }
 
             //- CG options
