@@ -492,17 +492,18 @@ class DEMspecs
             /* STL related stuff -------------------------------*/
             int number_of_stl_files(0);
             pp.query("number_of_stl_files", number_of_stl_files);
+            Vector<std::string> stlnames;
 
             if ( number_of_stl_files > 0 )
             {
                 stl_geom_present = true;
+            
+
+                stls.resize(number_of_stl_files);
+                stlnames.resize(number_of_stl_files);
+                //- Read stl file names
+                pp.getarr("stl_names",stlnames);
             }
-
-            stls.resize(number_of_stl_files);
-
-            //- Read stl file names
-            Vector<std::string> stlnames(number_of_stl_files);
-            pp.getarr("stl_names",stlnames);
 
             //- Now read stl settings independently
             for (int stli = 0; stli < number_of_stl_files; stli++)
