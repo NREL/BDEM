@@ -53,7 +53,7 @@ amrex::ParallelFor(np,[=]
 
         if(min_tr != -1)
         {
-        centpvec[0]=pos[0]-
+            centpvec[0]=pos[0]-
                 0.3333*(stlptr->tri_pts[min_tr*9+0]+stlptr->tri_pts[min_tr*9+3]+stlptr->tri_pts[min_tr*9+6]);
             centpvec[1]=pos[1]-
                 0.3333*(stlptr->tri_pts[min_tr*9+1]+stlptr->tri_pts[min_tr*9+4]+stlptr->tri_pts[min_tr*9+7]);

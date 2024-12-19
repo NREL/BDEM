@@ -65,6 +65,7 @@ public:
         for(int i=0; i<MAXBONDS*9; i++) setRealCommComp(3+realData::first_bond_v+i, false);
         setRealCommComp(3+realData::theta_x, false);
         for(int i=0; i<MAXSPECIES; i++) setRealCommComp(3+realData::firstspec+i, false);
+        setRealCommComp(3+realData::fraction_of_fibrils, false); 
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);

@@ -44,6 +44,7 @@ struct realData
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
     theta_x = first_bond_v + MAXBONDS*9,
     firstspec,
+    fraction_of_fibrils
     count
   };
 };

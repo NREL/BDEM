@@ -757,6 +757,8 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
         real_data_names[realData::firstspec+i]=m_chemptr->specnames[i];
     }
 
+    real_data_names.push_back("fraction_of_fibrils");
+
     int_data_names.push_back("phase");
     int_data_names.push_back("near_softwall");
     int_data_names.push_back("type_id");
@@ -801,6 +803,7 @@ void BDEMParticleContainer::writeParticles(const int n, const int bonded_sphere_
     if(bonded_sphere_particles){
         writeflags_int[intData::type_id] = 1;
     }
+    writeflags_real[realData::fraction_of_fibrils]=1;
 
     WritePlotFile(pltfile, "particles",writeflags_real, 
             writeflags_int, real_data_names, int_data_names);

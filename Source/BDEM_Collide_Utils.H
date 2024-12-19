@@ -587,3 +587,17 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
       p.rdata(realData::fz) += Fcap*normal[ZDIR];
     }
 }
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void solve_fibrils_equation
+(
+    Real vp[3],
+    Real vn[3],
+    Real rad1,
+    Real rad2,
+    Real &fractionOfFibrils
+)
+{
+    
+
+}
