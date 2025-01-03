@@ -5,7 +5,7 @@
 
 using namespace amrex;
 
-    //- Stuff for STL grid
+//- Stuff for STL grid
 struct stlgrid
 {
     int size[3];
@@ -13,6 +13,18 @@ struct stlgrid
     Real bbmax[3];
     Real bbmin[3];
     Real delta[3];
+};
+
+// Struct for a point in the vtk vector
+struct vtk_point
+{
+    Real x,y,z;
+};
+
+// Struct for a vtk triangle
+struct vtk_triangle
+{
+    int node_id[3];
 };
 
 
@@ -66,9 +78,12 @@ struct STLtools
     AMREX_GPU_DEVICE_MANAGED int* tris_per_cell;
     Gpu::ManagedVector<int>* tris_per_cell_vec = NULL;
 
-    
     std::map<std::pair<int,int>,Array<Real,6>> boxmap;
 
+    // Data related to VTK format for the stl. It's for IO only and does not go
+    // on the GPU
+    std::vector<vtk_point> vtk_points;       // List of points in the vtk file
+    std::vector<vtk_triangle>  vtk_triangles;   // List of point ids for each triangle
 
 
     void read_stl_file(std::string fname);
@@ -95,6 +110,9 @@ struct STLtools
 
     // Builds space binning addressing of tris
     void buildGridData(int gsize[3]);
+
+    // Initialize vectors for vtk format
+    void init_vtk_data();
 };
 
 struct stl_specs

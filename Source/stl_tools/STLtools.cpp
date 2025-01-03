@@ -151,6 +151,8 @@ void STLtools::read_stl_file(std::string fname)
     sorted_indexarray=sorted_indexarray_vec->dataPtr();
     
     orb_of_triangulation(0,num_tri-1,0,sorted_indexarray);
+
+    init_vtk_data();
 }
 
 void STLtools::buildGridData(int gsize[3])
@@ -899,25 +901,22 @@ void STLtools::writeVTK(std::string fname) const
     vtkFile << "DATASET UNSTRUCTURED_GRID\n";
 
     // Write points with duplicates
-    vtkFile << "POINTS " << num_tri*3 << " float\n";
-    for(int i=0;i<num_tri;i++)
+    vtkFile << "POINTS " << vtk_points.size() << " float\n";
+    for(int i=0;i<vtk_points.size();i++)
     {
-        vtkFile << tri_pts[i*ndata_per_tri+0] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+1] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+2] << "\n";
-        vtkFile << tri_pts[i*ndata_per_tri+3] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+4] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+5] << "\n";            
-        vtkFile << tri_pts[i*ndata_per_tri+6] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+7] << " ";
-        vtkFile << tri_pts[i*ndata_per_tri+8] << "\n";
+        vtkFile << vtk_points[i].x << " ";
+        vtkFile << vtk_points[i].y << " ";
+        vtkFile << vtk_points[i].z << "\n";
     }
 
     // Write triangles
     vtkFile << "\nCELLS " << num_tri << " " << num_tri * 4 << "\n";
     for(int i=0;i<num_tri;i++)
     {
-        vtkFile << "3 " << 3*i << " " << 3*i + 1 << " " << 3*i + 2 << "\n";
+        vtkFile << "3 " 
+                << vtk_triangles[i].node_id[0] << " "
+                << vtk_triangles[i].node_id[1] << " "
+                << vtk_triangles[i].node_id[2] << "\n"; 
     }
 
     // Write cell types (5 corresponds to VTK_TRIANGLE)
@@ -944,7 +943,58 @@ void STLtools::writeVTK(std::string fname) const
     }
 
     vtkFile.close();
+}
 
+void STLtools::init_vtk_data()
+{
+    // This can be a long operation because the stl format has duplicates.
+    // All triplets must be different
+
+    // Each triangle has three nodes
+    vtk_triangles.resize(num_tri);
+
+    // Go triangle-by-tringle
+    for (size_t tri = 0; tri < num_tri; tri++)
+    {
+        // Go node-by node
+        for (size_t n = 0; n < 3; n++)
+        {
+            // Current node point
+            Real* p = &tri_pts[tri*9 + n*3];
+            bool duplicate = false;
+
+            int nId = 0;
+            for (nId; nId < vtk_points.size(); nId++)
+            {
+                // Check triplet
+                if ( 
+                    std::fabs(vtk_points[nId].x - p[0]) < 1e-12 && 
+                    std::fabs(vtk_points[nId].y - p[1]) < 1e-12 && 
+                    std::fabs(vtk_points[nId].z - p[2]) < 1e-12 
+                ) 
+                {
+                    // Found matching node
+                    vtk_triangles[tri].node_id[n] = nId; 
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            if(!duplicate)
+            {
+                // Add to vectors if not found
+                vtk_point vp;
+                vp .x = p[0];
+                vp .y = p[1];
+                vp .z = p[2];
+
+                vtk_points.push_back(vp);
+                vtk_triangles[tri].node_id[n] = vtk_points.size() - 1;   
+            }
+        }        
+    }
+
+    vtk_points.shrink_to_fit();    
 }
 
 void STLtools::move_stl(Real timestep,int movetype,amrex::Real movedir[3],amrex::Real movecenter[3],Real movevel)
@@ -983,8 +1033,20 @@ void STLtools::move_stl(Real timestep,int movetype,amrex::Real movedir[3],amrex:
         tri_normals[i*ndata_per_normal+2]=norm[2];
     }
 
-  //  move_this_point(grid.bbmin,newcoord,timestep,movetype,movedir,movecenter,movevel);
-  //  move_this_point(grid.bbmax,newcoord,timestep,movetype,movedir,movecenter,movevel);
+    // Also move the points in vtk_points
+    for (size_t i = 0; i < vtk_points.size(); i++)
+    {
+        coord[0] = vtk_points[i].x;
+        coord[1] = vtk_points[i].y;
+        coord[2] = vtk_points[i].z;
+
+        move_this_point(coord,newcoord,timestep,movetype,movedir,movecenter,movevel);
+
+        vtk_points[i].x = newcoord[0];
+        vtk_points[i].y = newcoord[1];
+        vtk_points[i].z = newcoord[2];
+    }
+    
 }
 
 void STLtools::printForces() const
