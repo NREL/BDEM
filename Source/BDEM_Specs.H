@@ -521,11 +521,15 @@ class DEMspecs
                     stls[stli].stlptr->read_stl_file(stls[stli].name + std::to_string(stls[stli].stl_timeoffset) + ".stl");
                 }
                 else
-                {
+                {       
                     stls[stli].stlptr->read_stl_file(stls[stli].name  + ".stl");
                 }
 
-                stls[stli].stlptr->buildGridData();
+                //- Build STL grid
+                Vector<int> stl_grid_size(3,25);               
+                pp.queryarr(( stlname + "_grid_size" ).c_str(),stl_grid_size);
+                stls[stli].stlptr->buildGridData(stl_grid_size.data());
+
                 pp.query( ( stlname + "_dynamicstl" ).c_str(), stls[stli].dynamicstl );
 
                 amrex::Print()  << "Found STL named " << stls[stli].name << "\n";

@@ -164,31 +164,63 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
         {
             for (int stli = 0; stli < stls.size(); stli++)
             {
+                /* Prepare data for Kernel */
                 STLtools* stlptr = stls[stli].stlptr;
                 int movetype = stls[stli].dynamicstl;
-                Real movedir[3];
-                Real movecenter[3];
+                Real x_movedir, y_movedir, z_movedir;
+                Real x_movecenter, y_movecenter, z_movecenter;
+                Real x_grid_bbmin, y_grid_bbmin, z_grid_bbmin;
+                Real x_grid_bbmax, y_grid_bbmax, z_grid_bbmax;
+                Real x_grid_delta, y_grid_delta, z_grid_delta;
+                int x_grid_size, y_grid_size, z_grid_size;
+
+                int* tris_per_cell = stlptr->tris_per_cell;
+                int* tris_in_grid = stlptr->tris_in_grid;
+                int* cell_start = stlptr->cell_start;
+                Real* tri_pts = stlptr->tri_pts;
+                Real* tri_normals = stlptr->tri_normals;
+
+                x_grid_bbmin = stlptr->grid.bbmin[0];
+                y_grid_bbmin = stlptr->grid.bbmin[1];
+                z_grid_bbmin = stlptr->grid.bbmin[2];
+                x_grid_bbmax = stlptr->grid.bbmax[0];
+                y_grid_bbmax = stlptr->grid.bbmax[1];
+                z_grid_bbmax = stlptr->grid.bbmax[2];
+                x_grid_delta = stlptr->grid.delta[0];
+                y_grid_delta = stlptr->grid.delta[1];
+                z_grid_delta = stlptr->grid.delta[2];
+                x_grid_size = stlptr->grid.size[0];
+                y_grid_size = stlptr->grid.size[1];
+                z_grid_size = stlptr->grid.size[2];
 
                 Real movevel = 0;
 
                 if (movetype == 2)
                 {
-                    movedir[0] = stls[stli].dynstl_rot_dir[0];
-                    movedir[1] = stls[stli].dynstl_rot_dir[1];
-                    movedir[2] = stls[stli].dynstl_rot_dir[2];
-                    movecenter[0] = stls[stli].dynstl_center[0];
-                    movecenter[1] = stls[stli].dynstl_center[1];   
-                    movecenter[2] = stls[stli].dynstl_center[2];
+                    x_movedir = stls[stli].dynstl_rot_dir[0];
+                    y_movedir = stls[stli].dynstl_rot_dir[1];
+                    z_movedir = stls[stli].dynstl_rot_dir[2];
+                    x_movecenter = stls[stli].dynstl_center[0];
+                    y_movecenter = stls[stli].dynstl_center[1];   
+                    z_movecenter = stls[stli].dynstl_center[2];
                     movevel = stls[stli].dynstl_rot_vel; 
                 }
                 else if (movetype == 1)
                 {
-                    movedir[0] = stls[stli].dynstl_transl_dir[0];
-                    movedir[1] = stls[stli].dynstl_transl_dir[1];
-                    movedir[2] = stls[stli].dynstl_transl_dir[2];
+                    x_movedir = stls[stli].dynstl_transl_dir[0];
+                    y_movedir = stls[stli].dynstl_transl_dir[1];
+                    z_movedir = stls[stli].dynstl_transl_dir[2];
                     movevel = stls[stli].dynstl_transl_vel;
                 }
 
+                Real x_lo_bb = stlptr->bbox_lo[0];
+                Real x_hi_bb = stlptr->bbox_hi[0];
+                Real y_lo_bb = stlptr->bbox_lo[1];
+                Real y_hi_bb = stlptr->bbox_hi[1];
+                Real z_lo_bb = stlptr->bbox_lo[2];
+                Real z_hi_bb = stlptr->bbox_hi[2];
+
+                /* Launch kernel */
                 #include"BDEM_STLCollisions.H"
 //                amrex::Print() << "\nSTL collisions done";
 

@@ -153,7 +153,7 @@ void STLtools::read_stl_file(std::string fname)
     orb_of_triangulation(0,num_tri-1,0,sorted_indexarray);
 }
 
-void STLtools::buildGridData()
+void STLtools::buildGridData(int gsize[3])
 {
     grid.bbmax[0] = bbox_hi[0];
     grid.bbmax[1] = bbox_hi[1];
@@ -161,9 +161,9 @@ void STLtools::buildGridData()
     grid.bbmin[0] = bbox_lo[0];
     grid.bbmin[1] = bbox_lo[1];
     grid.bbmin[2] = bbox_lo[2];
-    grid.size[0] = 25;
-    grid.size[1] = 25;
-    grid.size[2] = 25;
+    grid.size[0] = gsize[0];
+    grid.size[1] = gsize[1];
+    grid.size[2] = gsize[2];
     grid.delta[0] = (bbox_hi[0] - bbox_lo[0])/grid.size[0];
     grid.delta[1] = (bbox_hi[1] - bbox_lo[1])/grid.size[1];
     grid.delta[2] = (bbox_hi[2] - bbox_lo[2])/grid.size[2];
@@ -477,99 +477,6 @@ void STLtools::orb_of_triangulation(int startindex,int endindex,
     }
 }
 
-AMREX_GPU_HOST_DEVICE void STLtools::get_closest_local_tri
-(
-    Real p[3],
-    Real &mindist, 
-    int& idmin,
-    const Real time,
-    const int movetype,
-    const Real dir[3],
-    const Real center[3],
-    const Real movevel
-) const
-{
-    //- Assume nothing is found
-    idmin = -1;
-
-    //- Move the point following the STL backward in time
-    //! NOTE: this only works for simple motion, where the velocity and
-    //! center do not change in time
-    Real pNew[3] = {p[0],p[1],p[2]};
-    move_this_point(p,pNew,-time, movetype,dir,center,movevel);
-
-    //- Check if the new point lies inside the original bounding box
-    if  ( 
-            pNew[0] < grid.bbmin[0] 
-            || 
-            pNew[0] > grid.bbmax[0]
-            ||
-            pNew[1] < grid.bbmin[1] 
-            || 
-            pNew[1] > grid.bbmax[1] 
-            ||
-            pNew[2] < grid.bbmin[2] 
-            || 
-            pNew[2] > grid.bbmax[2] 
-        )
-    {
-        return;
-    }
-
-    Real A[3];
-    Real B[3];
-    Real C[3];
-
-    //- Get IJK coordinates and id of transformed point
-    int pIJK[3];
-    ijkFromPos(pNew, grid.delta, grid.bbmin, pIJK);
-    int pId = IdFromIJK(grid.size,pIJK);
-
-    //- Check the neighboring cells and get the triangle with minimum distance
-    int maxId[3]; 
-    int minId[3];
-    minId[0] =  std::max(0,pIJK[0]-1);
-    minId[1] =  std::max(0,pIJK[1]-1);
-    minId[2] =  std::max(0,pIJK[2]-1);
-    maxId[0] =  std::min(grid.size[0]-1,pIJK[0]+1);
-    maxId[1] =  std::min(grid.size[1]-1,pIJK[1]+1);
-    maxId[2] =  std::min(grid.size[2]-1,pIJK[2]+1);
-    
-    for (int i = minId[0]; i <= maxId[0]; i++)
-        for (int j = minId[1]; j <= maxId[1]; j++)
-            for (int k = minId[2]; k <= maxId[2]; k++)
-            {
-                int cIJK[3] = {i,j,k};
-                int cellID = IdFromIJK(grid.size,cIJK);
-//                std::printf("\nTris per cell %i",tris_per_cell[cellID]);
-                for (int tri = 0; tri < tris_per_cell[cellID]; tri++)
-                {
-                    int triId = tris_in_grid[cell_start[cellID] + tri];
-
-                    for (int coord = 0; coord < 3; coord++)
-                    {
-                        A[coord] = tri_pts[ndata_per_tri*triId+coord];
-                        B[coord] = tri_pts[ndata_per_tri*triId+3+coord];
-                        C[coord] = tri_pts[ndata_per_tri*triId+6+coord];
-                    }
-
-                    int closestType;
-                    Real dist[3];
-
-                    Real newdist = point_tri_distance(pNew,A,B,C,closestType,dist);
-
-                    if ( newdist < mindist )
-                    {
-                        mindist = newdist;
-                        idmin = triId;
-                    }           
-                }            
-            }
-    
-
-}
-   
-
 AMREX_GPU_HOST_DEVICE void STLtools::brutesearch(int startindex,int endindex,int *indexarray,
                     Real p[3],Real &mindist,int &idmin) const
 {
@@ -621,34 +528,6 @@ AMREX_GPU_HOST_DEVICE void STLtools::brutesearch(int startindex,int endindex,int
             idmin=id;
             copyVector(dist,distTri)
         }
-    }
-}
-
-AMREX_GPU_HOST_DEVICE void STLtools::brutesearch_with_intersections(int startindex,int endindex,int *indexarray,
-                    Real p[3],Real &mindist,int &idmin, Real outp[3], int &num_intersects) const
-{
-    mindist=1e50;
-    idmin=-1;
-    Real t1[3],t2[3],t3[3], dist[3];
-    for(int id=startindex;id<=endindex;id++)
-    {
-        int tri=indexarray[id];
-        for(int dim=0;dim<3;dim++)
-        {
-            t1[dim]=tri_pts[ndata_per_tri*tri+dim+0];
-            t2[dim]=tri_pts[ndata_per_tri*tri+dim+3];
-            t3[dim]=tri_pts[ndata_per_tri*tri+dim+6];
-        }
-
-        int closestType = -1;
-        Real ptdist=point_tri_distance(p,t1,t2,t3,closestType,dist);
-        if(ptdist<mindist)
-        {
-            mindist=ptdist;
-            idmin=id;
-        }
-
-        num_intersects += (1-lineseg_tri_intersect(outp,p,t1,t2,t3));
     }
 }
 

@@ -17,18 +17,24 @@ amrex::ParallelFor(np,[=]
     int min_tr = -1;
 
     Real mindist=BIGVAL;
-    if( (p.pos(0) + p.rdata(realData::radius) > stlptr->bbox_lo[0]) && 
-        (p.pos(0) - p.rdata(realData::radius) < stlptr->bbox_hi[0]) &&
-        (p.pos(1) + p.rdata(realData::radius) > stlptr->bbox_lo[1]) &&
-        (p.pos(1)- p.rdata(realData::radius) < stlptr->bbox_hi[1]) &&
-        (p.pos(2)+ p.rdata(realData::radius) > stlptr->bbox_lo[2]) &&
-        (p.pos(2)- p.rdata(realData::radius) < stlptr->bbox_hi[2]) )
+    if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+        (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+        (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+        (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+        (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+        (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+    )
     {
         int ndistcalcs;
 
-    if ( movetype == 0 ) // This seems to work ok only for static stl files
-    {
-        stlptr->get_closest_local_tri(
+        const Real movedir[3] = {x_movedir, y_movedir, z_movedir};
+        const Real movecenter[3] = {x_movecenter, y_movecenter, z_movecenter};
+        const Real grid_bbmin[3] = {x_grid_bbmin, y_grid_bbmin, z_grid_bbmin };
+        const Real  grid_bbmax[3] = {x_grid_bbmax, y_grid_bbmax, z_grid_bbmax };
+        const Real grid_delta[3] = {x_grid_delta, y_grid_delta, z_grid_delta };
+        const int grid_size[3] = {x_grid_size, y_grid_size, z_grid_size};
+
+        get_closest_local_tri(
             pos,
             mindist,
             min_tri_id,
@@ -36,41 +42,39 @@ amrex::ParallelFor(np,[=]
             movetype,
             movedir,
             movecenter,
-            movevel
+            movevel,
+            grid_bbmin,
+            grid_bbmax,
+            grid_delta,
+            grid_size,
+            tris_per_cell,
+            tris_in_grid,
+            cell_start,
+            tri_pts      
         );
 
         min_tr = min_tri_id;
-    }
-    else
-    {
-        stlptr->searchtriangulation(0,stlptr->num_tri-1,
-                    stlptr->sorted_indexarray,
-                    pos,mindist,min_tri_id,ndistcalcs);
-        mindist=std::sqrt(mindist);
-        min_tr=stlptr->sorted_indexarray[min_tri_id];
-    }
-//        std::printf("\nDistance check complete %i", min_tri_id);
 
         if(min_tr != -1)
         {
             centpvec[0]=pos[0]-
-                0.3333*(stlptr->tri_pts[min_tr*9+0]+stlptr->tri_pts[min_tr*9+3]+stlptr->tri_pts[min_tr*9+6]);
+                0.3333*(tri_pts[min_tr*9+0]+tri_pts[min_tr*9+3]+tri_pts[min_tr*9+6]);
             centpvec[1]=pos[1]-
-                0.3333*(stlptr->tri_pts[min_tr*9+1]+stlptr->tri_pts[min_tr*9+4]+stlptr->tri_pts[min_tr*9+7]);
+                0.3333*(tri_pts[min_tr*9+1]+tri_pts[min_tr*9+4]+tri_pts[min_tr*9+7]);
             centpvec[2]=pos[2]-
-                0.3333*(stlptr->tri_pts[min_tr*9+2]+stlptr->tri_pts[min_tr*9+5]+stlptr->tri_pts[min_tr*9+8]);
+                0.3333*(tri_pts[min_tr*9+2]+tri_pts[min_tr*9+5]+tri_pts[min_tr*9+8]);
 
-            norm[0]=stlptr->tri_normals[min_tr*3+0];
-            norm[1]=stlptr->tri_normals[min_tr*3+1];
-            norm[2]=stlptr->tri_normals[min_tr*3+2];
+            norm[0]=tri_normals[min_tr*3+0];
+            norm[1]=tri_normals[min_tr*3+1];
+            norm[2]=tri_normals[min_tr*3+2];
 
             Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
-            mindist*=amrex::Math::copysign(1.0,dotpdt);   
+            
             if(mindist <p.rdata(realData::radius))
             {
-                norm[0]=-stlptr->tri_normals[min_tr*3+0];
-                norm[1]=-stlptr->tri_normals[min_tr*3+1];
-                norm[2]=-stlptr->tri_normals[min_tr*3+2];
+                norm[0]=-tri_normals[min_tr*3+0];
+                norm[1]=-tri_normals[min_tr*3+1];
+                norm[2]=-tri_normals[min_tr*3+2];
                 
                 Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
 
@@ -116,10 +120,10 @@ amrex::ParallelFor(np,[=]
                     movetype, 
                     vw
                 );
-                // stlptr->pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
-                // stlptr->shear_stress[3*min_tr]      += ft[0];
-                // stlptr->shear_stress[3*min_tr + 1]  += ft[1];
-                // stlptr->shear_stress[3*min_tr + 2]  += ft[2];
+                // pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
+                // shear_stress[3*min_tr]      += ft[0];
+                // shear_stress[3*min_tr + 1]  += ft[1];
+                // shear_stress[3*min_tr + 2]  += ft[2];
                 if(solve_fibrillation == 1)
                 {
                     Real vp[3] = { p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel) };

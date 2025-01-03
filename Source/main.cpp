@@ -225,7 +225,7 @@ int main (int argc, char* argv[])
                && time < specs.stop_sourcing_time)
 
             {
-                // Remove any particles in particle sourcing area
+                amrex::Print() << "Doing particle sourcing\n";
                 bpc.clearSourcingVolume(specs.particle_sourcing_mincoords.data(), specs.particle_sourcing_maxcoords.data());
 
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 

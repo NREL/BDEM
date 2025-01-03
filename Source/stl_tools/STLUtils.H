@@ -961,5 +961,143 @@ AMREX_FORCE_INLINE bool fileExists(std::string filename)
     return false;
 }
 
+// Find closest triangle employing the hash-table
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_closest_local_tri
+(
+    Real p[3],
+    Real &mindist, 
+    int& idmin,
+    const Real time,
+    const int movetype,
+    const Real dir[3],
+    const Real center[3],
+    const Real movevel,
+    const Real grid_bbmin[3],
+    const Real  grid_bbmax[3],
+    const Real grid_delta[3],
+    const int grid_size[3],
+    const int* tris_per_cell,
+    const int* tris_in_grid,
+    const int* cell_start,
+    const Real* tri_pts      
+)
+{
+    //- Assume nothing is found
+    idmin = -1;
+
+    //- Move the point following the STL backward in time
+    //! NOTE: this only works for simple motion, where the velocity and
+    //! center do not change in time
+    Real pNew[3] = {p[0],p[1],p[2]};
+    move_this_point(p,pNew,-time, movetype,dir,center,movevel);
+
+    //- Check if the new point lies inside the original bounding box
+    if  ( 
+            pNew[0] < grid_bbmin[0] 
+            || 
+            pNew[0] > grid_bbmax[0]
+            ||
+            pNew[1] < grid_bbmin[1] 
+            || 
+            pNew[1] > grid_bbmax[1] 
+            ||
+            pNew[2] < grid_bbmin[2] 
+            || 
+            pNew[2] > grid_bbmax[2] 
+        )
+    {
+        return;
+    }
+
+    Real A[3];
+    Real B[3];
+    Real C[3];
+
+    //- Get IJK coordinates and id of transformed point
+    int pIJK[3];
+    ijkFromPos(pNew, grid_delta, grid_bbmin, pIJK);
+    int pId = IdFromIJK(grid_size,pIJK);
+
+    //- Check the neighboring cells and get the triangle with minimum distance
+    int maxId[3]; 
+    int minId[3];
+    minId[0] =  std::max(0,pIJK[0]-1);
+    minId[1] =  std::max(0,pIJK[1]-1);
+    minId[2] =  std::max(0,pIJK[2]-1);
+    maxId[0] =  std::min(grid_size[0]-1,pIJK[0]+1);
+    maxId[1] =  std::min(grid_size[1]-1,pIJK[1]+1);
+    maxId[2] =  std::min(grid_size[2]-1,pIJK[2]+1);
+    
+    for (int i = minId[0]; i <= maxId[0]; i++)
+        for (int j = minId[1]; j <= maxId[1]; j++)
+            for (int k = minId[2]; k <= maxId[2]; k++)
+            {
+                int cIJK[3] = {i,j,k};
+                int cellID = IdFromIJK(grid_size,cIJK);
+
+                for (int tri = 0; tri < tris_per_cell[cellID]; tri++)
+                {
+                    int triId = tris_in_grid[cell_start[cellID] + tri];
+
+                    for (int coord = 0; coord < 3; coord++)
+                    {
+                        A[coord] = tri_pts[9*triId+coord];
+                        B[coord] = tri_pts[9*triId+3+coord];
+                        C[coord] = tri_pts[9*triId+6+coord];
+                    }
+
+                    int closestType;
+                    Real dist[3];
+
+                    Real newdist = point_tri_distance(p,A,B,C,closestType,dist);
+
+                    if ( newdist < mindist )
+                    {
+                        mindist = newdist;
+                        idmin = triId;
+                    }           
+                }            
+            }
+}
+
+// Crude algorithm that simply loops over all triangles in tr_pts and checks
+// if point p is contained inside the stl (must be a closed geometry).
+// Ray tracing is employed to check if inside the geometry.
+// Return distance to closest triangle.
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void brutesearch_with_intersections
+(
+    int endindex,
+    Real p[3],
+    Real &mindist,
+    int &idmin, 
+    Real outp[3], 
+    int &num_intersects,
+    Real* tri_pts
+)
+{
+    mindist=1e50;
+    idmin=-1;
+    Real t1[3],t2[3],t3[3], dist[3];
+    for(int tri=0;tri<endindex;tri++)
+    {
+
+        for(int dim=0;dim<3;dim++)
+        {
+            t1[dim]=tri_pts[9*tri+dim+0];
+            t2[dim]=tri_pts[9*tri+dim+3];
+            t3[dim]=tri_pts[9*tri+dim+6];
+        }
+
+        int closestType = -1;
+        Real ptdist=point_tri_distance(p,t1,t2,t3,closestType,dist);
+        if(ptdist<mindist)
+        {
+            mindist=ptdist;
+            idmin=tri;
+        }
+
+        num_intersects += (1-lineseg_tri_intersect(outp,p,t1,t2,t3));
+    }
+}
 
 #endif

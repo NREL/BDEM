@@ -466,7 +466,7 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, STLtools* stl)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, STLtools* stlptr)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -479,18 +479,18 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
 //    #define USE_INTERSECT 
 
     amrex::Print()  << "STL BBs: " 
-                    << stl->bbox_lo[0] << " " << stl->bbox_hi[0] << " "
-                    << stl->bbox_lo[1] << " " << stl->bbox_hi[1] << " "
-                    << stl->bbox_lo[2] << " " << stl->bbox_hi[2] << "\n";
+                    << stlptr->bbox_lo[0] << " " << stlptr->bbox_hi[0] << " "
+                    << stlptr->bbox_lo[1] << " " << stlptr->bbox_hi[1] << " "
+                    << stlptr->bbox_lo[2] << " " << stlptr->bbox_hi[2] << "\n";
 
-    Real stlbbox_lo[3];
-    Real stlbbox_hi[3];
-    stlbbox_lo[0] = stl->bbox_lo[0];
-    stlbbox_lo[1] = stl->bbox_lo[1];
-    stlbbox_lo[2] = stl->bbox_lo[2];
-    stlbbox_hi[0] = stl->bbox_hi[0];
-    stlbbox_hi[1] = stl->bbox_hi[1];
-    stlbbox_hi[2] = stl->bbox_hi[2];
+    Real x_lo_bb = stlptr->bbox_lo[0];
+    Real x_hi_bb = stlptr->bbox_hi[0];
+    Real y_lo_bb = stlptr->bbox_lo[1];
+    Real y_hi_bb = stlptr->bbox_hi[1];
+    Real z_lo_bb = stlptr->bbox_lo[2];
+    Real z_hi_bb = stlptr->bbox_hi[2];
+    Real* tri_pts = stlptr->tri_pts;
+    int num_tri = stlptr->num_tri;
 
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
     {
@@ -518,85 +518,32 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
             int num_intersects=0;
             int min_tri_id=0;
 
-            // For safety, remove everything that is inisde the bounding box of the STL
-
-            // if( (p.pos(0) + p.rdata(realData::radius) > stl->bbox_lo[0]) && 
-            //    (p.pos(0) - p.rdata(realData::radius) <stl->bbox_hi[0]) &&
-            //    (p.pos(1) + p.rdata(realData::radius) >stl->bbox_lo[1]) &&
-            //    (p.pos(1)- p.rdata(realData::radius) <stl->bbox_hi[1]) &&
-            //    (p.pos(2)+ p.rdata(realData::radius) >stl->bbox_lo[2]) &&
-            //    (p.pos(2)- p.rdata(realData::radius) <stl->bbox_hi[2]) )
-            //  {
-            //      p.id() = -1;
-            //  }
-            // for(int dim=0;dim<3;dim++)
-            // {
-            //     for(int j=0;j<3;j++)
-            //     {
-            //         ploc_t[dim] += stl->eigdirs[3*dim+j]*ploc[j];
-            //     }
-            // }
-
-
-
-            if( (p.pos(0) + p.rdata(realData::radius) > stlbbox_lo[0]) && 
-               (p.pos(0) - p.rdata(realData::radius) <stlbbox_hi[0]) &&
-               (p.pos(1) + p.rdata(realData::radius) >stlbbox_lo[1]) &&
-               (p.pos(1)- p.rdata(realData::radius) <stlbbox_hi[1]) &&
-               (p.pos(2)+ p.rdata(realData::radius) >stlbbox_lo[2]) &&
-               (p.pos(2)- p.rdata(realData::radius) <stlbbox_hi[2]) )
+            if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+                (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+                (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+                (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+                (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+                (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+            )
             {
+                Real mindist=BIGVAL;
+                brutesearch_with_intersections(
+                    num_tri,
+                    ploc,
+                    mindist,
+                    min_tri_id,
+                    outp,
+                    num_intersects,
+                    tri_pts
+                );           
 
-                
-                #ifdef USE_INTERSECT
 
-                    for(int tr=0;tr<stl->num_tri;tr++)
-                    {
-                        t1[0]=stl->tri_pts[tr*stl->ndata_per_tri+0];
-                        t1[1]=stl->tri_pts[tr*stl->ndata_per_tri+1];
-                        t1[2]=stl->tri_pts[tr*stl->ndata_per_tri+2];
-
-                        t2[0]=stl->tri_pts[tr*stl->ndata_per_tri+3];
-                        t2[1]=stl->tri_pts[tr*stl->ndata_per_tri+4];
-                        t2[2]=stl->tri_pts[tr*stl->ndata_per_tri+5];
-
-                        t3[0]=stl->tri_pts[tr*stl->ndata_per_tri+6];
-                        t3[1]=stl->tri_pts[tr*stl->ndata_per_tri+7];
-                        t3[2]=stl->tri_pts[tr*stl->ndata_per_tri+8];
-
-                        num_intersects += (1-lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                    }
-
-                    if(num_intersects%2 == 1)
-                    {
-                        p.id()=-1;   
-                    }
-                #else
-                    Real mindist=BIGVAL;
-                    stl->brutesearch_with_intersections(0,stl->num_tri-1,
-                            stl->sorted_indexarray,
-                            ploc,mindist,min_tri_id,outp,num_intersects);           
-                    // int min_tr=stl->sorted_indexarray[min_tri_id];
-
-                    // t1[0]=stl->tri_pts[min_tr*stl->ndata_per_tri+0];
-                    // t1[1]=stl->tri_pts[min_tr*stl->ndata_per_tri+1];
-                    // t1[2]=stl->tri_pts[min_tr*stl->ndata_per_tri+2];                
-
-                    // Real normproj = (t1[0] - ploc[0])*stl->tri_normals[min_tr*3+0]
-                    //     + (t1[1] - ploc[1])*stl->tri_normals[min_tr*3+1]
-                    //     + (t1[2] - ploc[2])*stl->tri_normals[min_tr*3+2];
-
-    //                Print() << "normproj " << normproj << " tri_id " << min_tr << "\n";
-
-                    // Remove particles with intersections, but also particles that are 
-                    // too close
-                    if( mindist < p.rdata(realData::radius) || num_intersects%2 == 1 )
-                    {
-                        p.id()=-1;
-                    }
-
-                #endif
-
+                // Remove particles with intersections, but also particles that are 
+                // too close
+                if( mindist < p.rdata(realData::radius) || num_intersects%2 == 1 )
+                {
+                    p.id()=-1;
+                }
             }
         });
     }
@@ -604,7 +551,7 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
     Redistribute();
 }
 
-void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, STLtools* stl)
+void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, STLtools* stlptr)
 {
     const int lev = 0;
     auto& plev  = GetParticles(lev);
@@ -613,6 +560,20 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
     const auto dx = geom.CellSizeArray();
     const auto plo = geom.ProbLoArray();
     Array<Real,AMREX_SPACEDIM> po_arr{outside_point[0],outside_point[1],outside_point[2]};
+
+    amrex::Print()  << "STL BBs: " 
+                    << stlptr->bbox_lo[0] << " " << stlptr->bbox_hi[0] << " "
+                    << stlptr->bbox_lo[1] << " " << stlptr->bbox_hi[1] << " "
+                    << stlptr->bbox_lo[2] << " " << stlptr->bbox_hi[2] << "\n";
+
+    Real x_lo_bb = stlptr->bbox_lo[0];
+    Real x_hi_bb = stlptr->bbox_hi[0];
+    Real y_lo_bb = stlptr->bbox_lo[1];
+    Real y_hi_bb = stlptr->bbox_hi[1];
+    Real z_lo_bb = stlptr->bbox_lo[2];
+    Real z_hi_bb = stlptr->bbox_hi[2];
+    Real* tri_pts = stlptr->tri_pts;
+    int num_tri = stlptr->num_tri;
 
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
     {
@@ -625,11 +586,11 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
         const size_t np = aos.numParticles();
 
         ParticleType* pstruct = aos().dataPtr();
-
         amrex::ParallelFor(np,[=]
         AMREX_GPU_DEVICE (int i) noexcept
         {
             ParticleType& p = pstruct[i];
+  
             Real ploc[THREEDIM];
             ploc[XDIR] = p.pos(0);
             ploc[YDIR] = p.pos(1);
@@ -638,38 +599,27 @@ void BDEMParticleContainer::checkParticlesInsideSTL(Vector<Real> outside_point, 
             Real t1[3],t2[3],t3[3];
             Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
             int num_intersects=0;
+            int min_tri_id=0;
 
-            for(int dim=0;dim<3;dim++)
+            if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+                (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+                (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+                (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+                (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+                (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+            )
             {
-                for(int j=0;j<3;j++)
-                {
-                    ploc_t[dim] += stl->eigdirs[3*dim+j]*ploc[j];
-                }
-            }
-
-            if( (ploc_t[0]>stl->bbox_lo[0]) && 
-               (ploc_t[0]<stl->bbox_hi[0]) &&
-               (ploc_t[1]>stl->bbox_lo[1]) &&
-               (ploc_t[1]<stl->bbox_hi[1]) &&
-               (ploc_t[2]>stl->bbox_lo[2]) &&
-               (ploc_t[2]<stl->bbox_hi[2]) )
-            {
-                for(int tr=0;tr<stl->num_tri;tr++)
-                {
-                    t1[0]=stl->tri_pts[tr*stl->ndata_per_tri+0];
-                    t1[1]=stl->tri_pts[tr*stl->ndata_per_tri+1];
-                    t1[2]=stl->tri_pts[tr*stl->ndata_per_tri+2];
-
-                    t2[0]=stl->tri_pts[tr*stl->ndata_per_tri+3];
-                    t2[1]=stl->tri_pts[tr*stl->ndata_per_tri+4];
-                    t2[2]=stl->tri_pts[tr*stl->ndata_per_tri+5];
-
-                    t3[0]=stl->tri_pts[tr*stl->ndata_per_tri+6];
-                    t3[1]=stl->tri_pts[tr*stl->ndata_per_tri+7];
-                    t3[2]=stl->tri_pts[tr*stl->ndata_per_tri+8];
-
-                    num_intersects += (1-lineseg_tri_intersect(outp,ploc,t1,t2,t3));
-                }
+                Real mindist=BIGVAL;
+                brutesearch_with_intersections(
+                    num_tri,
+                    ploc,
+                    mindist,
+                    min_tri_id,
+                    outp,
+                    num_intersects,
+                    tri_pts
+                );  
+                         
                 if(num_intersects%2 == 1)
                 {
 #ifndef AMREX_USE_GPU

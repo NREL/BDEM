@@ -86,30 +86,15 @@ struct STLtools
                      Real p[3],Real &mindist,int &idmin) const;
     void orb_of_triangulation(int startindex,int endindex,int dir,int *indexarray);
     void sort_triangle_ids(int start,int end,int dir,int *indexarray);
-    AMREX_GPU_HOST_DEVICE void brutesearch_with_intersections(int startindex,int endindex,int *indexarray,
-                     Real p[3],Real &mindist,int &idmin, Real outp[3], int &num_intersects) const;
     AMREX_GPU_HOST_DEVICE void brutesearch(int startindex,int endindex,int *indexarray,
                      Real p[3],Real &mindist,int &idmin, Real dist[3]) const;
-
-    // Uses spatial binning to get the closest triangle in the neighborhood
-    AMREX_GPU_HOST_DEVICE void get_closest_local_tri
-    (
-        Real p[3],
-        Real &mindist, 
-        int& idmin,
-        const Real time,
-        const int movetype,
-        const Real u[3],
-        const Real center[3],
-        const Real movevel
-    ) const;
     
     void writeVTK(std::string fname) const;
 
     void printForces() const;
 
     // Builds space binning addressing of tris
-    void buildGridData();
+    void buildGridData(int gsize[3]);
 };
 
 struct stl_specs
