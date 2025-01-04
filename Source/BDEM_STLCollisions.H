@@ -120,10 +120,19 @@ amrex::ParallelFor(np,[=]
                     movetype, 
                     vw
                 );
-                // pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
-                // shear_stress[3*min_tr]      += ft[0];
-                // shear_stress[3*min_tr + 1]  += ft[1];
-                // shear_stress[3*min_tr + 2]  += ft[2];
+    
+    #ifndef AMREX_USE_GPU
+
+                pressure[min_tr] += sqrt(DotProd(fn,fn));
+                shear_stress[3*min_tr]      += ft[0];
+                shear_stress[3*min_tr + 1]  += ft[1];
+                shear_stress[3*min_tr + 2]  += ft[2];
+    #else
+                Gpu::Atomic::Add( &(pressure[min_tr]), sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]) );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr]), ft[0] );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr +1]), ft[1] );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr +2]), ft[2] );
+    #endif
                 if(solve_fibrillation == 1)
                 {
                     Real vp[3] = { p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel) };

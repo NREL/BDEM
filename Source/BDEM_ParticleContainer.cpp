@@ -133,6 +133,24 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
         });
     }
 
+    // Zero stl forces
+    for (int stli = 0; stli < stls.size(); stli++)
+    {
+        STLtools* stlptr = stls[stli].stlptr;
+        Real* pressure = stlptr->pressure;
+        Real* shear_stress = stlptr->shear_stress;
+
+        // Reset pressure and shear stress (keep on GPU)
+        amrex::ParallelFor(stlptr->num_tri,
+        [=] AMREX_GPU_DEVICE (int i)
+        {
+            pressure[i] = 0.;
+            shear_stress[3*i]      = 0.;
+            shear_stress[3*i + 1]  = 0.;
+            shear_stress[3*i + 2]  = 0.;
+        });
+    }
+
     for(MFIter mfi = MakeMFIter(lev); mfi.isValid(); ++mfi)
     {
         int gid = mfi.index();
@@ -220,13 +238,13 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
                 Real z_lo_bb = stlptr->bbox_lo[2];
                 Real z_hi_bb = stlptr->bbox_hi[2];
 
+                Real* pressure = stlptr->pressure;
+                Real* shear_stress = stlptr->shear_stress;
+              
                 /* Launch kernel */
                 #include"BDEM_STLCollisions.H"
 //                amrex::Print() << "\nSTL collisions done";
 
-                /* Reduce forces */
-                //detail::Reduce(detail::ReduceOp::sum,stlptr->pressure, stlptr->num_tri, -1, MPI_COMM_WORLD);
-                //detail::Reduce(detail::ReduceOp::sum,stlptr->shear_stress, stlptr->num_tri*3, -1, MPI_COMM_WORLD);
             }
             
 
@@ -242,30 +260,42 @@ void BDEMParticleContainer::computeForces (Real &dt,const EBFArrayBoxFactory *eb
     for (int stli = 0; stli < stls.size(); stli++)
     {
         STLtools* stlptr = stls[stli].stlptr;
-        Real t1[3],t2[3],t3[3];
-        
-        for (int i = 0; i < stlptr->num_tri; i++)
-        {
 
-            t1[0]=stlptr->tri_pts[i*9+0];
-            t1[1]=stlptr->tri_pts[i*9+1];
-            t1[2]=stlptr->tri_pts[i*9+2];
+        Real* pressure = stlptr->pressure;
+        Real* shear_stress = stlptr->shear_stress;
+        Real* tri_pts = stlptr->tri_pts;
+
+        #ifdef AMREX_USE_MPI
+            // Communicate via MPI
+            ParallelDescriptor::ReduceRealSum(pressure,stlptr->num_tri);
+            ParallelDescriptor::ReduceRealSum(shear_stress,3*stlptr->num_tri);
+        #endif
+
+        // Reset pressure and shear stress (keep on GPU)
+        amrex::ParallelFor(stlptr->num_tri,
+        [=] AMREX_GPU_DEVICE (int i)
+        {
+            Real t1[3],t2[3],t3[3];
+            t1[0]=tri_pts[i*9+0];
+            t1[1]=tri_pts[i*9+1];
+            t1[2]=tri_pts[i*9+2];
             
-            t2[0]=stlptr->tri_pts[i*9+3];
-            t2[1]=stlptr->tri_pts[i*9+4];
-            t2[2]=stlptr->tri_pts[i*9+5];
+            t2[0]=tri_pts[i*9+3];
+            t2[1]=tri_pts[i*9+4];
+            t2[2]=tri_pts[i*9+5];
             
-            t3[0]=stlptr->tri_pts[i*9+6];
-            t3[1]=stlptr->tri_pts[i*9+7];
-            t3[2]=stlptr->tri_pts[i*9+8];
+            t3[0]=tri_pts[i*9+6];
+            t3[1]=tri_pts[i*9+7];
+            t3[2]=tri_pts[i*9+8];
 
             Real one_over_area = 1.0/triangle_area(t1,t2,t3);
 
-            stlptr->pressure[i] *= one_over_area;
-            stlptr->shear_stress[3*i] *= one_over_area;
-            stlptr->shear_stress[3*i + 1] *= one_over_area;
-            stlptr->shear_stress[3*i + 2] *= one_over_area;
-        }
+            pressure[i] *= one_over_area;
+            shear_stress[3*i] *= one_over_area;
+            shear_stress[3*i + 1] *= one_over_area;
+            shear_stress[3*i + 2] *= one_over_area;
+        });
+    
     }
 }
 
