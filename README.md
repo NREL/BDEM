@@ -35,3 +35,20 @@ BDEM is a massively-parallel discrete-element method (DEM) solver capable of sim
 * These plot files can be open using AMReX grid reader in ParaView (see https://amrex-codes.github.io/amrex/docs_html/Visualization.html#paraview)
 * Alternatively visit can be used after converting to vtp format. see https://amrex-codes.github.io/amrex/docs_html/Visualization_Chapter.html
 * We also provide python scripts to access particle data as numpy arrays. see https://github.com/NREL/BDEM/blob/main/tests/read_and_avg_particle_data.py
+
+## Citation
+
+To cite BDEM, please use:
+
+```
+@article{deak2024high,
+  doi = {10.1016/j.powtec.2024.120548},
+  url = {https://doi.org/10.1016/j.powtec.2024.120548},
+  title={A high-performance discrete-element framework for simulating flow and jamming of moisture bearing biomass feedstocks},
+  author={Deak, Nicholas and Sitaraman, Hariswaran and Lu, Yimin and Saha, Nepu and Klinger, Jordan and Xia, Yidong},
+  journal={Powder Technology},
+  pages={120548},
+  year={2024},
+  publisher={Elsevier}
+}
+```
