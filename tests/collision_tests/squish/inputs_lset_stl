@@ -35,4 +35,5 @@ eb2.box_hi = 0.005   0.0   0.005
 eb2.box_has_fluid_inside=false
 bdem.refine_level_set=8
 
-bdem.stl_file=block.stl
+bdem.number_of_stl_files = 1
+bdem.stl_names= "block.stl"
