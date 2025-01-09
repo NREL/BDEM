@@ -130,6 +130,7 @@ struct stl_specs
     Real stl_vib_amp = 0.0;
     Vector<Real> stl_vib_dir; 
     Real stl_timeoffset = 0.0;
+    int remove_particles_inside = 1;
 };
 
 

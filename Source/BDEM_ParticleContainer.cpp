@@ -512,6 +512,13 @@ void BDEMParticleContainer::clearSourcingVolume(Real mincoords[THREEDIM],Real ma
 
         ParticleType* pstruct = aos().dataPtr();
         const Box & bx = mfi.tilebox();
+        Real mincoords_x = mincoords[XDIR];
+        Real mincoords_y = mincoords[YDIR];
+        Real mincoords_z = mincoords[ZDIR]; 
+        Real maxcoords_x = maxcoords[XDIR];
+        Real maxcoords_y = maxcoords[YDIR];
+        Real maxcoords_z = maxcoords[ZDIR]; 
+
         amrex::ParallelFor(np,[=] AMREX_GPU_DEVICE (int i) noexcept{
             ParticleType& p = pstruct[i];
             amrex::Real x = p.pos(0);
@@ -519,15 +526,17 @@ void BDEMParticleContainer::clearSourcingVolume(Real mincoords[THREEDIM],Real ma
             amrex::Real z = p.pos(2);
             amrex::Real rad = p.rdata(realData::radius);
 
-            if(x+rad>=mincoords[XDIR] && x-rad<=maxcoords[XDIR] &&
-               y+rad>=mincoords[YDIR] && y-rad<=maxcoords[YDIR] &&
-               z+rad>=mincoords[ZDIR] && z-rad<=maxcoords[ZDIR])
+            if(x+rad>=mincoords_x && x-rad<=maxcoords_x &&
+               y+rad>=mincoords_y && y-rad<=maxcoords_y &&
+               z+rad>=mincoords_z && z-rad<=maxcoords_z)
             {
                 p.id()=-1;
             }
         });
     }
+
     Redistribute();
+
 }
 
 void BDEMParticleContainer::saveParticles_softwall()

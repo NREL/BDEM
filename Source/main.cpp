@@ -155,8 +155,11 @@ int main (int argc, char* argv[])
 
             for (int stli = 0; stli < specs.stls.size(); stli++)
             {
-                bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
-                amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+                if(specs.stls[stli].remove_particles_inside == 1)
+                {
+                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
+                    amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+                }
             }
 
             if(specs.remove_eb_overlaps) {
@@ -227,7 +230,6 @@ int main (int argc, char* argv[])
             {
                 amrex::Print() << "Doing particle sourcing\n";
                 bpc.clearSourcingVolume(specs.particle_sourcing_mincoords.data(), specs.particle_sourcing_maxcoords.data());
-
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
                                    specs.particle_sourcing_meanvel.data(),  specs.particle_sourcing_fluctuation.data(), 
                                    specs.particle_sourcing_radius, specs.particle_sourcing_dens,
@@ -251,10 +253,14 @@ int main (int argc, char* argv[])
                 amrex::Print() << "Num particles after eb removal  " << bpc.TotalNumberOfParticles() << "\n";
                 for (int stli = 0; stli < specs.stls.size(); stli++)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
+                    if(specs.stls[stli].remove_particles_inside == 1)
+                    {
+                        bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
+                        amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+                    }
                 }
 
-                amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
+                
 
 
                 bpc.redist_particles(1,specs.using_softwalls);
