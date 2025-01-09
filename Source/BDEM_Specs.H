@@ -44,6 +44,7 @@ struct realData
     first_bond_v, // We leave room for 9 real components (ft_x, ft_y, ft_z, taun_x, taun_y, taun_z, taut_x, taut_y, taut_z) * MAXBONDS
     theta_x = first_bond_v + MAXBONDS*9,
     firstspec,
+    fraction_of_fibrils,
     count
   };
 };
@@ -268,6 +269,9 @@ class DEMspecs
         Vector< stl_specs > stls;
         bool stl_geom_present=false;
 
+        // Switch to solve for fibrils
+        int solve_fibrillation = 0;
+
         void read_dem_specs()
         {
             plo.resize(AMREX_SPACEDIM);
@@ -488,17 +492,18 @@ class DEMspecs
             /* STL related stuff -------------------------------*/
             int number_of_stl_files(0);
             pp.query("number_of_stl_files", number_of_stl_files);
+            Vector<std::string> stlnames;
 
             if ( number_of_stl_files > 0 )
             {
                 stl_geom_present = true;
+            
+
+                stls.resize(number_of_stl_files);
+                stlnames.resize(number_of_stl_files);
+                //- Read stl file names
+                pp.getarr("stl_names",stlnames);
             }
-
-            stls.resize(number_of_stl_files);
-
-            //- Read stl file names
-            Vector<std::string> stlnames(number_of_stl_files);
-            pp.getarr("stl_names",stlnames);
 
             //- Now read stl settings independently
             for (int stli = 0; stli < number_of_stl_files; stli++)
@@ -508,11 +513,24 @@ class DEMspecs
                 stls[stli].name = stlname;
 
                 stls[stli].stlptr = new STLtools();
-                stls[stli].stlptr->read_stl_file(stls[stli].name + ".stl");
+                stls[stli].stlptr->name = stls[stli].name;
+                pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );
+
+                if (stls[stli].stl_timeoffset > 0)
+                {
+                    stls[stli].stlptr->read_stl_file(stls[stli].name + std::to_string(stls[stli].stl_timeoffset) + ".stl");
+                }
+                else
+                {       
+                    stls[stli].stlptr->read_stl_file(stls[stli].name  + ".stl");
+                }
+
+                //- Build STL grid
+                Vector<int> stl_grid_size(3,25);               
+                pp.queryarr(( stlname + "_grid_size" ).c_str(),stl_grid_size);
+                stls[stli].stlptr->buildGridData(stl_grid_size.data());
 
                 pp.query( ( stlname + "_dynamicstl" ).c_str(), stls[stli].dynamicstl );
-
-                pp.query( ( stlname + "_stl_timeoffset" ).c_str(), stls[stli].stl_timeoffset );
 
                 amrex::Print()  << "Found STL named " << stls[stli].name << "\n";
 
@@ -744,6 +762,12 @@ class DEMspecs
                 pp.get("gas_vfrac", DEM::eps_g);
                 pp.get("gas_visc", DEM::mu_g);
                 pp.get("gas_density", DEM::rho_g);
+            }
+
+            pp.query("solve_fibrillation",solve_fibrillation);
+            if(solve_fibrillation == 1)
+            {
+                amrex::Print() << "Solving for fibrillation.\n";
             }
 
             //- CG options

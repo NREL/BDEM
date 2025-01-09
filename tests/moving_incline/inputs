@@ -15,8 +15,9 @@ bdem.final_time=0.5
 bdem.max_steps=100000000
 bdem.write_output_time=0.005
 bdem.num_redist = 25
-bdem.cfl = 0.01
+bdem.cfl = 0.1
 bdem.init_particles_using_file = 0
+bdem.verlet_scheme = 0
 
 bdem.mincoords_autogen =  0.002       0.0    0.0
 bdem.maxcoords_autogen =  0.003        0.008    0.01
@@ -34,13 +35,15 @@ bdem.tangential_spring_constant = 10
 bdem.tangential_restitution_coefficient = 0.7
 bdem.rolling_friction_coefficient = 0.1
 
+#physics
+bdem.solve_fibrillation = 1;
 
 bdem.gravity = 0.0 -9.8 0.0
 bdem.number_of_stl_files = 1
 bdem.stl_names= "incline"
 bdem.incline_dynamicstl=1
-bdem.incline_dynamicstl_transl_dir=0
-bdem.incline_dynamicstl_transl_vel=0.01
+bdem.incline_dynamicstl_transl_dir= 1 0 0
+bdem.incline_dynamicstl_transl_vel= 0.01
 
 bdem.kind_of_geometry=all_regular
 bdem.refine_level_set=1

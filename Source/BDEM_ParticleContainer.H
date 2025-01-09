@@ -65,6 +65,7 @@ public:
         for(int i=0; i<MAXBONDS*9; i++) setRealCommComp(3+realData::first_bond_v+i, false);
         setRealCommComp(3+realData::theta_x, false);
         for(int i=0; i<MAXSPECIES; i++) setRealCommComp(3+realData::firstspec+i, false);
+        setRealCommComp(3+realData::fraction_of_fibrils, false); 
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);
@@ -77,7 +78,7 @@ public:
                         Real temp_mean, Real temp_stdev,
                         int contact_law, int liquid_bridging,
                         Real liquid_density, Real MC_avg, 
-                        Real MC_stdev, Real FSP);
+                        Real MC_stdev, Real FSP, const int solve_fibrils = 0);
 
     void InitParticles (Real mincoords[THREEDIM],Real maxcoords[THREEDIM], 
         Real meanvel[THREEDIM], Real fluctation[THREEDIM], Real rad, 
@@ -86,7 +87,8 @@ public:
         int bonded_sphere_particles,Real min_rad, Real max_rad,  
         int p_type, Vector<int> type_list, int use_type_dist, 
         Vector<Real> dist_list,int liquid_bridging, 
-        Real liquid_density, Real MC_avg, Real MC_stdev, Real FSP);
+        Real liquid_density, Real MC_avg, Real MC_stdev, Real FSP
+        );
 
     void clearSourcingVolume(Real mincoords[THREEDIM],Real maxcoords[THREEDIM]);
 
@@ -108,12 +110,13 @@ public:
             bool do_heat_transfer, int walltemp_vardir,
             Real walltemp_polynomial[3],
             const int ls_refinement,bool stl_geom_resent, int contact_law, int steps,
-            RealVect &gravity, amrex::Vector< stl_specs >& stls,
+            RealVect &gravity, amrex::Vector< stl_specs >& stls, Real time,
             const int bonded_sphere_particles=0,
             const int liquid_bridging=0, 
             const int particle_cohesion=0,
             const Real init_force = 0.0, const int init_force_dir = 0, const int init_force_comp = 0,
-            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0, const int drag_model = 0);
+            const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0, const int drag_model = 0,
+            const int solve_fibrillation = 0);
 
     Real compute_coll_timescale(int bonded_sphere_particles);
 

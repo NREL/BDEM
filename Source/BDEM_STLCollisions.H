@@ -14,118 +14,140 @@ amrex::ParallelFor(np,[=]
     pos_t[XDIR] = p.pos(0);
     pos_t[YDIR] = p.pos(1);
     pos_t[ZDIR] = p.pos(2);
-    // for(int dim=0;dim<3;dim++)
-    // {
-    //     pos_t[dim]=0.0;
-    //     for(int j=0;j<3;j++)
-    //     {
-    //         pos_t[dim] += stlptr->eigdirs[3*dim+j]*pos[j];
-    //     }
-    // }
-
-//    Print() << "post_t[0]" << pos_t[0] << " ppos[0]" << pos[0] << "\n";
-//    Print() << "stlptr->bbox_lo[0] " << stlptr->bbox_lo[0] << " stlptr->bbox_hi[0] " << stlptr->bbox_hi[0] << "\n";
-
-    //amrex::Print()<<"bbox_lo:"<<stlptr->bbox_lo[0]<<"\t"<<stlptr->bbox_lo[1]<<"\t"<<stlptr->bbox_lo[2]<<"\n";
-    //amrex::Print()<<"bbox_hi:"<<stlptr->bbox_hi[0]<<"\t"<<stlptr->bbox_hi[1]<<"\t"<<stlptr->bbox_hi[2]<<"\n";
+    int min_tr = -1;
 
     Real mindist=BIGVAL;
-    if( (p.pos(0) + p.rdata(realData::radius) > stlptr->bbox_lo[0]) && 
-        (p.pos(0) - p.rdata(realData::radius) < stlptr->bbox_hi[0]) &&
-        (p.pos(1) + p.rdata(realData::radius) > stlptr->bbox_lo[1]) &&
-        (p.pos(1)- p.rdata(realData::radius) < stlptr->bbox_hi[1]) &&
-        (p.pos(2)+ p.rdata(realData::radius) > stlptr->bbox_lo[2]) &&
-        (p.pos(2)- p.rdata(realData::radius) < stlptr->bbox_hi[2]) )
+    if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+        (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+        (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+        (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+        (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+        (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+    )
     {
         int ndistcalcs;
-        Real dist[3];
 
-#ifndef AMREX_USE_GPU
-         //cpu version, need to figure out gpu version
-         stlptr->searchtriangulation(0,stlptr->num_tri-1,
-                         stlptr->sorted_indexarray,
-                         pos,mindist,min_tri_id,ndistcalcs);
-         mindist=std::sqrt(mindist);
-         int min_tr=stlptr->sorted_indexarray[min_tri_id];
+        const Real movedir[3] = {x_movedir, y_movedir, z_movedir};
+        const Real movecenter[3] = {x_movecenter, y_movecenter, z_movecenter};
+        const Real grid_bbmin[3] = {x_grid_bbmin, y_grid_bbmin, z_grid_bbmin };
+        const Real  grid_bbmax[3] = {x_grid_bbmax, y_grid_bbmax, z_grid_bbmax };
+        const Real grid_delta[3] = {x_grid_delta, y_grid_delta, z_grid_delta };
+        const int grid_size[3] = {x_grid_size, y_grid_size, z_grid_size};
 
-#else
-        stlptr->brutesearch(0,stlptr->num_tri-1,
-                              stlptr->sorted_indexarray,
-                              pos,mindist,min_tri_id,dist);
-        int min_tr=stlptr->sorted_indexarray[min_tri_id];
-#endif
+        get_closest_local_tri(
+            pos,
+            mindist,
+            min_tri_id,
+            time - dt,
+            movetype,
+            movedir,
+            movecenter,
+            movevel,
+            grid_bbmin,
+            grid_bbmax,
+            grid_delta,
+            grid_size,
+            tris_per_cell,
+            tris_in_grid,
+            cell_start,
+            tri_pts      
+        );
 
-        // Real distDir[3];
+        min_tr = min_tri_id;
 
-        // for (int i =0; i<3;i++)
-        // {
-        //     distDir[i] = -dist[i]/mindist;
-        // }
-        
-        // // Correct particles erroneously interacting with internal triangles.
-        // // norm should always point in the direction of dist.
-        // // If this check happens, some particles are in a place where they should definitely not be.
-        // // if ( normdist < 0 && mindist < p.rdata(realData::radius) )
-        // // {
-        // //     normdist *= -1.;
-        // //     distDir[0]  *= -1.;
-        // //     distDir[1]  *= -1.;
-        // //     distDir[2]  *= -1.;
-        // //     //p.rdata(realData::temperature) = 1;
-
-        // //    // Print() << "Found misplaced particle!\n";
-        // // }
-
-        // if ( mindist <  p.rdata(realData::radius) )
-        // {
-            
-        //     Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
-
-        //     get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
-
-        // }
-
-
-
-        // //Print()<<"tr:"<<tr<<"\n";
-        centpvec[0]=pos[0]-
-            0.3333*(stlptr->tri_pts[min_tr*9+0]+stlptr->tri_pts[min_tr*9+3]+stlptr->tri_pts[min_tr*9+6]);
-        centpvec[1]=pos[1]-
-            0.3333*(stlptr->tri_pts[min_tr*9+1]+stlptr->tri_pts[min_tr*9+4]+stlptr->tri_pts[min_tr*9+7]);
-        centpvec[2]=pos[2]-
-            0.3333*(stlptr->tri_pts[min_tr*9+2]+stlptr->tri_pts[min_tr*9+5]+stlptr->tri_pts[min_tr*9+8]);
-
-        norm[0]=stlptr->tri_normals[min_tr*3+0];
-        norm[1]=stlptr->tri_normals[min_tr*3+1];
-        norm[2]=stlptr->tri_normals[min_tr*3+2];
-
-        Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
-        mindist*=amrex::Math::copysign(1.0,dotpdt);
-
-        //if(mindist<p.rdata(realData::radius) && amrex::Math::abs(mindist)<p.rdata(realData::radius))
-        if(amrex::Math::abs(mindist)<p.rdata(realData::radius))
+        if(min_tr != -1)
         {
-            /*if(amrex::Math::abs(mindist)>p.rdata(realData::radius))
+            centpvec[0]=pos[0]-
+                0.3333*(tri_pts[min_tr*9+0]+tri_pts[min_tr*9+3]+tri_pts[min_tr*9+6]);
+            centpvec[1]=pos[1]-
+                0.3333*(tri_pts[min_tr*9+1]+tri_pts[min_tr*9+4]+tri_pts[min_tr*9+7]);
+            centpvec[2]=pos[2]-
+                0.3333*(tri_pts[min_tr*9+2]+tri_pts[min_tr*9+5]+tri_pts[min_tr*9+8]);
+
+            norm[0]=tri_normals[min_tr*3+0];
+            norm[1]=tri_normals[min_tr*3+1];
+            norm[2]=tri_normals[min_tr*3+2];
+
+            Real dotpdt=norm[0]*centpvec[0] + norm[1]*centpvec[1] + norm[2]*centpvec[2];
+            
+            if(mindist <p.rdata(realData::radius))
             {
-                amrex::Print()<<"mindist,rad:"<<mindist<<"\t"<<p.rdata(realData::radius)
-                <<"\t"<<p.pos(0)<<"\t"<<p.pos(1)<<"\t"<<p.pos(2)<<
-                "\t"<<norm[0]<<"\t"<<norm[1]<<"\t"<<norm[2]<<"\t"<<dotpdt<<"\n";
-            }*/
-            
-            Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
+                norm[0]=-tri_normals[min_tr*3+0];
+                norm[1]=-tri_normals[min_tr*3+1];
+                norm[2]=-tri_normals[min_tr*3+2];
+                
+                Real fn[3],ft[3],rollfriqtorq_by_d[3],tow[3],contact_vect[3];
 
-            
-            norm[0]*=-1;
-            norm[1]*=-1;
-            norm[2]*=-1;
+                // Compute wall velocity
+                Real vw[3] = {0.,0.,0.};
 
-            get_wall_forces(mindist,norm,p,dt,fn,ft,rollfriqtorq_by_d,pos,contact_law, liquid_bridging);
-            
-            stlptr->pressure[min_tr] += sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]);
-            stlptr->shear_stress[3*min_tr]      += ft[0];
-            stlptr->shear_stress[3*min_tr + 1]  += ft[1];
-            stlptr->shear_stress[3*min_tr + 2]  += ft[2];
+                if(movetype == 1)
+                {
+                    vw[0] = movedir[0]*movevel;
+                    vw[1] = movedir[1]*movevel;
+                    vw[2] = movedir[2]*movevel;
+                }
+                else if (movetype == 2)
+                {
+                    // Get contact point
+                    Real contact_point[3];
+                    contact_point[0] = pos[0] + norm[0]*dotpdt - movecenter[0];
+                    contact_point[1] = pos[1] + norm[1]*dotpdt - movecenter[1];
+                    contact_point[2] = pos[2] + norm[2]*dotpdt - movecenter[2];
+                
+                    // Get angular velocity vector
+                    Real omega[3];
+                    omega[0] = movevel*movedir[0];
+                    omega[1] = movevel*movedir[1];
+                    omega[2] = movevel*movedir[2];
 
-        } 
+                    // Get velocity
+                    CrossProd(omega,contact_point,vw);
+                }
+
+                get_wall_forces
+                (
+                    mindist,
+                    norm,
+                    p,
+                    dt,
+                    fn,
+                    ft,
+                    rollfriqtorq_by_d,
+                    pos,
+                    contact_law, 
+                    liquid_bridging, 
+                    movetype, 
+                    vw
+                );
+    
+    #ifndef AMREX_USE_GPU
+
+                pressure[min_tr] += sqrt(DotProd(fn,fn));
+                shear_stress[3*min_tr]      += ft[0];
+                shear_stress[3*min_tr + 1]  += ft[1];
+                shear_stress[3*min_tr + 2]  += ft[2];
+    #else
+                Gpu::Atomic::Add( &(pressure[min_tr]), sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]) );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr]), ft[0] );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr +1]), ft[1] );
+                Gpu::Atomic::Add( &(shear_stress[3*min_tr +2]), ft[2] );
+    #endif
+                if(solve_fibrillation == 1)
+                {
+                    Real vp[3] = { p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel) };
+                    Real dx[3] = { norm[0]*mindist + TINYVAL, norm[1]*mindist + TINYVAL, norm[2]*mindist + TINYVAL};
+                    solve_fibrils_equation
+                    (
+                        dt,
+                        vp,
+                        vw,
+                        dx,
+                        p.rdata(realData::fraction_of_fibrils)
+                    );
+                }
+
+            } 
+        }
     }
 });

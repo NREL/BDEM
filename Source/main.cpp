@@ -128,12 +128,6 @@ int main (int argc, char* argv[])
            bpc.InitChemSpecies(specs.nstrat_domains,specs.strat_mincoords.data(),
                                specs.strat_maxcoords.data(),specs.strat_spec_massfracs.data());
         }
-
-        //! Moved to specs
-        //! for (int stli = 0; stli < specs.stls.size(); stli++)
-        //! {
-        //!     specs.stls[stli].stlptr->read_stl_file(specs.stls[stli].name + ".stl");
-        //! }
             
         //compute tcoll here over all particles
         DEM::tcoll=bpc.compute_coll_timescale(specs.bonded_sphere_particles);
@@ -180,11 +174,12 @@ int main (int argc, char* argv[])
 
         for (int stli = 0; stli < specs.stls.size(); stli++)
         {
+            std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5);
             if(specs.stls[stli].dynamicstl!=0)
             {
-                std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".stl";
-                specs.stls[stli].stlptr->write_stl_file(stlpltfile);
+                specs.stls[stli].stlptr->write_stl_file(stlpltfile);                
             }
+            specs.stls[stli].stlptr->writeVTK(stlpltfile);
         }  
 
         amrex::Print() << "Num particles after init is " << bpc.TotalNumberOfParticles() << "\n";
@@ -230,7 +225,7 @@ int main (int argc, char* argv[])
                && time < specs.stop_sourcing_time)
 
             {
-                // Remove any particles in particle sourcing area
+                amrex::Print() << "Doing particle sourcing\n";
                 bpc.clearSourcingVolume(specs.particle_sourcing_mincoords.data(), specs.particle_sourcing_maxcoords.data());
 
                 bpc.InitParticles (specs.particle_sourcing_mincoords.data(),specs.particle_sourcing_maxcoords.data(), 
@@ -310,12 +305,13 @@ int main (int argc, char* argv[])
                                   specs.do_heat_transfer,specs.walltemp_vardir,
                                   specs.walltemp_polynomial.data(),
                                   EBtools::ls_refinement,specs.stl_geom_present, specs.contact_law, steps,
-                                  specs.gravity, specs.stls,
+                                  specs.gravity, specs.stls, time,
                                   specs.bonded_sphere_particles,
                                   specs.liquid_bridging, 
                                   specs.particle_cohesion,
                                   specs.init_force, specs.init_force_dir, specs.init_force_comp,
-                                  cb_force, cb_torq, specs.cb_dir, specs.drag_model);
+                                  cb_force, cb_torq, specs.cb_dir, specs.drag_model,
+                                  specs.solve_fibrillation);
             }
             BL_PROFILE_VAR_STOP(forceCalc);
             
@@ -340,6 +336,7 @@ int main (int argc, char* argv[])
                     {
                         specs.stls[stli].stlptr->move_stl(dt,specs.stls[stli].dynamicstl,specs.stls[stli].dynstl_rot_dir.data(),
                                             specs.stls[stli].dynstl_center.data(),specs.stls[stli].dynstl_rot_vel);
+
                     }
                     else if(specs.stls[stli].dynamicstl==3)
                     {
@@ -396,14 +393,13 @@ int main (int argc, char* argv[])
 
                 for (int stli = 0; stli < specs.stls.size(); stli++)
                 {
-                    // if(specs.stls[stli].dynamicstl!=0)
-                    // {
-                    //     std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".stl";
-                    //     specs.stls[stli].stlptr->write_stl_file(stlpltfile);
-                    //     specs.stls[stli].stlptr->update_bounding_box();
-                    // }
-                    Print() << "Writing STL " << specs.stls[stli].name;
-                    std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), steps+specs.stepoffset, 5)+".vtk";
+                    
+                    std::string stlpltfile = amrex::Concatenate( (specs.stls[stli].name + "_").c_str(), output_it+specs.stepoffset, 5);
+                    if(specs.stls[stli].dynamicstl!=0)
+                    {
+                        specs.stls[stli].stlptr->write_stl_file(stlpltfile);
+                        Print() << "Writing STL " << specs.stls[stli].name << "\n";
+                    }
                     specs.stls[stli].stlptr->writeVTK(stlpltfile);
                     specs.stls[stli].stlptr->printForces();
                     specs.stls[stli].stlptr->update_bounding_box();

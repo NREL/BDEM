@@ -131,6 +131,21 @@ amrex::ParallelFor(np,[=]
         // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
         if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.idata(intData::unique_id) != p2.idata(intData::unique_id))) || bridge_exists || bond_exists )
         {
+            if(solve_fibrillation == 1)
+            {
+                Real v1[3] = { p1.rdata(realData::xvel), p1.rdata(realData::yvel), p1.rdata(realData::zvel) };
+                Real v2[3] = { p2.rdata(realData::xvel), p2.rdata(realData::yvel), p2.rdata(realData::zvel) };
+                Real dx[3] = { dist_x, dist_y, dist_z };
+                solve_fibrils_equation
+                (
+                    dt,
+                    v1,
+                    v2,
+                    dx,
+                    p1.rdata(realData::fraction_of_fibrils)
+                );
+            }
+            
             // Normal vector pointing from center of component sphere 1 to component sphere 2
             normal[XDIR] = dist_x*distmag_inv;
             normal[YDIR] = dist_y*distmag_inv;
@@ -602,7 +617,7 @@ amrex::ParallelFor(np,[=]
     }
 
     // Compute drag forces
-    // Assumptions: - gas velocity and bouyancy term both neglected
+    // Assumptions: - gas velocity and buoyancy term both neglected
     //              - gas volume fraction is prescribed by the user
     if(drag_model){
         // Readability variables

@@ -369,7 +369,7 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
         BDEMParticleContainer::ParticleType& p,amrex::Real dt,
         amrex::Real fn[THREEDIM],amrex::Real ft[THREEDIM], 
         amrex::Real rollfric_torq_by_d[THREEDIM], amrex::Real pos[THREEDIM],
-        int contact_law, int liquid_bridging)
+        int contact_law, int liquid_bridging, int wall_moves = 0, amrex::Real *wall_vel = NULL)
 {
     Real rp = p.rdata(realData::radius);
     Real overlap_n = rp - walldist;
@@ -394,6 +394,13 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
     vrel[XDIR] = p.rdata(realData::xvel) + cpdt[XDIR];
     vrel[YDIR] = p.rdata(realData::yvel) + cpdt[YDIR];
     vrel[ZDIR] = p.rdata(realData::zvel) + cpdt[ZDIR];
+
+    if ( wall_vel != NULL && wall_moves != 0)
+    {
+       vrel[XDIR] -= wall_vel[XDIR];
+       vrel[YDIR] -= wall_vel[YDIR];
+       vrel[ZDIR] -= wall_vel[ZDIR]; 
+    }
 
     Real vreltrans_norm = dotpdt(vrel, normal);
 
@@ -586,4 +593,49 @@ void get_wall_forces(amrex::Real walldist, amrex::Real normal[THREEDIM],
       p.rdata(realData::fy) += Fcap*normal[YDIR];
       p.rdata(realData::fz) += Fcap*normal[ZDIR];
     }
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
+void solve_fibrils_equation
+(
+    Real dt,    
+    Real vp[3],
+    Real vn[3],
+    Real dx[3],
+    Real &xi
+)
+{
+    //- Equation parameters
+    Real a = 1.;
+    Real b = 1.;
+
+    //- Compute rate of deformation and rate of rotation
+    Real r = normVec(dx);
+    Real normal[3];
+    getunitvec(dx,normal);
+
+    //- Create orthonormal basis
+    Real y[3];
+    Real z[3];
+    generateOrthonormalBasis(normal,y,z);
+
+    Real vrel[3] = initV1MinusV2(vn,vp);
+    
+    Real vrel_r = DotProd(vrel,normal);
+    Real vrel_y = DotProd(vrel,y);
+    Real vrel_z = DotProd(vrel,z);
+
+    Real omega_tmp = (vrel_y*vrel_y + vrel_z*vrel_z)/(8.*r);
+    Real gammadot = std::sqrt(omega_tmp);
+    Real d = std::sqrt(omega_tmp + vrel_r*vrel_r/(8.*r));
+
+    //- Flow parameter
+    Real psi = (d - gammadot)/(d + gammadot);
+
+    //- No fibril formation when deformation is smaller than rotation
+    if ( psi < TINYVAL ) return;
+
+    //- Advance the fraction of fibrils
+    xi = ( xi + a*dt*gammadot*std::sqrt(psi) ) / ( 1. + dt*b*gammadot );
+    
 }

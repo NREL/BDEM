@@ -1,2 +1,2 @@
-CEXE_headers += STLtools.H MoveUtils.H
-CEXE_sources += STLtools.cpp MoveUtils.cpp 
+CEXE_headers += STLtools.H STLUtils.H
+CEXE_sources += STLtools.cpp
