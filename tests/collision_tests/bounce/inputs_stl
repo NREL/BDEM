@@ -28,4 +28,5 @@ bdem.rolling_friction_coefficient = 0.0
 
 bdem.gravity = 0.0 -9.8 0.0
 
-bdem.stl_file=block.stl
+bdem.number_of_stl_files = 1
+bdem.stl_names= "block.stl"
