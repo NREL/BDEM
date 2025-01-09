@@ -148,10 +148,6 @@ class DEMspecs
         Vector<Real> walltemp_polynomial;
         int walltemp_vardir=0;
 
-        // STL stuff
-        
-
-
         int particle_sourcing=0;
         Vector<Real> particle_sourcing_mincoords; 
         Vector<Real> particle_sourcing_maxcoords; 
@@ -190,7 +186,7 @@ class DEMspecs
         int num_upd_neighbor=1;
         int stepoffset=0;
         std::string restartfilename {""};
-	std::string pltprefix {""};
+	    std::string pltprefix {""};
 
         mechanism *chemptr;
         std::string chemistry;
@@ -345,18 +341,18 @@ class DEMspecs
             pp.get("final_time",final_time);
             pp.query("avg_speed_stop", avg_speed_stop);
 
-	    pp.query("particle_mass_history",mass_flow);
-	    if(mass_flow)
-	    {
-		massflow_output_time=write_output_time/10.0;
-		pp.query("write_output_time_massflow", massflow_output_time);
-	    }
+            pp.query("particle_mass_history",mass_flow);
+            if(mass_flow)
+            {
+            massflow_output_time=write_output_time/10.0;
+            pp.query("write_output_time_massflow", massflow_output_time);
+            }
 
-            write_output_time=final_time/10.0;
-            pp.query("write_output_time", write_output_time);
+                write_output_time=final_time/10.0;
+                pp.query("write_output_time", write_output_time);
 
-	    screen_output_time=write_output_time/10.0;
-	    pp.query("screen_output_time", screen_output_time);
+            screen_output_time=write_output_time/10.0;
+            pp.query("screen_output_time", screen_output_time);
 
             pp.query("num_redist", num_redist);
             pp.query("num_upd_neighbor", num_upd_neighbor);
@@ -403,7 +399,7 @@ class DEMspecs
                 pp.queryarr("modified_species_massfracs"
                             ,modified_species_massfracs,0,chemptr->nspecies);
             }
-	    
+        
             if(init_particles_using_file==0)
             {
                 pp.getarr("mincoords_autogen",autogen_mincoords);
@@ -427,6 +423,7 @@ class DEMspecs
             }
 
             pp.query("particle_sourcing",particle_sourcing);
+            Print() << "Particle sourcing: " << particle_sourcing << "\n";
             if(particle_sourcing==1)
             {
                 pp.getarr("mincoords_particle_sourcing",particle_sourcing_mincoords);
@@ -454,7 +451,7 @@ class DEMspecs
             pp.get("normal_spring_constant",DEM::k_n);
             pp.get("normal_restitution_coefficient",DEM::e_n);
             pp.get("friction_coefficient",DEM::mu);
-	        pp.get("tangential_spring_constant",DEM::k_t);
+            pp.get("tangential_spring_constant",DEM::k_t);
             pp.get("tangential_restitution_coefficient",DEM::e_t);
             pp.get("rolling_friction_coefficient",DEM::muR);
             
@@ -463,16 +460,16 @@ class DEMspecs
             DEM::E_wall  = 100.0;  // Initial unrealistic value
             DEM::nu_wall  = 0.3;  // Default general nu_wall
             DEM::mu_wall  = DEM::mu;
-	        DEM::k_t_wall = DEM::k_t;
+            DEM::k_t_wall = DEM::k_t;
             DEM::e_t_wall = DEM::e_t;
             DEM::muR_wall  = DEM::muR;
-	    
+        
             pp.query("wall_normal_spring_constant",DEM::k_n_wall);
             pp.query("wall_normal_restitution_coefficient",DEM::e_n_wall);
             pp.query("elastic_modulus_wall",DEM::E_wall);
             pp.query("poissons_ratio_wall",DEM::nu_wall);
             pp.query("wall_friction_coefficient",DEM::mu_wall);
-	        pp.query("wall_tangential_spring_constant",DEM::k_t_wall);
+            pp.query("wall_tangential_spring_constant",DEM::k_t_wall);
             pp.query("wall_tangential_restitution_coefficient",DEM::e_t_wall);
             pp.query("wall_rolling_friction_coefficient",DEM::muR_wall);
 
@@ -526,7 +523,8 @@ class DEMspecs
                 }
 
                 //- Build STL grid
-                Vector<int> stl_grid_size(3,25);               
+                Vector<int> stl_grid_size;
+                stl_grid_size.resize(3,25);               
                 pp.queryarr(( stlname + "_grid_size" ).c_str(),stl_grid_size);
                 stls[stli].stlptr->buildGridData(stl_grid_size.data());
 
@@ -591,6 +589,12 @@ class DEMspecs
                     pp.get( ( stlname + "_stl_vib_freq" ).c_str(), stls[stli].stl_vib_freq );
                     pp.getarr( ( stlname + "_stl_vib_dir" ).c_str(), stls[stli].stl_vib_dir );
                 }
+
+                pp.query
+                (
+                    ( stlname + "_remove_particles_inside" ).c_str(), 
+                    stls[stli].remove_particles_inside
+                );
 
             }
             
@@ -706,8 +710,8 @@ class DEMspecs
                     pp.query("cb_unload_time", cb_unload_time);
                     pp.query("cb_intervals", cb_intervals);
                     if(cb_intervals){
-                      pp.get("cb_interval_num", cb_interval_num);
-                      pp.get("cb_hold_time", cb_hold_time);
+                        pp.get("cb_interval_num", cb_interval_num);
+                        pp.get("cb_hold_time", cb_hold_time);
                     }
                 }
             }
@@ -741,8 +745,8 @@ class DEMspecs
 
             pp.query("clip_particles", clip_particles);
             if(clip_particles){
-              pp.get("clip_particle_dir", clip_particle_dir);
-              pp.get("clip_particle_val", clip_particle_val);
+                pp.get("clip_particle_dir", clip_particle_dir);
+                pp.get("clip_particle_val", clip_particle_val);
             }
 
             pp.query("calc_mass_flow", calc_mass_flow);
@@ -807,6 +811,7 @@ class DEMspecs
             }
 
         }
+
         void clear()
         {
             plo.clear();
@@ -822,8 +827,8 @@ class DEMspecs
                 delete stls[stli].stlptr;
             }
             stls.clear();
-             
+                
             delete(chemptr);
         }
-};
+    };
 #endif
