@@ -130,22 +130,7 @@ amrex::ParallelFor(np,[=]
     
         // Calculate quantities used in contact, liquid bridge, and particle bond force evaluation
         if ( (dist2 <= (rad_sum - TINYVAL)*(rad_sum - TINYVAL) and (p1.idata(intData::unique_id) != p2.idata(intData::unique_id))) || bridge_exists || bond_exists )
-        {
-            if(solve_fibrillation == 1)
-            {
-                Real v1[3] = { p1.rdata(realData::xvel), p1.rdata(realData::yvel), p1.rdata(realData::zvel) };
-                Real v2[3] = { p2.rdata(realData::xvel), p2.rdata(realData::yvel), p2.rdata(realData::zvel) };
-                Real dx[3] = { dist_x, dist_y, dist_z };
-                solve_fibrils_equation
-                (
-                    dt,
-                    v1,
-                    v2,
-                    dx,
-                    p1.rdata(realData::fraction_of_fibrils)
-                );
-            }
-            
+        {            
             // Normal vector pointing from center of component sphere 1 to component sphere 2
             normal[XDIR] = dist_x*distmag_inv;
             normal[YDIR] = dist_y*distmag_inv;
@@ -503,6 +488,28 @@ amrex::ParallelFor(np,[=]
                 fn[XDIR] += fc*normal[XDIR];
                 fn[YDIR] += fc*normal[YDIR];
                 fn[ZDIR] += fc*normal[ZDIR];
+            }
+
+            // Solve fibrils equation and add cohesive force from fibrillation
+            if(solve_fibrillation == 1)
+            {
+                Real v1[3] = { p1.rdata(realData::xvel), p1.rdata(realData::yvel), p1.rdata(realData::zvel) };
+                Real v2[3] = { p2.rdata(realData::xvel), p2.rdata(realData::yvel), p2.rdata(realData::zvel) };
+                Real dx[3] = { dist_x, dist_y, dist_z };
+                // Contact area
+                Real A_c = - PI/4.0 * ( (distmag-rad1-rad2)*(distmag+rad1-rad2)*(distmag-rad1+rad2)*(distmag+rad1+rad2) )/(dist2);
+
+                solve_fibrils_equation
+                (
+                    dt,
+                    v1,
+                    v2,
+                    dx,
+                    p1.rdata(realData::fraction_of_fibrils),
+                    p2.rdata(realData::fraction_of_fibrils),
+                    A_c,
+                    fn
+                );
             }
 
             // Total force on composite particle is just a sum across the forces on all component spheres

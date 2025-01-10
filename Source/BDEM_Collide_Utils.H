@@ -602,12 +602,16 @@ void solve_fibrils_equation
     Real vp[3],
     Real vn[3],
     Real dx[3],
-    Real &xi
+    Real &xi,
+    const Real &xi_2,
+    const Real A_c,
+    Real fn[3]
 )
 {
     //- Equation parameters
     Real a = 1.;
     Real b = 1.;
+    Real c = 0.; // Coesive force per unit area for fully fibrillized material
 
     //- Compute rate of deformation and rate of rotation
     Real r = normVec(dx);
@@ -638,4 +642,14 @@ void solve_fibrils_equation
     //- Advance the fraction of fibrils
     xi = ( xi + a*dt*gammadot*std::sqrt(psi) ) / ( 1. + dt*b*gammadot );
     
+    //- Bound fraction of fibrils
+    if ( xi > 1. ) { xi = 1.; }
+    else if( xi < 0.f ) { xi = 0.f; }
+
+    //- Add cohesive force (simple linear)
+    Real coesive_force = - c * A_c * ( xi * xi_2 ); 
+
+    fn[0] += normal[0] * coesive_force;
+    fn[1] += normal[1] * coesive_force;
+    fn[2] += normal[2] * coesive_force;
 }

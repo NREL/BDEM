@@ -137,13 +137,18 @@ amrex::ParallelFor(np,[=]
                 {
                     Real vp[3] = { p.rdata(realData::xvel), p.rdata(realData::yvel), p.rdata(realData::zvel) };
                     Real dx[3] = { norm[0]*mindist + TINYVAL, norm[1]*mindist + TINYVAL, norm[2]*mindist + TINYVAL};
+                    Real fc[3]; // No cohesion with the wall... it doesn't fibrillize
+                    Real p2xi = 0.;
                     solve_fibrils_equation
                     (
                         dt,
                         vp,
                         vw,
                         dx,
-                        p.rdata(realData::fraction_of_fibrils)
+                        p.rdata(realData::fraction_of_fibrils),
+                        p2xi,
+                        0.,
+                        fc
                     );
                 }
 
