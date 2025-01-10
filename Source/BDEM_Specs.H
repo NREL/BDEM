@@ -5,6 +5,7 @@
 #include <AMReX_ParmParse.H>
 #include <AllChemistries.H>
 #include <STLtools.H>
+#include <chrono>
 
 using namespace amrex;
 
@@ -268,8 +269,13 @@ class DEMspecs
         // Switch to solve for fibrils
         int solve_fibrillation = 0;
 
+        // Initial wall time
+        std::chrono::_V2::high_resolution_clock::time_point  start_time;
+
         void read_dem_specs()
         {
+            start_time = std::chrono::high_resolution_clock::now();
+
             plo.resize(AMREX_SPACEDIM);
             phi.resize(AMREX_SPACEDIM);
             ncells.resize(AMREX_SPACEDIM);
@@ -829,6 +835,15 @@ class DEMspecs
             stls.clear();
                 
             delete(chemptr);
+        }
+
+        //- Returns the elapsed clock time in seconds
+        double elapsed_clock_time()
+        {
+            const auto now = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = now - start_time;
+            return elapsed.count();
+
         }
     };
 #endif
