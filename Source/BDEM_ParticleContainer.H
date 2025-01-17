@@ -118,7 +118,7 @@ public:
             const Real cb_force = 0.0, const Real cb_torq = 0.0, const int cb_dir = 0, const int drag_model = 0,
             const int solve_fibrillation = 0);
 
-    Real compute_coll_timescale(int bonded_sphere_particles);
+    Real compute_coll_timescale(int bonded_sphere_particles, int contact_law);
 
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
             const int ls_refinement);

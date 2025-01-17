@@ -6,7 +6,7 @@
 using namespace amrex;
 using namespace std;
 
-Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles)
+Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles, int contact_law)
 {
     BL_PROFILE("BDEMParticleContainer::compute_coll_timescale");
     Real coll_timescale=BIGVAL;
@@ -19,14 +19,30 @@ Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles)
     coll_timescale = amrex::ReduceMin(*this, [=] 
     AMREX_GPU_HOST_DEVICE (const PType& p) -> Real 
     {
-        //technically the mass should be effective mass 
-        //among collision partners
-        //but this may be ok for now
-        // FIXME: should this change when using glued sphere model?
-        // return( std::pow(DEM::k_n/p.rdata(realData::mass)
+        // TODO: this function should be called at each iteration to adapt the time step
+        
         Real bonded_dt = 1e10;
+        Real k_n = DEM::k_n;
+
+        // Compute the spring constant using particle radius as overlap
+        // under the assumption that the particle collides against itself
+        if(contact_law == 1) 
+        {
+            Real E1 = p.rdata(realData::E);
+            Real E2 = p.rdata(realData::E);
+            Real nu1 = p.rdata(realData::nu);
+            Real nu2 = p.rdata(realData::nu);
+            Real E_eff = E1*E2/((1.0-nu1*nu1)*E2+(1.0-nu2*nu2)*E1);
+            Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
+            Real G_eff = E1*E2/temp;
+            Real beta = log(DEM::e_n) / sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
+            Real temp1 = sqrt(Reff*p.rdata(realData::radius);
+            k_n = 4.0/3.0*E_eff*temp1;
+        }
+        
         if(bonded_sphere_particles) bonded_dt = 0.8165*2.0*p.rdata(realData::radius)*pow(p.rdata(realData::density) / DEM::E_bond,0.5); 
-        return( std::min(bonded_dt, std::pow(DEM::k_n/(p.rdata(realData::mass))
+        
+        return( std::min(bonded_dt, std::pow(k_n/(p.rdata(realData::mass))
                 *PI*PI/(PI*PI + log(DEM::e_n)*log(DEM::e_n))
                 ,-half))
          ); 
