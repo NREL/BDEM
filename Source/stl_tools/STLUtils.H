@@ -1060,6 +1060,56 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_closest_local_tri
             }
 }
 
+// Returns true if the there is at least one triangle between the point and the line
+// defined by a point orig and a vector dir
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool check_inside_stl_line_method
+(
+    Real p[3],
+    Real orig[3],
+    Real dir[3],
+    const int* tris_per_cell,
+    const Real grid_bbmin[3],
+    const int  grid_size[3],
+    const Real grid_delta[3] 
+)
+{
+    //- Evaluate the vector between p and the line
+    Real pmc[3] = initV1MinusV2(p, orig);
+    Real pdot = DotProd(pmc,dir);
+    Real intersect_point[3] ={orig[0] + pdot*dir[0], orig[1] + pdot*dir[1], orig[2] + pdot*dir[2]};
+
+    Real dist[3] = initV1MinusV2(p,intersect_point);
+    Real ndist[3];
+    getunitvec(dist,ndist);
+    Real mdist = normVec(dist);
+
+    //- Discretize interval
+    Real delta = DotProd(dir,grid_delta)/2.0;
+    int n_divisions = std::ceil(mdist/delta);
+
+    //- Check 
+    for (int i = 0; i < n_divisions; i++)
+    {
+        Real dval = i*delta;
+        Real incr[3] = { dval*ndist[0], dval*ndist[1], dval*ndist[2] };
+        Real currPoint[3] = initV1PlusV2(intersect_point,incr);
+        int pIJK[3];
+        ijkFromPos(currPoint, grid_delta, grid_bbmin, pIJK);
+        int cellID = IdFromIJK(grid_size,pIJK);
+
+        if ( tris_per_cell[cellID] > 0 )
+        {
+            //- Found triangles!
+            //  It cannot be inside the STL
+            return false;
+        } 
+   
+    }
+
+    return true;
+}
+
+
 // Crude algorithm that simply loops over all triangles in tr_pts and checks
 // if point p is contained inside the stl (must be a closed geometry).
 // Ray tracing is employed to check if inside the geometry.

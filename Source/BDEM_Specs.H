@@ -602,6 +602,22 @@ class DEMspecs
                     stls[stli].remove_particles_inside
                 );
 
+                if( stls[stli].remove_particles_inside == 1 )
+                {
+                    pp.query
+                    (
+                        ( stlname + "_use_line_check" ).c_str(), 
+                        stls[stli].use_line_check
+                    );
+
+                    if ( stls[stli].use_line_check )
+                    {
+                        pp.getarr((stlname + "_point_inside").c_str(), stls[stli].point_inside);
+                        pp.getarr((stlname + "_direction_inside").c_str(), stls[stli].direction_inside);
+                    }
+                }
+                
+
             }
             
 

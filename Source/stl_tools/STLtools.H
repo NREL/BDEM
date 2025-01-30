@@ -131,6 +131,9 @@ struct stl_specs
     Vector<Real> stl_vib_dir; 
     Real stl_timeoffset = 0.0;
     int remove_particles_inside = 1;
+    int use_line_check = 0;
+    Vector<Real> point_inside;
+    Vector<Real> direction_inside; 
 };
 
 

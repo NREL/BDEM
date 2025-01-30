@@ -466,8 +466,10 @@ void BDEMParticleContainer::removeParticlesOutsideBoundary(const MultiFab *lsmfa
     Redistribute();
 }
 
-void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, STLtools* stlptr)
+void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point, stl_specs& stlspcs)
 {
+
+    STLtools* stlptr = stlspcs.stlptr;
     const int lev = 0;
     auto& plev  = GetParticles(lev);
     const Geometry& geom = Geom(lev);
@@ -503,49 +505,105 @@ void BDEMParticleContainer::removeParticlesInsideSTL(Vector<Real> outside_point,
         const size_t np = aos.numParticles();
 
         ParticleType* pstruct = aos().dataPtr();
-        amrex::ParallelFor(np,[=]
-        AMREX_GPU_DEVICE (int i) noexcept
+
+        if ( stlspcs.use_line_check != 1 )
         {
-            ParticleType& p = pstruct[i];
-  
-            Real ploc[THREEDIM];
-            ploc[XDIR] = p.pos(0);
-            ploc[YDIR] = p.pos(1);
-            ploc[ZDIR] = p.pos(2);
-            Real ploc_t[3]={0.0};
-            Real t1[3],t2[3],t3[3];
-            Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
-            int num_intersects=0;
-            int min_tri_id=0;
-
-            if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
-                (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
-                (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
-                (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
-                (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
-                (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
-            )
+            amrex::ParallelFor(np,[=]
+            AMREX_GPU_DEVICE (int i) noexcept
             {
-                Real mindist=BIGVAL;
-                brutesearch_with_intersections(
-                    num_tri,
-                    ploc,
-                    mindist,
-                    min_tri_id,
-                    outp,
-                    num_intersects,
-                    tri_pts
-                );           
+                ParticleType& p = pstruct[i];
+    
+                Real ploc[THREEDIM];
+                ploc[XDIR] = p.pos(0);
+                ploc[YDIR] = p.pos(1);
+                ploc[ZDIR] = p.pos(2);
+                Real ploc_t[3]={0.0};
+                Real t1[3],t2[3],t3[3];
+                Real outp[]={po_arr[0],po_arr[1],po_arr[2]};
+                int num_intersects=0;
+                int min_tri_id=0;
 
-
-                // Remove particles with intersections, but also particles that are 
-                // too close
-                if( mindist < p.rdata(realData::radius) || num_intersects%2 == 1 )
+                if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+                    (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+                    (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+                    (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+                    (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+                    (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+                )
                 {
-                    p.id()=-1;
+                    Real mindist=BIGVAL;
+                    brutesearch_with_intersections(
+                        num_tri,
+                        ploc,
+                        mindist,
+                        min_tri_id,
+                        outp,
+                        num_intersects,
+                        tri_pts
+                    );           
+
+
+                    // Remove particles with intersections, but also particles that are 
+                    // too close
+                    if( mindist < p.rdata(realData::radius) || num_intersects%2 == 1 )
+                    {
+                        p.id()=-1;
+                    }
                 }
-            }
-        });
+            });
+        }
+        else
+        {
+
+            Array<Real,3> pi_arr{stlspcs.point_inside[0],stlspcs.point_inside[1],stlspcs.point_inside[2]};
+            Array<Real,3> di_arr{stlspcs.direction_inside[0],stlspcs.direction_inside[1],stlspcs.direction_inside[2]};
+            int* tris_per_cell = stlptr->tris_per_cell;
+            Array<Real,3> gridbbmin_arr{stlptr->grid.bbmin[0],stlptr->grid.bbmin[1],stlptr->grid.bbmin[2]};
+            Array<Real,3> griddelta_arr{stlptr->grid.delta[0],stlptr->grid.delta[1],stlptr->grid.delta[2]};
+            Array<int,3> gridsize_arr{stlptr->grid.size[0],stlptr->grid.size[1],stlptr->grid.size[2]};
+            
+
+            amrex::ParallelFor(np,[=]
+            AMREX_GPU_DEVICE (int i) noexcept
+            {
+                ParticleType& p = pstruct[i];
+
+                Real ploc[3] = {p.pos(0), p.pos(1), p.pos(2)};
+
+                if( (p.pos(0) + p.rdata(realData::radius) > x_lo_bb ) && 
+                    (p.pos(0) - p.rdata(realData::radius) < x_hi_bb ) &&
+                    (p.pos(1) + p.rdata(realData::radius) > y_lo_bb ) &&
+                    (p.pos(1)- p.rdata(realData::radius) < y_hi_bb ) &&
+                    (p.pos(2)+ p.rdata(realData::radius) > z_lo_bb ) &&
+                    (p.pos(2)- p.rdata(realData::radius) < z_hi_bb )
+                )
+                {
+                    Real ploc[3] = {p.pos(0), p.pos(1), p.pos(2)};
+                    Real point_inside[3] = {pi_arr[0],pi_arr[1],pi_arr[2]};
+                    Real direction_inside[3] = {di_arr[0],di_arr[1],di_arr[2]};
+                    Real grid_bbmin[3] = {gridbbmin_arr[0],gridbbmin_arr[1],gridbbmin_arr[2]};
+                    Real grid_delta[3] = {griddelta_arr[0],griddelta_arr[1],griddelta_arr[2]};
+                    int grid_size[3] = {gridsize_arr[0],gridsize_arr[1],gridsize_arr[2]};
+                    
+                    bool is_inside = check_inside_stl_line_method(
+                        ploc,
+                        point_inside,
+                        direction_inside,
+                        tris_per_cell,
+                        grid_bbmin,
+                        grid_size,
+                        grid_delta
+                    );           
+
+
+                    if( is_inside )
+                    {
+                        p.id()=-1;
+                    }
+                }
+            });
+        }
+
     }
 
     Redistribute();

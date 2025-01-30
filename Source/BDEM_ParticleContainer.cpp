@@ -36,7 +36,7 @@ Real BDEMParticleContainer::compute_coll_timescale(int bonded_sphere_particles, 
             Real temp = 2.0*E2*(2.0-nu1)*(1.0+nu1) + 2.0*E1*(2.0-nu2)*(1.0+nu2);
             Real G_eff = E1*E2/temp;
             Real beta = log(DEM::e_n) / sqrt(PI*PI + log(DEM::e_n)*log(DEM::e_n));
-            Real temp1 = sqrt(Reff*p.rdata(realData::radius);
+            Real temp1 = p.rdata(realData::radius);
             k_n = 4.0/3.0*E_eff*temp1;
         }
         

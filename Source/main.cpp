@@ -132,7 +132,7 @@ int main (int argc, char* argv[])
     }
         
     //compute tcoll here over all particles
-    DEM::tcoll=bpc.compute_coll_timescale(specs.bonded_sphere_particles);
+    DEM::tcoll=bpc.compute_coll_timescale(specs.bonded_sphere_particles,specs.contact_law);
     Print()<<"tcoll:"<<DEM::tcoll<<"\n";
 
     Real dt = (specs.constant_dt > 0.0) ? specs.constant_dt:specs.cfl*DEM::tcoll;
@@ -159,7 +159,7 @@ int main (int argc, char* argv[])
         {
             if(specs.stls[stli].remove_particles_inside == 1)
             {
-                bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
+                bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli]);
                 amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
             }
         }
@@ -257,7 +257,7 @@ int main (int argc, char* argv[])
             {
                 if(specs.stls[stli].remove_particles_inside == 1)
                 {
-                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli].stlptr);
+                    bpc.removeParticlesInsideSTL(specs.outside_point, specs.stls[stli]);
                     amrex::Print() << "Num particles after stl removal " << bpc.TotalNumberOfParticles() << "\n";
                 }
             }

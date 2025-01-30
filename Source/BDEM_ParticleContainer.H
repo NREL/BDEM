@@ -123,7 +123,7 @@ public:
     void removeParticlesOutsideBoundary(const MultiFab *lsfab,const EBFArrayBoxFactory *ebfactory,
             const int ls_refinement);
     
-    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, STLtools* stl);
+    void removeParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, stl_specs& stlspcs);
     void checkParticlesInsideSTL(amrex::Vector<amrex::Real> outside_point, STLtools* stl);
 
     void moveParticles (const amrex::Real& dt, int do_chemistry=0, amrex::Real minradfrac=0.1, int verlet_schme = 0);
