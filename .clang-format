@@ -3,34 +3,8 @@ BasedOnStyle: Microsoft
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-# BreakBeforeBraces: Never
-# AllowShortFunctionsOnASingleLine: None
-# AllowShortBlocksOnASingleLine: Never
-# AllowShortIfStatementsOnASingleLine: Never
-# SpaceBeforeParens: ControlStatements
-# PointerAlignment: Right
 ColumnLimit: 100
-# AlignOperands: true
 AlignConsecutiveAssignments: true
-# AlignConsecutiveDeclarations: false
-# BinPackParameters: false
-# BinPackArguments: false
-# BreakBeforeBinaryOperators: None
-# ReflowComments: false
-# SortIncludes: false
-# DerivePointerAlignment: false
-# AlwaysBreakTemplateDeclarations: No
-# SpacesInAngles: false
-# IndentCaseLabels: true
-# BraceWrapping:
-#     AfterClass: true
-#     AfterStruct: true
-#     AfterFunction: true
-#     AfterControlStatement: true
-#     SplitEmptyFunction: true
-#     SplitEmptyRecord: true
-#     SplitEmptyNamespace: true
-#     BeforeElse: true
 SpacesInParentheses: true
 BinPackParameters: false  # Forces function declarations to use vertical argument formatting
 BinPackArguments: false   # Forces function calls to use vertical argument formatting
