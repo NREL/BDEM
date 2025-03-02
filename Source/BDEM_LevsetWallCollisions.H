@@ -1,23 +1,21 @@
-const auto phiarr = lsmfab->array(mfi);
+const auto phiarr = lsmfab->array( mfi );
 
-amrex::ParallelFor(np,[=]
-        AMREX_GPU_DEVICE (int i) noexcept
-{
-    ParticleType& p = pstruct[i];
-    Real rp = p.rdata(realData::radius);
+amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
+    ParticleType &p = pstruct[i];
+    Real rp         = p.rdata( realData::radius );
 
     Real ppos_inert[THREEDIM];
-    ppos_inert[XDIR] = p.pos(0);
-    ppos_inert[YDIR] = p.pos(1);
-    ppos_inert[ZDIR] = p.pos(2);
+    ppos_inert[XDIR] = p.pos( 0 );
+    ppos_inert[YDIR] = p.pos( 1 );
+    ppos_inert[ZDIR] = p.pos( 2 );
 
-    Real ls_value = get_levelset_value(ppos_inert, ls_refinement, phiarr, plo, dx);
+    Real ls_value = get_levelset_value( ppos_inert, ls_refinement, phiarr, plo, dx );
 
-    if (ls_value < rp)
+    if ( ls_value < rp )
     {
-        Real normal[3],fn[3],ft[3],rollfriqtorq_by_d[3],contact_vect[3];
+        Real normal[3], fn[3], ft[3], rollfriqtorq_by_d[3], contact_vect[3];
 
-        get_levelset_normal(ppos_inert,ls_refinement,phiarr,plo,dx,normal);
+        get_levelset_normal( ppos_inert, ls_refinement, phiarr, plo, dx, normal );
 
         /*if(amrex::Math::abs(ls_value)>rp)
           {
@@ -30,13 +28,24 @@ amrex::ParallelFor(np,[=]
         normal[1] *= -1;
         normal[2] *= -1;
 
-        get_wall_forces(ls_value,normal,p,dt,fn,ft,rollfriqtorq_by_d,ppos_inert,contact_law, liquid_bridging);
+        get_wall_forces(
+            ls_value,
+            normal,
+            p,
+            dt,
+            fn,
+            ft,
+            rollfriqtorq_by_d,
+            ppos_inert,
+            contact_law,
+            liquid_bridging );
 
-        if(do_heat_transfer)
+        if ( do_heat_transfer )
         {
-            Real walltemp=get_wall_temperature(p.pos(0),p.pos(1),p.pos(2),walltemp_vardir,walltemp_polynomial);
-            p.rdata(realData::temperature)=0.5*(walltemp+p.rdata(realData::temperature));
+            Real walltemp = get_wall_temperature(
+                p.pos( 0 ), p.pos( 1 ), p.pos( 2 ), walltemp_vardir, walltemp_polynomial );
+            p.rdata( realData::temperature ) =
+                0.5 * ( walltemp + p.rdata( realData::temperature ) );
         }
-
     }
-});
+} );
