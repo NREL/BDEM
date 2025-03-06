@@ -106,6 +106,7 @@ void BDEMParticleContainer::InitParticles(
 
             if ( solve_fibrils == 1 )
             {
+                Print() << "Reading fibrils\n";
                 ifs >> p.rdata( realData::fraction_of_fibrils );
             }
             else

@@ -106,7 +106,8 @@ int main( int argc, char *argv[] )
                     specs.liquid_density,
                     specs.moisture_content,
                     specs.moisture_content_stdev,
-                    specs.FSP );
+                    specs.FSP,
+                    specs.solve_fibrillation );
             }
             bpc.InitChemSpecies( specs.species_massfracs.data() );
         }
