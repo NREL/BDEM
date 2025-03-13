@@ -1,0 +1,50 @@
+#geometry parameters
+bdem.prob_lo        = -0.025     -0.021     0.      # lo corner of physical domain
+bdem.prob_hi        = 0.025   0.06    0.005    # hi corner of physical domain
+bdem.ncells         = 50     81     5
+bdem.max_grid_size  = 16
+bdem.is_it_periodic = 0      0      0
+
+#0 - outflow
+#1 - wall
+bdem.bc_lower = 1 1 1
+bdem.bc_upper = 1 1 1
+
+#timestepping
+bdem.final_time=0.5
+bdem.max_steps=100000000
+bdem.write_output_time=0.005
+bdem.num_redist = 25
+bdem.cfl = 0.01
+bdem.init_particles_using_file = 0
+bdem.verlet_scheme = 1
+
+bdem.mincoords_autogen =  -0.025     -0.021     0. 
+bdem.maxcoords_autogen =  0.025   0.06    0.005
+bdem.meanvel_autogen   = 0 0 0
+bdem.fluctuation_autogen   = 0.0 0.0 0.0
+bdem.radius_autogen = 1e-4
+bdem.dens_autogen = 1000.0
+bdem.temp_autogen = 300.0
+
+#particle intrinsics
+bdem.normal_spring_constant = 50
+bdem.normal_restitution_coefficient = 0.9
+bdem.friction_coefficient = 5
+bdem.tangential_spring_constant = 50
+bdem.tangential_restitution_coefficient = 0.9
+bdem.rolling_friction_coefficient = 0.1
+bdem.CG_ratio = 5
+
+#physics
+bdem.solve_fibrillation = 1;
+
+bdem.gravity = 0.0 -9.8 0.0
+bdem.number_of_stl_files = 1
+bdem.stl_names= "impeller_scaled"
+bdem.impeller_scaled_dynamicstl=2
+bdem.impeller_scaled_dynamicstl_rot_dir = 0 0 1
+bdem.impeller_scaled_dynamicstl_rot_vel= 5
+
+bdem.impeller_scaled_dynamicstl_geo_rot_center = true
+bdem.impeller_scaled_grid_size = 40 40 40
