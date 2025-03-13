@@ -140,7 +140,7 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                     Real fc[3]; // No cohesion with the wall... it doesn't fibrillize
                     Real p2xi = 0.;
                     solve_fibrils_equation(
-                        dt, vp, vw, dx, p.rdata( realData::fraction_of_fibrils ), p2xi, 0., fc );
+                        dt, fib_alpha, fib_beta, fib_ced, vp, vw, dx, p.rdata( realData::fraction_of_fibrils ), p2xi, 0., fc );
                 }
             }
         }

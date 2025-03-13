@@ -270,6 +270,9 @@ class DEMspecs
     // Switch to solve for fibrils
     int solve_fibrillation = 0;
 
+    // Parameters for fibrillation
+    Real fib_alpha, fib_beta, fib_ced;
+
     // Initial wall time
     std::chrono::_V2::high_resolution_clock::time_point start_time;
 
@@ -815,6 +818,9 @@ class DEMspecs
         if ( solve_fibrillation == 1 )
         {
             amrex::Print() << "Solving for fibrillation.\n";
+            pp.get("fibrillation_alpha", fib_alpha);
+            pp.get("fibrillation_beta", fib_beta);
+            pp.get("fibrillation_ced", fib_ced);
         }
 
         //- CG options

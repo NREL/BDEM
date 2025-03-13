@@ -259,7 +259,8 @@ int main( int argc, char *argv[] )
         particle_sourcing_time += dt;
 
         if ( steps > 0 )
-            specs.init_force = 0.0;
+        {    specs.init_force = 0.0;
+        }
         if ( specs.cantilever_beam_test )
         {
             if ( specs.cb_intervals )
@@ -409,7 +410,11 @@ int main( int argc, char *argv[] )
                 cb_torq,
                 specs.cb_dir,
                 specs.drag_model,
-                specs.solve_fibrillation );
+                specs.solve_fibrillation,
+                specs.fib_alpha,
+                specs.fib_beta,
+                specs.fib_ced
+            );
         }
         BL_PROFILE_VAR_STOP( forceCalc );
 

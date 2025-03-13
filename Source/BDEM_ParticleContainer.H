@@ -155,7 +155,11 @@ class BDEMParticleContainer
         const Real cb_torq                = 0.0,
         const int cb_dir                  = 0,
         const int drag_model              = 0,
-        const int solve_fibrillation      = 0 );
+        const int solve_fibrillation      = 0, 
+        const Real fib_alpha      = 0.,
+        const Real fib_beta      = 0.,
+        const Real fib_ced      = 0. 
+    );
 
     Real compute_coll_timescale( int bonded_sphere_particles, int contact_law );
 

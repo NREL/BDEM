@@ -780,19 +780,18 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
     Real dt,
+    Real alpha,
+    Real beta,
+    Real ced,
     Real vp[3],
     Real vn[3],
     Real dx[3],
     Real &xi,
-    const Real &xi_2,
+    const Real xi_2,
     const Real A_c,
-    Real fn[3] )
+    Real fn[3] 
+)
 {
-    //- Equation parameters
-    Real a = 1.;
-    Real b = 1.;
-    Real c = 0.; // Coesive force per unit area for fully fibrillized material
-
     //- Compute rate of deformation and rate of rotation
     Real r = normVec( dx );
     Real normal[3];
@@ -809,9 +808,9 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
     Real vrel_y = DotProd( vrel, y );
     Real vrel_z = DotProd( vrel, z );
 
-    Real omega_tmp = ( vrel_y * vrel_y + vrel_z * vrel_z ) / ( 8. * r );
-    Real gammadot  = std::sqrt( omega_tmp );
-    Real d         = std::sqrt( omega_tmp + vrel_r * vrel_r / ( 8. * r ) );
+    Real omega_tmp = ( vrel_y * vrel_y + vrel_z * vrel_z ) / ( 8. * r + TINYVAL );
+    Real gammadot  = std::sqrt( omega_tmp ) + TINYVAL;
+    Real d         = std::sqrt( omega_tmp + ( vrel_r * vrel_r ) / ( 8. * r + TINYVAL) );
 
     //- Flow parameter
     Real psi = ( d - gammadot ) / ( d + gammadot );
@@ -821,20 +820,20 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
         return;
 
     //- Advance the fraction of fibrils
-    xi = ( xi + a * dt * gammadot * std::sqrt( psi ) ) / ( 1. + dt * b * gammadot );
+    xi = ( xi + alpha * dt * gammadot * std::sqrt( psi ) ) / ( 1. + dt * beta * gammadot );
 
-    //- Bound fraction of fibrils
+    // //- Bound fraction of fibrils
     if ( xi > 1. )
     {
         xi = 1.;
     }
-    else if ( xi < 0.f )
+    else if ( xi < 0. )
     {
-        xi = 0.f;
+        xi = 0.;
     }
 
-    //- Add cohesive force (simple linear)
-    Real coesive_force = -c * A_c * ( xi * xi_2 );
+    //- Add cohesive force using SJKR model
+    Real coesive_force = ced * A_c * ( xi * xi_2 );
 
     fn[0] += normal[0] * coesive_force;
     fn[1] += normal[1] * coesive_force;

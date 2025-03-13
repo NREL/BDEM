@@ -94,7 +94,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void generateOrthonormalBasis( Real a[3], Rea
     Real dot_ae_sqr = DotProd( a, e );
     dot_ae_sqr *= dot_ae_sqr;
 
-    if ( 1. - TINYVAL < dot_ae_sqr && dot_ae_sqr > 1. + TINYVAL )
+    if ( 1. - TINYVAL > dot_ae_sqr && dot_ae_sqr < 1. + TINYVAL )
     {
         e[0] = 0.;
         e[1] = 1.;

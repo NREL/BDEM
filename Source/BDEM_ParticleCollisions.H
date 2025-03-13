@@ -585,6 +585,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
 
                 solve_fibrils_equation(
                     dt,
+                    fib_alpha,
+                    fib_beta,
+                    fib_ced,
                     v1,
                     v2,
                     dx,

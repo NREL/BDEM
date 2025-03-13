@@ -82,7 +82,11 @@ void BDEMParticleContainer::computeForces(
     const Real cb_torq,
     const int cb_dir,
     const int drag_model,
-    const int solve_fibrillation )
+    const int solve_fibrillation,
+    const Real fib_alpha,
+    const Real fib_beta,
+    const Real fib_ced
+)
 {
     BL_PROFILE( "BDEMParticleContainer::computeForces" );
 
