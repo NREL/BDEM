@@ -594,7 +594,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                     p1.rdata( realData::fraction_of_fibrils ),
                     p2.rdata( realData::fraction_of_fibrils ),
                     A_c,
-                    fn );
+                    fn,
+                    kn_dem * rad1 / 5.0
+                );
             }
 
             // Total force on composite particle is just a sum across the forces on all component

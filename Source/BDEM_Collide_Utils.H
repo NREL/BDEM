@@ -789,7 +789,8 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
     Real &xi,
     const Real xi_2,
     const Real A_c,
-    Real fn[3] 
+    Real fn[3],
+    Real max_force = 1e+20
 )
 {
     //- Compute rate of deformation and rate of rotation
@@ -833,9 +834,9 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
     }
 
     //- Add cohesive force using SJKR model
-    Real coesive_force = ced * A_c * ( xi * xi_2 );
+    Real cohesive_force = std::min( ced * A_c * ( xi * xi_2 ), max_force  );
 
-    fn[0] += normal[0] * coesive_force;
-    fn[1] += normal[1] * coesive_force;
-    fn[2] += normal[2] * coesive_force;
+    fn[0] += normal[0] * cohesive_force;
+    fn[1] += normal[1] * cohesive_force;
+    fn[2] += normal[2] * cohesive_force;
 }
