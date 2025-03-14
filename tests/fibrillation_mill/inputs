@@ -48,6 +48,7 @@ bdem.solve_fibrillation = 1
 bdem.fibrillation_alpha = 1
 bdem.fibrillation_beta = 0
 bdem.fibrillation_ced = 3e+5
+bdem.dt_error_target = 1e-3
 
 
 bdem.gravity = 0.0 -9.8 0.0

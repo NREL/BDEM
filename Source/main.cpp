@@ -170,6 +170,9 @@ int main( int argc, char *argv[] )
     Print() << "tcoll:" << DEM::tcoll << "\n";
 
     Real dt          = ( specs.constant_dt > 0.0 ) ? specs.constant_dt : specs.cfl * DEM::tcoll;
+    specs.dt_min *= DEM::tcoll;
+    specs.dt_max *= DEM::tcoll;
+    
     int steps        = 0;
     Real time        = zero;
     Real output_time = zero;
@@ -177,7 +180,7 @@ int main( int argc, char *argv[] )
     Real output_timeMass        = zero;
     Real output_timePrint       = zero;
     int output_it               = 0;
-    amrex::Print() << "Time step dt = " << dt << "\n";
+    amrex::Print() << "Time step dt = " << dt << "\tdt min = " << specs.dt_min << "\tdt max = " << specs.dt_max << "\n";
 
     amrex::Print() << "Num particles before eb removal  " << bpc.TotalNumberOfParticles() << "\n";
     // if(EBtools::using_levelset_geometry and !specs.restartedcase)
@@ -375,17 +378,15 @@ int main( int argc, char *argv[] )
             bpc.checkParticlesInsideSTL(specs.outside_point);
             }*/
 
-#define USE_HARI_INTEGRATION
+        if ( specs.use_hari_scheme )
+        {
+            #include "BDEM_adaptive_integration.H"
+        }
+        else
+        {
+            #include "BDEM_Verlet_integration.H"
 
-#ifdef USE_HARI_INTEGRATION
-
-#include "BDEM_adaptive_integration.H"
-
-#else
-
-#include "BDEM_Verlet_integration.H"
-
-#endif
+        }
 
 
         for ( int stli = 0; stli < specs.stls.size(); stli++ )
@@ -448,6 +449,7 @@ int main( int argc, char *argv[] )
 
             Print() << "step:" << steps << "\t"
                     << "time:" << time << "\t"
+                    << "dt:" << dt << "\t"
                     << "clock time:" << specs.elapsed_clock_time() << " s\n";
 
             output_timePrint = zero;

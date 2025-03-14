@@ -74,6 +74,7 @@ class BDEMParticleContainer
         setRealCommComp( 3 + realData::xangvel_prvs, false );
         setRealCommComp( 3 + realData::yangvel_prvs, false );
         setRealCommComp( 3 + realData::zangvel_prvs, false );
+        setRealCommComp( 3 + realData::vel_error, false );
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);
@@ -253,8 +254,19 @@ class BDEMParticleContainer
 
     void particleColoringStriation( Real striation_len, int striation_dir );
 
+    // Returns true if the timestep needs to be recomputed
+    bool updateTimeStep(Real& dt, const int steps, const Real dt_min, const Real dt_max, const Real tolerance, const Real error_target );
+
+    Real error_ = 0.;
+    Real error_old_ = 0.;
+    Real error_zero_ = 0.;
+
+    void updateError(const Real dt, const int steps);
+
   private:
     int domain_bc[6] = { 0 };
     mechanism *m_chemptr;
+
+
 };
 #endif

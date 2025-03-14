@@ -53,6 +53,7 @@ struct realData
         xangvel_prvs,
         yangvel_prvs,
         zangvel_prvs,
+        vel_error,
         count
     };
 };
@@ -278,6 +279,13 @@ class DEMspecs
 
     // Parameters for fibrillation
     Real fib_alpha, fib_beta, fib_ced;
+
+    // Adaptive time step
+    int use_hari_scheme = 1; // is the default
+    Real dt_min = 0.01; 
+    Real dt_max = 0.25;
+    Real dt_error_jump_ratio = 1e+6;
+    Real dt_error_target = 1e-5;
 
     // Initial wall time
     std::chrono::_V2::high_resolution_clock::time_point start_time;
@@ -869,6 +877,15 @@ class DEMspecs
 
             //- The sliding friction coefficient cannot be pre-scaled and it is computed during
             //collisions
+        }
+
+        pp.query( "high_order_adaptive_time_step", use_hari_scheme );
+        if ( use_hari_scheme == 1 )
+        {
+            pp.query("dt_cfl_min", dt_min);
+            pp.query("dt_cfl_max", dt_max);
+            pp.query("dt_error_jump_ratio", dt_error_jump_ratio);
+            pp.query("dt_error_target", dt_error_target);
         }
     }
 

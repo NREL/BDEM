@@ -793,44 +793,48 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void solve_fibrils_equation(
     Real max_force = 1e+20
 )
 {
-    //- Compute rate of deformation and rate of rotation
-    Real r = normVec( dx );
     Real normal[3];
     getunitvec( dx, normal );
-
-    //- Create orthonormal basis
-    Real y[3];
-    Real z[3];
-    generateOrthonormalBasis( normal, y, z );
-
-    Real vrel[3] = initV1MinusV2( vn, vp );
-
-    Real vrel_r = DotProd( vrel, normal );
-    Real vrel_y = DotProd( vrel, y );
-    Real vrel_z = DotProd( vrel, z );
-
-    Real omega_tmp = ( vrel_y * vrel_y + vrel_z * vrel_z ) / ( 8. * r + TINYVAL );
-    Real gammadot  = std::sqrt( omega_tmp ) + TINYVAL;
-    Real d         = std::sqrt( omega_tmp + ( vrel_r * vrel_r ) / ( 8. * r + TINYVAL) );
-
-    //- Flow parameter
-    Real psi = ( d - gammadot ) / ( d + gammadot );
-
-    //- No fibril formation when deformation is smaller than rotation
-    if ( psi < TINYVAL )
-        return;
-
-    //- Advance the fraction of fibrils
-    xi = ( xi + alpha * dt * gammadot * std::sqrt( psi ) ) / ( 1. + dt * beta * gammadot );
-
-    // //- Bound fraction of fibrils
-    if ( xi > 1. )
+    
+    // Only update when at least one coefficient is not zero
+    if (alpha > TINYVAL || beta > TINYVAL )
     {
-        xi = 1.;
-    }
-    else if ( xi < 0. )
-    {
-        xi = 0.;
+        //- Compute rate of deformation and rate of rotation
+        Real r = normVec( dx );
+        //- Create orthonormal basis
+        Real y[3];
+        Real z[3];
+        generateOrthonormalBasis( normal, y, z );
+
+        Real vrel[3] = initV1MinusV2( vn, vp );
+
+        Real vrel_r = DotProd( vrel, normal );
+        Real vrel_y = DotProd( vrel, y );
+        Real vrel_z = DotProd( vrel, z );
+
+        Real omega_tmp = ( vrel_y * vrel_y + vrel_z * vrel_z ) / ( 8. * r + TINYVAL );
+        Real gammadot  = std::sqrt( omega_tmp ) + TINYVAL;
+        Real d         = std::sqrt( omega_tmp + ( vrel_r * vrel_r ) / ( 8. * r + TINYVAL) );
+
+        //- Flow parameter
+        Real psi = ( d - gammadot ) / ( d + gammadot );
+
+        //- No fibril formation when deformation is smaller than rotation
+        if ( psi < TINYVAL )
+            return;
+
+        //- Advance the fraction of fibrils
+        xi = ( xi + alpha * dt * gammadot * std::sqrt( psi ) ) / ( 1. + dt * beta * gammadot );
+
+        // //- Bound fraction of fibrils
+        if ( xi > 1. )
+        {
+            xi = 1.;
+        }
+        else if ( xi < 0. )
+        {
+            xi = 0.;
+        }
     }
 
     //- Add cohesive force using SJKR model

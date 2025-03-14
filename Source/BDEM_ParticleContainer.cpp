@@ -507,6 +507,15 @@ void BDEMParticleContainer::moveParticles(
                     p.pos( 0 ) = p.rdata( realData::posx_prvs ) + ( vel_jump[0] * dt );
                     p.pos( 1 ) = p.rdata( realData::posy_prvs ) + ( vel_jump[1] * dt );
                     p.pos( 2 ) = p.rdata( realData::posz_prvs ) + ( vel_jump[2] * dt );
+                    
+                    // Compute velocity error
+                    Real vel_err[3] = {
+                        p.rdata( realData::xvel ) - 2.0*vel_jump[0] + p.rdata( realData::xvel_prvs ),
+                        p.rdata( realData::yvel ) - 2.0*vel_jump[1] + p.rdata( realData::yvel_prvs ),
+                        p.rdata( realData::zvel ) - 2.0*vel_jump[2] + p.rdata( realData::zvel_prvs )
+                    };
+
+                    p.rdata( realData::vel_error ) = DotProd(vel_err, vel_err);
 
                 }
 
@@ -972,7 +981,7 @@ void BDEMParticleContainer::writeParticles(
     real_data_names.push_back( "xangvel_prvs" );
     real_data_names.push_back( "yangvel_prvs" );
     real_data_names.push_back( "zangvel_prvs" );
-
+    real_data_names.push_back( "vel_error" );
     int_data_names.push_back( "phase" );
     int_data_names.push_back( "near_softwall" );
     int_data_names.push_back( "type_id" );
@@ -1090,4 +1099,104 @@ void BDEMParticleContainer::removeEBOverlapParticles(
         }
     }
     Redistribute();
+}
+
+void BDEMParticleContainer::updateError(const Real dt, const int steps)
+{
+    const int lev        = 0;
+    const Geometry &geom = Geom( lev );
+    auto &plev           = GetParticles( lev );
+
+    using PType    = typename BDEMParticleContainer::SuperParticleType;
+
+    error_old_ = error_;
+
+    /**
+     * This reduces the minimum of v^(n+1) - v^*. This expression uses the velocity correction
+     * equation to avoid storing v^*.
+     */
+    error_ = amrex::ReduceMax ( 
+        *this, [=] AMREX_GPU_HOST_DEVICE( const PType &p ) -> Real {
+
+            // Real errorVec[3] = {
+            //     ( p.rdata(realData::xvel_prvs) - p.rdata(realData::xvel) + ( p.rdata(realData::fx) * dt / p.rdata( realData::mass) ) ) ,
+            //     ( p.rdata(realData::yvel_prvs) - p.rdata(realData::yvel) + ( p.rdata(realData::fy) * dt / p.rdata( realData::mass) ) ) ,
+            //     ( p.rdata(realData::zvel_prvs) - p.rdata(realData::zvel) + ( p.rdata(realData::fz) * dt / p.rdata( realData::mass) ) ) 
+            // };
+
+            // return DotProd(errorVec, errorVec) ;
+            return p.rdata(realData::vel_error);
+        }
+    );
+
+    ParallelDescriptor::ReduceRealMax( error_ );
+
+    if ( steps == 0 )
+    {
+        error_zero_ = error_;
+        error_old_ = 99999;
+    }
+}
+
+bool BDEMParticleContainer::updateTimeStep( Real& dt, const int steps, const Real dt_min, const Real dt_max, const Real tolerance, const Real error_target )
+{
+    updateError( dt, steps );
+
+    bool recompute = false;
+
+    // Check on error increase
+    if ( ( error_ / error_old_ ) > tolerance && dt > dt_min + TINYVAL) recompute = true;
+    
+    if ( recompute )
+    {
+        amrex::Print() << "Recomputing time step. Error: " << error_ / error_old_  << " dt: " << dt <<  "\n";
+
+        // Transform forces back from f^* to f^n
+        // Transform positions and velocities back
+
+        const int lev = 0;
+        auto &plev    = GetParticles( lev );
+
+        for ( MFIter mfi = MakeMFIter( lev ); mfi.isValid(); ++mfi )
+        {
+            int gid    = mfi.index();
+            int tid    = mfi.LocalTileIndex();
+            auto index = std::make_pair( gid, tid );
+
+            auto &ptile           = plev[index];
+            auto &aos             = ptile.GetArrayOfStructs();
+            const size_t np       = aos.numParticles();
+            ParticleType *pstruct = aos().dataPtr();
+
+            amrex::ParallelFor( 
+                np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
+                    ParticleType &p = pstruct[i];
+
+                    p.rdata(realData::fx) = ( 2.0 * p.rdata( realData::mass) / dt ) * ( p.rdata(realData::xvel) - p.rdata(realData::xvel_prvs) ) - p.rdata(realData::fx);
+                    p.rdata(realData::fy) = ( 2.0 * p.rdata( realData::mass) / dt ) * ( p.rdata(realData::yvel) - p.rdata(realData::yvel_prvs) ) - p.rdata(realData::fy);
+                    p.rdata(realData::fz) = ( 2.0 * p.rdata( realData::mass) / dt ) * ( p.rdata(realData::zvel) - p.rdata(realData::zvel_prvs) ) - p.rdata(realData::fz);
+                    p.rdata(realData::taux) = ( 2.0 / ( dt * p.rdata( realData::Iinv ) ) ) * ( p.rdata(realData::xangvel) - p.rdata(realData::xangvel_prvs) ) - p.rdata(realData::taux);
+                    p.rdata(realData::tauy) = ( 2.0 / ( dt * p.rdata( realData::Iinv ) ) ) * ( p.rdata(realData::yangvel) - p.rdata(realData::yangvel_prvs) ) - p.rdata(realData::tauy);
+                    p.rdata(realData::tauz) = ( 2.0 / ( dt * p.rdata( realData::Iinv ) ) ) * ( p.rdata(realData::zangvel) - p.rdata(realData::zangvel_prvs) ) - p.rdata(realData::tauz);
+                    p.rdata(realData::xvel) = p.rdata(realData::xvel_prvs);
+                    p.rdata(realData::yvel) = p.rdata(realData::yvel_prvs);
+                    p.rdata(realData::zvel) = p.rdata(realData::zvel_prvs);
+                    p.rdata(realData::xangvel) = p.rdata(realData::xangvel_prvs);
+                    p.rdata(realData::yangvel) = p.rdata(realData::yangvel_prvs);
+                    p.rdata(realData::zangvel) = p.rdata(realData::zangvel_prvs);
+                    p.pos(0) = p.rdata(realData::posx_prvs);
+                    p.pos(1) = p.rdata(realData::posy_prvs);
+                    p.pos(2) = p.rdata(realData::posz_prvs);
+                }
+            );
+        }
+        
+    }
+
+   // amrex::Print() << " Error : " << error_ << "\n";
+    // Update time step
+    dt = std::max( std::min( ( error_target / ( error_ + TINYVAL ) ) * dt, dt_max ) , dt_min );
+
+    return recompute;
+
 }
