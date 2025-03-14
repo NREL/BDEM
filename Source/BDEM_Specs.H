@@ -47,6 +47,12 @@ struct realData
         theta_x = first_bond_v + MAXBONDS * 9,
         firstspec,
         fraction_of_fibrils,
+        xvel_prvs, // Intermediate values for higher order integration
+        yvel_prvs,
+        zvel_prvs,
+        xangvel_prvs,
+        yangvel_prvs,
+        zangvel_prvs,
         count
     };
 };

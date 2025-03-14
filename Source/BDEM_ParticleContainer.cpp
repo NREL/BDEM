@@ -324,7 +324,7 @@ void BDEMParticleContainer::computeForces(
 }
 
 void BDEMParticleContainer::moveParticles(
-    const amrex::Real &dt, int do_chemistry, Real minradfrac, int verlet_scheme )
+    const amrex::Real &dt, int do_chemistry, Real minradfrac, int verlet_scheme, int adapt_step )
 {
     BL_PROFILE( "BDEMParticleContainer::moveParticles" );
 
@@ -344,6 +344,14 @@ void BDEMParticleContainer::moveParticles(
     Real *arrh_Ea      = m_chemptr->arrh_Ea.data();
     Real *molwts       = m_chemptr->molwts.data();
     int *solidspec_ids = m_chemptr->solidspec_ids.data();
+
+    // int xvel_id = ( adapt_step > 0 ) ? realData::xvel_prvs : realData::xvel;
+    // int yvel_id = ( adapt_step > 0 ) ? realData::yvel_prvs : realData::yvel;
+    // int xvel_id = ( adapt_step > 0 ) ? realData::zvel_prvs : realData::zvel;
+
+    // int xangvel_id = ( adapt_step > 0 ) ? realData::xangvel_prvs : realData::xangvel;
+    // int yangvel_id = ( adapt_step > 0 ) ? realData::yangvel_prvs : realData::yangvel;
+    // int zangvel_id = ( adapt_step > 0 ) ? realData::zangvel_prvs : realData::zangvel;
 
     for ( MFIter mfi = MakeMFIter( lev ); mfi.isValid(); ++mfi )
     {
@@ -376,78 +384,137 @@ void BDEMParticleContainer::moveParticles(
                 pos_old[1] = p.pos( 1 );
                 pos_old[2] = p.pos( 2 );
 
-                Real verlet_factor = ( verlet_scheme ) ? 0.5 : 1.0;
-
-                // Force-based damping
-                Real vel_vect[THREEDIM] = {
-                    p.rdata( realData::xvel ),
-                    p.rdata( realData::yvel ),
-                    p.rdata( realData::zvel ) };
-                Real f_vect[THREEDIM] = {
-                    p.rdata( realData::fx ), p.rdata( realData::fy ), p.rdata( realData::fz ) };
-                Real vmag = sqrt( dotpdt( vel_vect, vel_vect ) );
-                Real fmag = sqrt( dotpdt( f_vect, f_vect ) );
-                if ( vmag > TINYVAL )
+                // Store previous values if it is the first step in the adaptive algorithm
+                if (adapt_step == 1)
                 {
-                    p.rdata( realData::fx ) -=
-                        DEM::force_damping * fmag * ( p.rdata( realData::xvel ) / vmag );
-                    p.rdata( realData::fy ) -=
-                        DEM::force_damping * fmag * ( p.rdata( realData::yvel ) / vmag );
-                    p.rdata( realData::fz ) -=
-                        DEM::force_damping * fmag * ( p.rdata( realData::zvel ) / vmag );
+                    p.rdata(realData::posx_prvs) = p.pos(0);
+                    p.rdata(realData::posy_prvs) = p.pos(1);
+                    p.rdata(realData::posz_prvs) = p.pos(2);
+
+                    p.rdata(realData::xvel_prvs) = p.rdata( realData::xvel );
+                    p.rdata(realData::yvel_prvs) = p.rdata( realData::yvel );
+                    p.rdata(realData::zvel_prvs) = p.rdata( realData::zvel );
+
+                    p.rdata(realData::xangvel_prvs) = p.rdata( realData::xangvel );
+                    p.rdata(realData::yangvel_prvs) = p.rdata( realData::yangvel );
+                    p.rdata(realData::zangvel_prvs) = p.rdata( realData::zangvel );
                 }
 
-                p.rdata( realData::xvel ) +=
-                    ( p.rdata( realData::fx ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
-                    DEM::global_damping * p.rdata( realData::xvel );
-                p.rdata( realData::yvel ) +=
-                    ( p.rdata( realData::fy ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
-                    DEM::global_damping * p.rdata( realData::yvel );
-                p.rdata( realData::zvel ) +=
-                    ( p.rdata( realData::fz ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
-                    DEM::global_damping * p.rdata( realData::zvel );
+                Real verlet_factor = ( verlet_scheme == 0) ? 1.0 : 0.5;
 
-                if ( verlet_scheme != 2 )
+                //- This is the code to use when there is damping (not for adaptive algorithm)
+                if ( DEM::force_damping > TINYVAL && adapt_step == 0)
                 {
-                    p.pos( 0 ) += p.rdata( realData::xvel ) * dt;
-                    p.pos( 1 ) += p.rdata( realData::yvel ) * dt;
-                    p.pos( 2 ) += p.rdata( realData::zvel ) * dt;
+                    // Force-based damping
+                    Real vel_vect[THREEDIM] = {
+                        p.rdata( realData::xvel ),
+                        p.rdata( realData::yvel ),
+                        p.rdata( realData::zvel ) };
+                    Real f_vect[THREEDIM] = {
+                        p.rdata( realData::fx ), p.rdata( realData::fy ), p.rdata( realData::fz ) };
+                    Real vmag = sqrt( dotpdt( vel_vect, vel_vect ) );
+                    Real fmag = sqrt( dotpdt( f_vect, f_vect ) );
+                    if ( vmag > TINYVAL )
+                    {
+                        p.rdata( realData::fx ) -=
+                            DEM::force_damping * fmag * ( p.rdata( realData::xvel ) / vmag );
+                        p.rdata( realData::fy ) -=
+                            DEM::force_damping * fmag * ( p.rdata( realData::yvel ) / vmag );
+                        p.rdata( realData::fz ) -=
+                            DEM::force_damping * fmag * ( p.rdata( realData::zvel ) / vmag );
+                    }
+
+                    p.rdata( realData::xvel ) +=
+                        ( p.rdata( realData::fx ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
+                        DEM::global_damping * p.rdata( realData::xvel );
+                    p.rdata( realData::yvel ) +=
+                        ( p.rdata( realData::fy ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
+                        DEM::global_damping * p.rdata( realData::yvel );
+                    p.rdata( realData::zvel ) +=
+                        ( p.rdata( realData::fz ) / p.rdata( realData::mass ) ) * dt * verlet_factor -
+                        DEM::global_damping * p.rdata( realData::zvel );
+
+                    // Torque-based damping
+                    Real angvel_vect[THREEDIM] = {
+                        p.rdata( realData::xangvel ),
+                        p.rdata( realData::yangvel ),
+                        p.rdata( realData::zangvel ) };
+                    Real tau_vect[THREEDIM] = {
+                        p.rdata( realData::taux ),
+                        p.rdata( realData::tauy ),
+                        p.rdata( realData::tauz ) };
+                    Real angvmag = sqrt( dotpdt( angvel_vect, angvel_vect ) );
+                    Real tmag    = sqrt( dotpdt( tau_vect, tau_vect ) );
+                    if ( angvmag > TINYVAL )
+                    {
+                        p.rdata( realData::taux ) -=
+                            DEM::force_damping * tmag * ( p.rdata( realData::xangvel ) / angvmag );
+                        p.rdata( realData::tauy ) -=
+                            DEM::force_damping * tmag * ( p.rdata( realData::yangvel ) / angvmag );
+                        p.rdata( realData::tauz ) -=
+                            DEM::force_damping * tmag * ( p.rdata( realData::zangvel ) / angvmag );
+                    }
+
+                    p.rdata( realData::xangvel ) +=
+                        p.rdata( realData::taux ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
+                        DEM::angv_damping * p.rdata( realData::xangvel );
+                    p.rdata( realData::yangvel ) +=
+                        p.rdata( realData::tauy ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
+                        DEM::angv_damping * p.rdata( realData::yangvel );
+                    p.rdata( realData::zangvel ) +=
+                        p.rdata( realData::tauz ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
+                        DEM::angv_damping * p.rdata( realData::zangvel );
+
                 }
 
-                // Torque-based damping
-                Real angvel_vect[THREEDIM] = {
-                    p.rdata( realData::xangvel ),
-                    p.rdata( realData::yangvel ),
-                    p.rdata( realData::zangvel ) };
-                Real tau_vect[THREEDIM] = {
-                    p.rdata( realData::taux ),
-                    p.rdata( realData::tauy ),
-                    p.rdata( realData::tauz ) };
-                Real angvmag = sqrt( dotpdt( angvel_vect, angvel_vect ) );
-                Real tmag    = sqrt( dotpdt( tau_vect, tau_vect ) );
-                if ( angvmag > TINYVAL )
+
+                if ( adapt_step != 2 )
                 {
-                    p.rdata( realData::taux ) -=
-                        DEM::force_damping * tmag * ( p.rdata( realData::xangvel ) / angvmag );
-                    p.rdata( realData::tauy ) -=
-                        DEM::force_damping * tmag * ( p.rdata( realData::yangvel ) / angvmag );
-                    p.rdata( realData::tauz ) -=
-                        DEM::force_damping * tmag * ( p.rdata( realData::zangvel ) / angvmag );
+                    p.rdata( realData::xvel ) += ( p.rdata( realData::fx ) / p.rdata( realData::mass ) ) * dt * verlet_factor;
+                    p.rdata( realData::yvel ) += ( p.rdata( realData::fy ) / p.rdata( realData::mass ) ) * dt * verlet_factor;
+                    p.rdata( realData::zvel ) += ( p.rdata( realData::fz ) / p.rdata( realData::mass ) ) * dt * verlet_factor;
+
+                    p.rdata( realData::xangvel ) +=  p.rdata( realData::taux ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
+                    p.rdata( realData::yangvel ) +=  p.rdata( realData::tauy ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
+                    p.rdata( realData::zangvel ) +=  p.rdata( realData::tauz ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
+
+                    if ( verlet_scheme != 2 )
+                    {
+                        p.pos( 0 ) += p.rdata( realData::xvel ) * dt;
+                        p.pos( 1 ) += p.rdata( realData::yvel ) * dt;
+                        p.pos( 2 ) += p.rdata( realData::zvel ) * dt;
+                    }
+                }
+                else
+                {
+                    Real vel_jump[3] = {
+                        0.5*( p.rdata( realData::xvel ) + p.rdata( realData::xvel_prvs ) ),
+                        0.5*( p.rdata( realData::yvel ) + p.rdata( realData::yvel_prvs ) ),
+                        0.5*( p.rdata( realData::zvel ) + p.rdata( realData::zvel_prvs ) )
+
+                    };
+
+                    p.rdata( realData::xvel ) = vel_jump[0] + ( 0.5 * p.rdata( realData::fx ) / p.rdata( realData::mass )  * dt );
+
+                    p.rdata( realData::yvel ) = vel_jump[1] + ( 0.5 * p.rdata( realData::fy ) / p.rdata( realData::mass )  * dt );
+
+                    p.rdata( realData::zvel ) = vel_jump[2] + ( 0.5 * p.rdata( realData::fz ) / p.rdata( realData::mass )  * dt );
+
+                    p.rdata( realData::xangvel ) = 0.5 * ( p.rdata( realData::xangvel ) + p.rdata( realData::xangvel_prvs ) +  p.rdata( realData::taux ) * p.rdata( realData::Iinv ) * dt );
+                    p.rdata( realData::yangvel ) = 0.5 * ( p.rdata( realData::yangvel ) + p.rdata( realData::yangvel_prvs ) +  p.rdata( realData::tauy ) * p.rdata( realData::Iinv ) * dt );
+                    p.rdata( realData::zangvel ) = 0.5 * ( p.rdata( realData::zangvel ) + p.rdata( realData::zangvel_prvs ) +  p.rdata( realData::tauz ) * p.rdata( realData::Iinv ) * dt );
+
+                    p.pos( 0 ) = p.rdata( realData::posx_prvs ) + ( vel_jump[0] * dt );
+                    p.pos( 1 ) = p.rdata( realData::posy_prvs ) + ( vel_jump[1] * dt );
+                    p.pos( 2 ) = p.rdata( realData::posz_prvs ) + ( vel_jump[2] * dt );
+
                 }
 
-                p.rdata( realData::xangvel ) +=
-                    p.rdata( realData::taux ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
-                    DEM::angv_damping * p.rdata( realData::xangvel );
-                p.rdata( realData::yangvel ) +=
-                    p.rdata( realData::tauy ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
-                    DEM::angv_damping * p.rdata( realData::yangvel );
-                p.rdata( realData::zangvel ) +=
-                    p.rdata( realData::tauz ) * p.rdata( realData::Iinv ) * dt * verlet_factor -
-                    DEM::angv_damping * p.rdata( realData::zangvel );
 
+ 
                 // Tracking change in theta_x for beam twisting testing
-                if ( verlet_scheme != 2 )
-                    p.rdata( realData::theta_x ) += p.rdata( realData::xangvel ) * dt;
+                // if ( verlet_scheme != 2 )
+                //     p.rdata( realData::theta_x ) += p.rdata( realData::xangvel ) * dt;
 
                 // FIXME: Chemistry should be compatible w Verlet scheme
                 if ( do_chemistry )
@@ -493,6 +560,7 @@ void BDEMParticleContainer::moveParticles(
                     }
                 }
 
+                // Do not use hardwall bcs for now
                 // FIXME: Update for glued sphere code
                 if ( x_lo_bc == HARDWALL_BC and p.pos( 0 ) < ( plo[0] + rp ) )
                 {
@@ -898,6 +966,12 @@ void BDEMParticleContainer::writeParticles(
     }
 
     real_data_names.push_back( "fraction_of_fibrils" );
+    real_data_names.push_back( "xvel_prvs" );
+    real_data_names.push_back( "yvel_prvs" );
+    real_data_names.push_back( "zvel_prvs" );
+    real_data_names.push_back( "xangvel_prvs" );
+    real_data_names.push_back( "yangvel_prvs" );
+    real_data_names.push_back( "zangvel_prvs" );
 
     int_data_names.push_back( "phase" );
     int_data_names.push_back( "near_softwall" );
@@ -936,6 +1010,7 @@ void BDEMParticleContainer::writeParticles(
     writeflags_real[realData::total_bridge_volume] = 1;
     writeflags_real[realData::theta_x]             = 1;
 
+
     for ( int i = 0; i < m_chemptr->nspecies; i++ )
     {
         writeflags_real[realData::firstspec + i] = 1;
@@ -945,6 +1020,7 @@ void BDEMParticleContainer::writeParticles(
         writeflags_int[intData::type_id] = 1;
     }
     writeflags_real[realData::fraction_of_fibrils] = 1;
+
 
     WritePlotFile(
         pltfile, "particles", writeflags_real, writeflags_int, real_data_names, int_data_names );

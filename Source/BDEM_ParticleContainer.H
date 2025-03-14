@@ -68,6 +68,12 @@ class BDEMParticleContainer
         for ( int i = 0; i < MAXSPECIES; i++ )
             setRealCommComp( 3 + realData::firstspec + i, false );
         setRealCommComp( 3 + realData::fraction_of_fibrils, false );
+        setRealCommComp( 3 + realData::xvel_prvs, false );
+        setRealCommComp( 3 + realData::yvel_prvs, false );
+        setRealCommComp( 3 + realData::zvel_prvs, false );
+        setRealCommComp( 3 + realData::xangvel_prvs, false );
+        setRealCommComp( 3 + realData::yangvel_prvs, false );
+        setRealCommComp( 3 + realData::zangvel_prvs, false );
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);
@@ -173,7 +179,9 @@ class BDEMParticleContainer
         const amrex::Real &dt,
         int do_chemistry       = 0,
         amrex::Real minradfrac = 0.1,
-        int verlet_schme       = 0 );
+        int verlet_schme       = 0,
+        int adapt_step         = 0 
+    );
 
     void writeParticles(
         const int n, const int bonded_sphere_particles, const std::string pltprefix );

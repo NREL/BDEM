@@ -375,54 +375,18 @@ int main( int argc, char *argv[] )
             bpc.checkParticlesInsideSTL(specs.outside_point);
             }*/
 
-        if ( specs.verlet_scheme )
-        {
-            BL_PROFILE_VAR( "MOVE_PART", movepart );
-            specs.verlet_scheme = 1;
-            bpc.moveParticles( dt, specs.do_chemistry, specs.minradius_frac, specs.verlet_scheme );
-            BL_PROFILE_VAR_STOP( movepart );
-        }
+#define USE_HARI_INTEGRATION
 
-        BL_PROFILE_VAR( "FORCE_CALC", forceCalc );
-        {
+#ifdef USE_HARI_INTEGRATION
 
-            bpc.computeForces(
-                dt,
-                EBtools::ebfactory,
-                EBtools::lsphi,
-                specs.do_heat_transfer,
-                specs.walltemp_vardir,
-                specs.walltemp_polynomial.data(),
-                EBtools::ls_refinement,
-                specs.stl_geom_present,
-                specs.contact_law,
-                steps,
-                specs.gravity,
-                specs.stls,
-                time,
-                specs.bonded_sphere_particles,
-                specs.liquid_bridging,
-                specs.particle_cohesion,
-                specs.init_force,
-                specs.init_force_dir,
-                specs.init_force_comp,
-                cb_force,
-                cb_torq,
-                specs.cb_dir,
-                specs.drag_model,
-                specs.solve_fibrillation,
-                specs.fib_alpha,
-                specs.fib_beta,
-                specs.fib_ced
-            );
-        }
-        BL_PROFILE_VAR_STOP( forceCalc );
+#include "BDEM_adaptive_integration.H"
 
-        BL_PROFILE_VAR( "MOVE_PART", movepart );
-        if ( specs.verlet_scheme )
-            specs.verlet_scheme = 2;
-        bpc.moveParticles( dt, specs.do_chemistry, specs.minradius_frac, specs.verlet_scheme );
-        BL_PROFILE_VAR_STOP( movepart );
+#else
+
+#include "BDEM_Verlet_integration.H"
+
+#endif
+
 
         for ( int stli = 0; stli < specs.stls.size(); stli++ )
         {
