@@ -1117,6 +1117,108 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void get_closest_local_tri(
             }
 }
 
+// Like get_closest_local_tri, but it focuses on finding the triangle that
+// overlaps. Therefore, it first does a simple distance check on the normal and
+// if positive, it checks if the particle is really inside the triangle.
+// This minimizes the number of computations required.
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void tri_collision_check(
+    Real p[3],
+    Real radius,
+    Real &mindist,
+    int &idmin,
+    const Real time,
+    const int movetype,
+    const Real dir[3],
+    const Real center[3],
+    const Real movevel,
+    const Real grid_bbmin[3],
+    const Real grid_bbmax[3],
+    const Real grid_delta[3],
+    const int grid_size[3],
+    const int *tris_per_cell,
+    const int *tris_in_grid,
+    const int *cell_start,
+    const Real *tri_pts, 
+    const Real *tri_normals)
+{
+    //- Assume nothing is found
+    idmin = -1;
+
+    //- Move the point following the STL backward in time
+    //! NOTE: this only works for simple motion, where the velocity and
+    //! center do not change in time
+    Real pNew[3] = { p[0], p[1], p[2] };
+    move_this_point( p, pNew, -time, movetype, dir, center, movevel );
+
+    //- Check if the new point lies inside the original bounding box
+    if ( pNew[0] < grid_bbmin[0] || pNew[0] > grid_bbmax[0] || pNew[1] < grid_bbmin[1] ||
+         pNew[1] > grid_bbmax[1] || pNew[2] < grid_bbmin[2] || pNew[2] > grid_bbmax[2] )
+    {
+        return;
+    }
+
+    Real A[3];
+    Real B[3];
+    Real C[3];
+
+    //- Get IJK coordinates and id of transformed point
+    int pIJK[3];
+    ijkFromPos( pNew, grid_delta, grid_bbmin, pIJK );
+    int pId = IdFromIJK( grid_size, pIJK );
+
+    //- Check the neighboring cells and get the triangle with minimum distance
+    int maxId[3];
+    int minId[3];
+    minId[0] = std::max( 0, pIJK[0] - 1 );
+    minId[1] = std::max( 0, pIJK[1] - 1 );
+    minId[2] = std::max( 0, pIJK[2] - 1 );
+    maxId[0] = std::min( grid_size[0] - 1, pIJK[0] + 1 );
+    maxId[1] = std::min( grid_size[1] - 1, pIJK[1] + 1 );
+    maxId[2] = std::min( grid_size[2] - 1, pIJK[2] + 1 );
+
+    for ( int i = minId[0]; i <= maxId[0]; i++ )
+        for ( int j = minId[1]; j <= maxId[1]; j++ )
+            for ( int k = minId[2]; k <= maxId[2]; k++ )
+            {
+                int cIJK[3] = { i, j, k };
+                int cellID  = IdFromIJK( grid_size, cIJK );
+
+                for ( int tri = 0; tri < tris_per_cell[cellID]; tri++ )
+                {
+                    int triId = tris_in_grid[cell_start[cellID] + tri];
+
+                    // Do not proceed if the particle distance is > radius
+                    Real ndist = 
+                          (p[0] - tri_pts[9 * triId]) * tri_normals[triId*3] 
+                        + (p[1] - tri_pts[9 * triId + 1]) * tri_normals[triId*3 + 1]
+                        + (p[2] - tri_pts[9 * triId + 2]) * tri_normals[triId*3 + 2];
+
+                    if (ndist*ndist > radius*radius)
+                    {
+                        continue;
+                    }
+
+                    for ( int coord = 0; coord < 3; coord++ )
+                    {
+                        A[coord] = tri_pts[9 * triId + coord];
+                        B[coord] = tri_pts[9 * triId + 3 + coord];
+                        C[coord] = tri_pts[9 * triId + 6 + coord];
+                    }
+
+                    int closestType;
+                    Real dist[3];
+
+                    Real newdist = point_tri_distance( p, A, B, C, closestType, dist );
+
+                    if ( newdist < mindist )
+                    {
+                        mindist = newdist;
+                        idmin   = triId;
+                    }
+                }
+            }
+}
+
 // Returns true if the there is at least one triangle between the point and the line
 // defined by a point orig and a vector dir
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool check_inside_stl_line_method(

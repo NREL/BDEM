@@ -31,8 +31,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         const Real grid_delta[3] = { x_grid_delta, y_grid_delta, z_grid_delta };
         const int grid_size[3]   = { x_grid_size, y_grid_size, z_grid_size };
 
-        get_closest_local_tri(
+        tri_collision_check(
             pos,
+            p.rdata( realData::radius ),
             mindist,
             min_tri_id,
             time - dt,
@@ -47,7 +48,8 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
             tris_per_cell,
             tris_in_grid,
             cell_start,
-            tri_pts );
+            tri_pts,
+            tri_normals );
 
         min_tr = min_tri_id;
 
@@ -101,38 +103,53 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                     CrossProd( omega, contact_point, vw );
                 }
 
-                get_wall_forces(
-                    mindist,
-                    norm,
-                    p,
-                    dt,
-                    fn,
-                    ft,
-                    rollfriqtorq_by_d,
-                    pos,
-                    contact_law,
-                    liquid_bridging,
-                    movetype,
-                    vw );
+                // Hard-sphere collision
 
-#ifndef AMREX_USE_GPU
+                Real vp[3] = {
+                    p.rdata( realData::xvel ),
+                    p.rdata( realData::yvel ),
+                    p.rdata( realData::zvel ) };
+/*
+                // Prevent particle from crossing the triangle
+                p.pos( 0 ) += (dotpdt - p.rdata( realData::radius )) * norm[0];
+                p.pos( 1 ) += (dotpdt - p.rdata( realData::radius )) * norm[1];
+                p.pos( 2 ) += (dotpdt - p.rdata( realData::radius )) * norm[2];
 
-                pressure[min_tr] += sqrt( DotProd( fn, fn ) );
-                shear_stress[3 * min_tr] += ft[0];
-                shear_stress[3 * min_tr + 1] += ft[1];
-                shear_stress[3 * min_tr + 2] += ft[2];
-#else
-                Gpu::Atomic::Add( &(pressure[min_tr]), sqrt(fn[0]*fn[0] + fn[1]*fn[1] + fn[2]*fn[2]) );
-                Gpu::Atomic::Add( &(shear_stress[3*min_tr]), ft[0] );
-                Gpu::Atomic::Add( &(shear_stress[3*min_tr +1]), ft[1] );
-                Gpu::Atomic::Add( &(shear_stress[3*min_tr +2]), ft[2] );
-#endif
+                // Reflect velocity (0.8 coefficient of restitution)
+                p.rdata( realData::xvel ) -= norm[0] * ( 1.8 ) * vp[0] - vw[0];
+                p.rdata( realData::yvel ) -= norm[1] * ( 1.8 ) * vp[0] - vw[1];
+                p.rdata( realData::zvel ) -= norm[2] * ( 1.8 ) * vp[2] - vw[2];
+
+*/
+                                get_wall_forces(
+                                    mindist,
+                                    norm,
+                                    p,
+                                    dt,
+                                    fn,
+                                    ft,
+                                    rollfriqtorq_by_d,
+                                    pos,
+                                    contact_law,
+                                    liquid_bridging,
+                                    movetype,
+                                    vw );
+
+                #ifndef AMREX_USE_GPU
+
+                                pressure[min_tr] += sqrt( DotProd( fn, fn ) );
+                                shear_stress[3 * min_tr] += ft[0];
+                                shear_stress[3 * min_tr + 1] += ft[1];
+                                shear_stress[3 * min_tr + 2] += ft[2];
+                #else
+                                Gpu::Atomic::Add( &(pressure[min_tr]), sqrt(fn[0]*fn[0] +
+                fn[1]*fn[1] + fn[2]*fn[2]) ); Gpu::Atomic::Add( &(shear_stress[3*min_tr]), ft[0] );
+                                Gpu::Atomic::Add( &(shear_stress[3*min_tr +1]), ft[1] );
+                                Gpu::Atomic::Add( &(shear_stress[3*min_tr +2]), ft[2] );
+                #endif 
                 if ( solve_fibrillation == 1 )
                 {
-                    Real vp[3] = {
-                        p.rdata( realData::xvel ),
-                        p.rdata( realData::yvel ),
-                        p.rdata( realData::zvel ) };
+
                     Real dx[3] = {
                         norm[0] * mindist + TINYVAL,
                         norm[1] * mindist + TINYVAL,
