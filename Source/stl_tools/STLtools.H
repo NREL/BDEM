@@ -128,6 +128,9 @@ struct STLtools
 
     // Initialize vectors for vtk format
     void init_vtk_data();
+
+    void writeGridData();
+    bool readGridData();
 };
 
 struct stl_specs

@@ -401,7 +401,7 @@ void BDEMParticleContainer::moveParticles(
                 }
 
                 Real verlet_factor = ( verlet_scheme == 0) ? 1.0 : 0.5;
-
+/*
                 //- This is the code to use when there is damping (not for adaptive algorithm)
                 if ( DEM::force_damping > TINYVAL && adapt_step == 0)
                 {
@@ -467,7 +467,8 @@ void BDEMParticleContainer::moveParticles(
 
                 }
 
-
+*/
+                // This goes unless using the adaptive step at stage 2
                 if ( adapt_step != 2 )
                 {
                     p.rdata( realData::xvel ) += ( p.rdata( realData::fx ) / p.rdata( realData::mass ) ) * dt * verlet_factor;
@@ -477,6 +478,34 @@ void BDEMParticleContainer::moveParticles(
                     p.rdata( realData::xangvel ) +=  p.rdata( realData::taux ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
                     p.rdata( realData::yangvel ) +=  p.rdata( realData::tauy ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
                     p.rdata( realData::zangvel ) +=  p.rdata( realData::tauz ) * p.rdata( realData::Iinv ) * dt * verlet_factor;
+
+                    /* Bound the velocity to limit the change in position to a fraction of the radius */
+                    Real maxVelMag = 1e-2*p.rdata( realData::radius ) / dt;
+                    Real vx        = p.rdata( realData::xvel );
+                    Real vy        = p.rdata( realData::yvel );
+                    Real vz        = p.rdata( realData::zvel );                    
+                    Real velMag    = std::sqrt(vx*vx + vy*vy + vz*vz);
+
+                    if ( velMag > maxVelMag )
+                    {
+                        p.rdata( realData::xvel ) *= maxVelMag / velMag;
+                        p.rdata( realData::yvel ) *= maxVelMag / velMag;
+                        p.rdata( realData::zvel ) *= maxVelMag / velMag;
+                    }
+
+                    // Same for the angular velocity
+                    Real maxVelaMag = 1e-2/ dt;
+                    Real vax        = p.rdata( realData::xangvel );
+                    Real vay        = p.rdata( realData::yangvel );
+                    Real vaz        = p.rdata( realData::zangvel );
+                    Real velaMag    = std::sqrt(vax*vax + vay*vay + vaz*vaz);
+
+                    if ( velaMag > maxVelaMag )
+                    {
+                        p.rdata( realData::xangvel ) *= maxVelaMag / velaMag;
+                        p.rdata( realData::yangvel ) *= maxVelaMag / velaMag;
+                        p.rdata( realData::zangvel ) *= maxVelaMag / velaMag;
+                    }                    
 
                     if ( verlet_scheme != 2 )
                     {

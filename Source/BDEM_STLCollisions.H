@@ -50,7 +50,27 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
             cell_start,
             tri_pts,
             tri_normals );
+/*
 
+        get_closest_local_tri(
+            pos,
+            mindist,
+            min_tri_id,
+            time - dt,
+            movetype,
+            movedir,
+            movecenter,
+            movevel,
+            grid_bbmin,
+            grid_bbmax,
+            grid_delta,
+            grid_size,
+            tris_per_cell,
+            tris_in_grid,
+            cell_start,
+            tri_pts      
+        );
+  */      
         min_tr = min_tri_id;
 
         if ( min_tr != -1 )
@@ -103,18 +123,8 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                     CrossProd( omega, contact_point, vw );
                 }
 
-                // Hard-sphere collision
 
-                Real vp[3] = {
-                    p.rdata( realData::xvel ),
-                    p.rdata( realData::yvel ),
-                    p.rdata( realData::zvel ) };
 /*
-                // Prevent particle from crossing the triangle
-                p.pos( 0 ) += (dotpdt - p.rdata( realData::radius )) * norm[0];
-                p.pos( 1 ) += (dotpdt - p.rdata( realData::radius )) * norm[1];
-                p.pos( 2 ) += (dotpdt - p.rdata( realData::radius )) * norm[2];
-
                 // Reflect velocity (0.8 coefficient of restitution)
                 p.rdata( realData::xvel ) -= norm[0] * ( 1.8 ) * vp[0] - vw[0];
                 p.rdata( realData::yvel ) -= norm[1] * ( 1.8 ) * vp[0] - vw[1];
@@ -134,7 +144,18 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                                     liquid_bridging,
                                     movetype,
                                     vw );
+                // Hard-sphere collision
 
+                Real vp[3] = {
+                    p.rdata( realData::xvel ),
+                    p.rdata( realData::yvel ),
+                    p.rdata( realData::zvel ) };
+/*
+                // Prevent particle from crossing the triangle
+                p.pos( 0 ) += (dotpdt - p.rdata( realData::radius )) * norm[0];
+                p.pos( 1 ) += (dotpdt - p.rdata( realData::radius )) * norm[1];
+                p.pos( 2 ) += (dotpdt - p.rdata( realData::radius )) * norm[2];
+*/
                 #ifndef AMREX_USE_GPU
 
                                 pressure[min_tr] += sqrt( DotProd( fn, fn ) );
@@ -147,6 +168,8 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                                 Gpu::Atomic::Add( &(shear_stress[3*min_tr +1]), ft[1] );
                                 Gpu::Atomic::Add( &(shear_stress[3*min_tr +2]), ft[2] );
                 #endif 
+
+
                 if ( solve_fibrillation == 1 )
                 {
 

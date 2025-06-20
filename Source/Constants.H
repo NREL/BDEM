@@ -9,8 +9,8 @@
 #define SOFTWALL_BC 2
 #define CONTACT_HERTZ 1
 #define MAXSPECIES 1
-#define MAXBRIDGES 8
-#define MAXBONDS 4
+#define MAXBRIDGES 1
+#define MAXBONDS 1
 
 #define BP_TYPES 29
 #define BP_NP0 1

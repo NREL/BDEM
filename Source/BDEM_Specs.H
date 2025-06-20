@@ -281,7 +281,7 @@ class DEMspecs
     Real fib_alpha, fib_beta, fib_ced;
 
     // Adaptive time step
-    int use_hari_scheme = 1; // is the default
+    int use_hari_scheme = 0; // is the default
     Real dt_min = 0.01; 
     Real dt_max = 0.25;
     Real dt_error_jump_ratio = 1e+6;

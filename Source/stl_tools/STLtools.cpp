@@ -1,4 +1,6 @@
 #include <STLtools.H>
+#include <fstream>
+#include <sstream>
 
 void STLtools::read_stl_file( std::string fname )
 {
@@ -156,6 +158,14 @@ void STLtools::read_stl_file( std::string fname )
 
 void STLtools::buildGridData( int gsize[3] )
 {
+    // Read file if present and return
+    // if ( readGridData() )
+    // {
+    //     return;
+    // }
+
+    // Build grid and data structure otherwise
+    // Writes at the end
     grid.bbmax[0] = bbox_hi[0];
     grid.bbmax[1] = bbox_hi[1];
     grid.bbmax[2] = bbox_hi[2];
@@ -328,6 +338,139 @@ void STLtools::buildGridData( int gsize[3] )
 #endif
 
     amrex::Print() << "Done building stl tree for " << name;
+
+    writeGridData();
+}
+
+void STLtools::writeGridData()
+{
+
+    std::string filePath = name + "_hashTable.dat";
+
+    std::ofstream newFile(filePath);
+
+    if (newFile.is_open()) {
+    
+        // Write grid size
+        newFile << grid.size[0] << " " << grid.size[1] << " " << grid.size[2] << "\n";
+        
+        // Write cell start
+        for ( int cell = 0; cell < grid.numberOfCells; cell++ )
+        {
+
+            newFile << cell_start[cell]  << "\n";
+        }
+
+        // Write tris per cell
+        int trisSize = 0;
+        for ( int cell = 0; cell < grid.numberOfCells; cell++ )
+        {
+
+            newFile << tris_per_cell[cell]  << "\n";
+            
+            trisSize += tris_per_cell[cell];
+        }
+        
+        // Write tris in grid
+        for ( int i = 0; i < trisSize; i++ )
+        {
+
+            newFile << tris_in_grid[i] << "\n";
+            
+        }
+
+        newFile.close();
+        
+    } else {
+        std::cerr << "Error opening file." << std::endl;
+    }
+}
+
+bool STLtools::readGridData()
+{
+    amrex::Print() << "STL hash initialized from file\n";
+    std::string filename = name + "_hashTable.dat";
+    std::ifstream file(filename);
+
+    grid.bbmax[0] = bbox_hi[0];
+    grid.bbmax[1] = bbox_hi[1];
+    grid.bbmax[2] = bbox_hi[2];
+    grid.bbmin[0] = bbox_lo[0];
+    grid.bbmin[1] = bbox_lo[1];
+    grid.bbmin[2] = bbox_lo[2];
+
+    if ( file.is_open() )
+    {
+        std::string line;
+
+        while ( std::getline(file, line) ) 
+        {
+            std::stringstream ss(line);
+            ss >> grid.size[0];
+            ss >> grid.size[1];
+            ss >> grid.size[2];
+        }
+
+        grid.numberOfCells = grid.size[0] * grid.size[1] * grid.size[2];
+        grid.delta[0] = ( bbox_hi[0] - bbox_lo[0] ) / grid.size[0];
+        grid.delta[1] = ( bbox_hi[1] - bbox_lo[1] ) / grid.size[1];
+        grid.delta[2] = ( bbox_hi[2] - bbox_lo[2] ) / grid.size[2];
+
+        //- Enlarge the bounding box
+        grid.bbmax[0] += 2 * grid.delta[0];
+        grid.bbmax[1] += 2 * grid.delta[1];
+        grid.bbmax[2] += 2 * grid.delta[2];
+        grid.bbmin[0] -= 2 * grid.delta[0];
+        grid.bbmin[1] -= 2 * grid.delta[1];
+        grid.bbmin[2] -= 2 * grid.delta[2];
+
+        grid.size[0] += 4;
+        grid.size[1] += 4;
+        grid.size[2] += 4;
+
+        cell_start_vec = new Gpu::ManagedVector<int>;
+        cell_start_vec->resize( grid.numberOfCells );
+        cell_start = cell_start_vec->dataPtr();
+
+        for ( int i = 0; i < grid.numberOfCells;  i++ )
+        {
+            std::getline( file, line );
+            std::stringstream ss( line );
+            ss >> cell_start[i];
+        }
+
+        tris_per_cell_vec = new Gpu::ManagedVector<int>;
+        tris_per_cell_vec->resize( grid.numberOfCells );
+        tris_per_cell = tris_per_cell_vec->dataPtr();
+        int nelems   = 0;
+
+        for ( int i = 0; i < grid.numberOfCells;  i++ )
+        {
+            std::getline( file, line );
+            std::stringstream ss( line );
+            ss >> tris_per_cell[i];
+            nelems += tris_per_cell[i];
+        }
+
+        tris_in_grid_vec = new Gpu::ManagedVector<int>;
+        tris_in_grid_vec->resize( nelems );
+        tris_in_grid = tris_in_grid_vec->dataPtr();
+
+        for ( int i = 0; i < nelems;  i++ )
+        {
+            std::getline( file, line );
+            std::stringstream ss( line );
+            ss >> tris_in_grid[i];
+        }
+
+        file.close();
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void STLtools::getSTLGeoCenter( Real center[3] )
