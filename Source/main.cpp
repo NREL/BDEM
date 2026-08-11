@@ -37,9 +37,12 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::nu_bond            = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::bond_radius_factor = one;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::k_c                = one;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::sigma_max          = zero;
-AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::eps_g              = zero;
-AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::rho_g              = zero;
-AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_g               = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::eps_f              = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::rho_f              = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::mu_f               = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::Ux_f               = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::Uy_f               = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::Uz_f               = zero;
 AMREX_GPU_DEVICE_MANAGED int DEM::particles_in_parcel        = 1;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::CG_ratio           = 1.;
 
@@ -111,7 +114,7 @@ int main( int argc, char *argv[] )
             }
             bpc.InitChemSpecies( specs.species_massfracs.data() );
         }
-        else
+        else if ( specs.particle_autogen == 1 )
         {
             Print() << "Doing autogeneration\n";
             bpc.InitParticles(
@@ -140,6 +143,10 @@ int main( int argc, char *argv[] )
                 specs.moisture_content_stdev,
                 specs.FSP );
         }
+        else
+        {
+            Print() << "Initialized with no particles\n"; 
+        }
     }
     else
     {
@@ -167,7 +174,15 @@ int main( int argc, char *argv[] )
 
     // compute tcoll here over all particles
     DEM::tcoll = bpc.compute_coll_timescale( specs.bonded_sphere_particles, specs.contact_law );
-    Print() << "tcoll:" << DEM::tcoll << "\n";
+    if ( DEM::tcoll > specs.max_tcoll )
+    {
+        Print() << "tcoll:" << DEM::tcoll << " will be bounded to " << specs.max_tcoll << "\n";
+        DEM::tcoll = specs.max_tcoll;
+    }
+    else
+    {
+        Print() << "tcoll:" << DEM::tcoll << "\n";    
+    }
 
     Real dt          = ( specs.constant_dt > 0.0 ) ? specs.constant_dt : specs.cfl * DEM::tcoll;
     specs.dt_min *= DEM::tcoll;

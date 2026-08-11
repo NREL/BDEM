@@ -759,47 +759,63 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
     }
 
     // Compute drag forces
-    // Assumptions: - gas velocity and buoyancy term both neglected
-    //              - gas volume fraction is prescribed by the user
+    // Assumptions: - fluid velocity is fixed
+    //              - fluid volume fraction is prescribed by the user
     if ( drag_model )
     {
         // Readability variables
-        Real eps_g = DEM::eps_g;
-        Real rho_g = DEM::rho_g;
-        Real mu_g  = DEM::mu_g;
+        Real eps_f = DEM::eps_f;
+        Real rho_f = DEM::rho_f;
+        Real mu_f  = DEM::mu_f;
         Real rad1  = p1.rdata( realData::radius );
         Real diam1 = 2.0 * rad1;
 
+        Real vSlip[3] = 
+        {
+            DEM::Ux_f - p1.rdata( realData::xvel ),
+            DEM::Uy_f - p1.rdata( realData::yvel ),
+            DEM::Uz_f - p1.rdata( realData::zvel )
+        };
+
         // Calculate the particle velocity magnitude
-        Real vmag2 = p1.rdata( realData::xvel ) * p1.rdata( realData::xvel ) +
-                     p1.rdata( realData::yvel ) * p1.rdata( realData::yvel ) +
-                     p1.rdata( realData::zvel ) * p1.rdata( realData::zvel );
+        Real vmag2 = (vSlip[0] * vSlip[0]) + (vSlip[1] * vSlip[1]) + (vSlip[2] * vSlip[2]);
+
         Real vmag = sqrt( vmag2 );
 
         // Gidaspow drag model
         if ( drag_model == 1 )
         {
+            Real beta_mom = 0.;
+
             // Calculate the particle Re
-            Real Re_p = eps_g * rho_g * vmag * diam1 / mu_g;
+            Real Re_p = eps_f * rho_f * vmag * diam1 / mu_f;
 
-            // Calculate the drag coefficient
-            Real Cd = ( Re_p < 1000.0 ) ? ( 24.0 / Re_p ) * ( 1.0 + 0.15 * pow( Re_p, 0.687 ) )
-                                        : 0.44 * Re_p;
+            if ( eps_f > 0.8)
+            {
+                // Wen-Yu drag
 
-            // Calculate the interphase momentum exchange term
-            Real beta_mom = ( eps_g <= 0.8 ) ? ( 150.0 * pow( 1.0 - eps_g, 2.0 ) * mu_g ) /
-                                                       ( eps_g * diam1 * diam1 ) +
-                                                   1.75 * ( 1.0 - eps_g ) * rho_g * vmag / diam1
-                                             : ( 3.0 / 4.0 ) * eps_g * ( 1.0 - eps_g ) * rho_g *
-                                                   vmag / diam1 * Cd * pow( eps_g, -2.65 );
+                // Calculate the drag coefficient
+                Real Cd = ( Re_p < 1000.0 ) ? 
+                    ( 24.0 / Re_p ) * ( 1.0 + 0.15 * pow( Re_p, 0.687 ) )
+                    : 
+                    0.44;
+
+                beta_mom = (Cd / 24.) * Re_p * pow( eps_f, -3.65);
+            }
+            else
+            {
+                // Ergun drag
+                beta_mom = ( (150 * (1. - eps_f)) + (1.75 * Re_p) ) / ( 18. * eps_f * eps_f);
+            }
+
+            Real coeff = 3. * PI * mu_f * diam1 * eps_f * beta_mom;
+
+            Real fmass = p1.rdata( realData::volume ) * rho_f;
 
             // Add on the particle drag forces
-            p1.rdata( realData::fx ) -= beta_mom * p1.rdata( realData::volume ) / ( 1 - eps_g ) *
-                                        p1.rdata( realData::xvel );
-            p1.rdata( realData::fy ) -= beta_mom * p1.rdata( realData::volume ) / ( 1 - eps_g ) *
-                                        p1.rdata( realData::yvel );
-            p1.rdata( realData::fz ) -= beta_mom * p1.rdata( realData::volume ) / ( 1 - eps_g ) *
-                                        p1.rdata( realData::zvel );
+            p1.rdata( realData::fx ) += (coeff * vSlip[0]) - (gravity[XDIR] * fmass);
+            p1.rdata( realData::fy ) += (coeff * vSlip[1]) - (gravity[YDIR] * fmass);
+            p1.rdata( realData::fz ) += (coeff * vSlip[2]) - (gravity[ZDIR] * fmass);
         }
     }
 } );

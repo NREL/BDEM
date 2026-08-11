@@ -1,0 +1,67 @@
+#geometry parameters
+bdem.prob_lo        = 0.      0.     0.      # lo corner of physical domain
+bdem.prob_hi        = 0.381  0.0762 0.002 # hi corner of physical domain
+bdem.ncells         = 190     38     1 
+bdem.max_grid_size  = 1
+bdem.is_it_periodic = 0      0      0
+
+#0 - outflow
+#1 - wall
+bdem.bc_lower = 1 1 1
+bdem.bc_upper = 0 1 1
+
+#timestepping
+bdem.final_time = 60
+bdem.max_steps = 100000000
+bdem.write_output_time = 1
+bdem.screen_output_time = 0.01
+bdem.num_redist = 25
+bdem.cfl = 1
+bdem.max_tcoll = 1e-3
+bdem.init_particles_using_file = 0
+bdem.contact_law = 1
+
+bdem.mincoords_autogen =  0.   0.  0.
+bdem.maxcoords_autogen =  0.002    0.0762  0.002
+bdem.meanvel_autogen   = 0.1    0.  0.
+bdem.fluctuation_autogen   = 0.0 0.0 0.0
+bdem.radius_autogen =  0.0006
+bdem.dens_autogen = 2650
+bdem.temp_autogen = 300.0
+
+
+bdem.particle_sourcing = 1
+bdem.mincoords_particle_sourcing =  0.   0.  0.
+bdem.maxcoords_particle_sourcing =  0.002    0.0762  0.002
+bdem.meanvel_particle_sourcing =    0.1    0.  0.
+bdem.fluctuation_particle_sourcing = 0.  0.  0.
+bdem.radius_particle_sourcing = 0.0006
+bdem.dens_particle_sourcing = 2650
+bdem.particle_sourcing_interval = 0.07536
+bdem.stop_sourcing_time = 60
+
+
+
+#particle intrinsics
+bdem.E_autogen = 1e9
+bdem.nu_autogen = 0.5
+bdem.E_particle_sourcing = 1e9
+bdem.nu_particle_sourcing = 0.5
+bdem.normal_spring_constant = 10
+bdem.normal_restitution_coefficient = 0.7
+bdem.friction_coefficient = 0.0
+bdem.tangential_spring_constant = 0.1
+bdem.tangential_restitution_coefficient = 0.7
+bdem.rolling_friction_coefficient = 0.01
+
+bdem.gravity = 0.0 -9.8 0.0
+
+#drag force
+bdem.drag_model = 0
+bdem.fluid_vfrac = 1
+bdem.fluid_visc = 0.001
+bdem.fluid_density = 998.2
+bdem.fluid_Ux = 0.1
+bdem.fluid_Uy = 0
+bdem.fluid_Uz = 0
+

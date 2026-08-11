@@ -59,4 +59,5 @@
 #define RUNIV 8.314
 #define sqtwo 1.414213562373
 #define sqthree 1.73205080757
+#define sphereVolCoeff 4.188790205
 #endif

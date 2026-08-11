@@ -109,9 +109,12 @@ extern AMREX_GPU_DEVICE_MANAGED amrex::Real bond_radius_factor;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_c;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real sigma_max;
 
-extern AMREX_GPU_DEVICE_MANAGED amrex::Real eps_g;
-extern AMREX_GPU_DEVICE_MANAGED amrex::Real rho_g;
-extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_g;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real eps_f;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real rho_f;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real mu_f;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real Ux_f;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real Uy_f;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real Uz_f;
 
 extern AMREX_GPU_DEVICE_MANAGED int particles_in_parcel;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real CG_ratio;
@@ -131,6 +134,7 @@ class DEMspecs
     int contact_law = 0;
     int ng_cells    = one;
 
+    int particle_autogen = 0;
     Vector<Real> autogen_mincoords;
     Vector<Real> autogen_maxcoords;
     Vector<Real> autogen_meanvel;
@@ -156,6 +160,7 @@ class DEMspecs
     Vector<Real> walltemp_polynomial;
     int walltemp_vardir = 0;
 
+
     int particle_sourcing = 0;
     Vector<Real> particle_sourcing_mincoords;
     Vector<Real> particle_sourcing_maxcoords;
@@ -179,6 +184,7 @@ class DEMspecs
     int init_particles_using_file = 1;
     Real cfl                      = 0.02;
     Real constant_dt              = 0.0;
+    Real max_tcoll                   = 1e+12;
     int verlet_scheme             = 0;
     Real avg_speed_stop           = -1;
 
@@ -380,6 +386,7 @@ class DEMspecs
         pp.query( "num_upd_neighbor", num_upd_neighbor );
         pp.query( "cfl", cfl );
         pp.query( "constant_dt", constant_dt );
+        pp.query( "max_tcoll", max_tcoll );
         pp.query( "verlet_scheme", verlet_scheme );
         pp.query( "init_particles_using_file", init_particles_using_file );
 
@@ -424,25 +431,31 @@ class DEMspecs
 
         if ( init_particles_using_file == 0 )
         {
-            pp.getarr( "mincoords_autogen", autogen_mincoords );
-            pp.getarr( "maxcoords_autogen", autogen_maxcoords );
-            pp.getarr( "meanvel_autogen", autogen_meanvel );
-            pp.getarr( "fluctuation_autogen", autogen_fluctuation );
-            pp.get( "radius_autogen", autogen_radius );
-            pp.get( "dens_autogen", autogen_dens );
-            if ( contact_law != 0 )
+            particle_autogen = 1;
+            pp.query( "particle_autogen", particle_autogen );
+            
+            if ( particle_autogen == 1 )
             {
-                pp.get( "E_autogen", autogen_E );
-                pp.get( "nu_autogen", autogen_nu );
+                pp.getarr( "mincoords_autogen", autogen_mincoords );
+                pp.getarr( "maxcoords_autogen", autogen_maxcoords );
+                pp.getarr( "meanvel_autogen", autogen_meanvel );
+                pp.getarr( "fluctuation_autogen", autogen_fluctuation );
+                pp.get( "radius_autogen", autogen_radius );
+                pp.get( "dens_autogen", autogen_dens );
+                if ( contact_law != 0 )
+                {
+                    pp.get( "E_autogen", autogen_E );
+                    pp.get( "nu_autogen", autogen_nu );
+                }
+                autogen_temp = NTP_TEMP;
+                pp.query( "temp_autogen", autogen_temp );
+                autogen_species_massfracs[0] = 1.0;
+                pp.queryarr( "autogen_species_massfracs", species_massfracs, 0, chemptr->nspecies );
+                pp.query( "autogen_multiple_particles_per_cell", autogen_multi_part_per_cell );
+                pp.query( "autogen_layer_particles", autogen_layer_particles );
+                pp.query( "min_radius_autogen", autogen_min_radius );
+                pp.query( "max_radius_autogen", autogen_max_radius );
             }
-            autogen_temp = NTP_TEMP;
-            pp.query( "temp_autogen", autogen_temp );
-            autogen_species_massfracs[0] = 1.0;
-            pp.queryarr( "autogen_species_massfracs", species_massfracs, 0, chemptr->nspecies );
-            pp.query( "autogen_multiple_particles_per_cell", autogen_multi_part_per_cell );
-            pp.query( "autogen_layer_particles", autogen_layer_particles );
-            pp.query( "min_radius_autogen", autogen_min_radius );
-            pp.query( "max_radius_autogen", autogen_max_radius );
         }
 
         pp.query( "particle_sourcing", particle_sourcing );
@@ -823,9 +836,12 @@ class DEMspecs
         pp.query( "drag_model", drag_model );
         if ( drag_model == 1 )
         {
-            pp.get( "gas_vfrac", DEM::eps_g );
-            pp.get( "gas_visc", DEM::mu_g );
-            pp.get( "gas_density", DEM::rho_g );
+            pp.get( "fluid_vfrac", DEM::eps_f );
+            pp.get( "fluid_visc", DEM::mu_f );
+            pp.get( "fluid_density", DEM::rho_f );
+            pp.get( "fluid_Ux", DEM::Ux_f );
+            pp.get( "fluid_Uy", DEM::Uy_f );
+            pp.get( "fluid_Uz", DEM::Uz_f );
         }
 
         pp.query( "solve_fibrillation", solve_fibrillation );
