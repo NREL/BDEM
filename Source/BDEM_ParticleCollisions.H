@@ -770,9 +770,13 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         Real rad1  = p1.rdata( realData::radius );
         Real diam1 = 2.0 * rad1;
 
+        Real ystar = (p1.pos(1) - 0.038)/0.038;
+
+        Real Ux = 3./2. * DEM::Ux_f * ( 1.0 -  ystar*ystar);
+
         Real vSlip[3] = 
         {
-            DEM::Ux_f - p1.rdata( realData::xvel ),
+            Ux - p1.rdata( realData::xvel ),
             DEM::Uy_f - p1.rdata( realData::yvel ),
             DEM::Uz_f - p1.rdata( realData::zvel )
         };
