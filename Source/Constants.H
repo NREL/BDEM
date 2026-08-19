@@ -12,6 +12,8 @@
 #define MAXBRIDGES 1
 #define MAXBONDS 1
 
+#define MAXWALLSCOLLISIONTRACK 6
+
 #define BP_TYPES 29
 #define BP_NP0 1
 #define BP_NP1 2

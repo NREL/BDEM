@@ -54,7 +54,8 @@ struct realData
         yangvel_prvs,
         zangvel_prvs,
         vel_error,
-        count
+        wall_toverlap,
+        count = wall_toverlap + MAXWALLSCOLLISIONTRACK * 3
     };
 };
 

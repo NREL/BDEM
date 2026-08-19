@@ -549,7 +549,9 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
     int contact_law,
     int liquid_bridging,
     int wall_moves        = 0,
-    amrex::Real *wall_vel = NULL )
+    amrex::Real *wall_vel = NULL,
+    int wall_tangential_history_id = -1
+)
 {
     Real rp        = p.rdata( realData::radius );
     Real overlap_n = rp - walldist;
@@ -639,6 +641,18 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
     overlap_t[1] = dt * vrel_t[1];
     overlap_t[2] = dt * vrel_t[2];
 
+    if (wall_tangential_history_id != -1 )
+    {
+        int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
+        overlap_t[0] += p.rdata(ptwallid    );
+        overlap_t[1] += p.rdata(ptwallid + 1);
+        overlap_t[2] += p.rdata(ptwallid + 2);
+
+        p.rdata(ptwallid    ) = overlap_t[0];
+        p.rdata(ptwallid + 1) = overlap_t[1];
+        p.rdata(ptwallid + 2) = overlap_t[2];
+    }
+
     mag_overlap_t = sqrt( dotpdt( overlap_t, overlap_t ) );
 
     if ( mag_overlap_t > zero )
@@ -703,7 +717,7 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
         ftn[ZDIR] = -fnmd * tangent[ZDIR];
         mag_ftsp  = sqrt( dotpdt( ftsp, ftsp ) );
         mag_ftn   = sqrt( dotpdt( ftn, ftn ) );
-        if ( mag_ftsp < mag_ftn )
+        if ( mag_ftsp < 0.1*mag_ftn )
         {
             ft[XDIR] = ftsp[XDIR];
             ft[YDIR] = ftsp[YDIR];
@@ -714,6 +728,14 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
             ft[XDIR] = ftn[XDIR];
             ft[YDIR] = ftn[YDIR];
             ft[ZDIR] = ftn[ZDIR];
+            
+            if (wall_tangential_history_id != -1 )
+            {
+                int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
+                p.rdata(ptwallid    ) = 0.;
+                p.rdata(ptwallid + 1) = 0.;
+                p.rdata(ptwallid + 2) = 0.;
+            }
         }
     }
     else

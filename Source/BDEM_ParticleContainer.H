@@ -27,7 +27,7 @@ class BDEMParticleContainer
     {
         m_chemptr = chemptr;
 
-        // Particle properties that need to be copied for neighbor updates
+        // Particle properties (the bool is for parallel communication)
         setRealCommComp( 0, true ); // posx
         setRealCommComp( 1, true ); // posy
         setRealCommComp( 2, true ); // posz
@@ -44,7 +44,12 @@ class BDEMParticleContainer
         setRealCommComp( 3 + realData::nu, true );
         setRealCommComp( 3 + realData::temperature, true );
 
-        // Remaining particle properties don't need to be copied over
+        for ( int i = 0; i < MAXWALLSCOLLISIONTRACK * 3; i++ )
+            setRealCommComp( 3 + realData::wall_toverlap + i, true );
+
+        setRealCommComp( 3 + realData::fraction_of_fibrils, true );
+
+
         setRealCommComp( 3 + realData::radinit, false );
         setRealCommComp( 3 + realData::fx, false );
         setRealCommComp( 3 + realData::fy, false );
@@ -55,9 +60,9 @@ class BDEMParticleContainer
         setRealCommComp( 3 + realData::Iinv, false );
         setRealCommComp( 3 + realData::volume, false );
         setRealCommComp( 3 + realData::density, false );
-        setRealCommComp( 3 + realData::posx_prvs, false );
-        setRealCommComp( 3 + realData::posy_prvs, false );
-        setRealCommComp( 3 + realData::posz_prvs, false );
+        setRealCommComp( 3 + realData::posx_prvs, true );
+        setRealCommComp( 3 + realData::posy_prvs, true );
+        setRealCommComp( 3 + realData::posz_prvs, true );
         setRealCommComp( 3 + realData::euler_angle_x, false );
         setRealCommComp( 3 + realData::euler_angle_y, false );
         setRealCommComp( 3 + realData::euler_angle_z, false );
@@ -67,14 +72,14 @@ class BDEMParticleContainer
         setRealCommComp( 3 + realData::theta_x, false );
         for ( int i = 0; i < MAXSPECIES; i++ )
             setRealCommComp( 3 + realData::firstspec + i, false );
-        setRealCommComp( 3 + realData::fraction_of_fibrils, false );
-        setRealCommComp( 3 + realData::xvel_prvs, false );
-        setRealCommComp( 3 + realData::yvel_prvs, false );
-        setRealCommComp( 3 + realData::zvel_prvs, false );
-        setRealCommComp( 3 + realData::xangvel_prvs, false );
-        setRealCommComp( 3 + realData::yangvel_prvs, false );
-        setRealCommComp( 3 + realData::zangvel_prvs, false );
-        setRealCommComp( 3 + realData::vel_error, false );
+
+        setRealCommComp( 3 + realData::xvel_prvs, true );
+        setRealCommComp( 3 + realData::yvel_prvs, true );
+        setRealCommComp( 3 + realData::zvel_prvs, true );
+        setRealCommComp( 3 + realData::xangvel_prvs, true );
+        setRealCommComp( 3 + realData::yangvel_prvs, true );
+        setRealCommComp( 3 + realData::zangvel_prvs, true );
+        setRealCommComp( 3 + realData::vel_error, true );
         // setIntCommComp(intData::phase, false);
         // setIntCommComp(intData::near_softwall, false);
         // setIntCommComp(intData::type_id, false);
