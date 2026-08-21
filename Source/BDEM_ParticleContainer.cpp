@@ -1028,15 +1028,15 @@ void BDEMParticleContainer::writeParticles(
         int_data_names.push_back( bondidx );
     }
 
-    for ( int i = 0; i < MAXWALLSCOLLISIONTRACK; i++ )
-    {
-        std::string wtx = amrex::Concatenate( "wall_tOverlap_X_", i, 2 );
-        std::string wty = amrex::Concatenate( "wall_tOverlap_Y_", i, 2 );
-        std::string wtz = amrex::Concatenate( "wall_tOverlap_Z_", i, 2 );
-        real_data_names.push_back( wtx );
-        real_data_names.push_back( wtx );
-        real_data_names.push_back( wtx );
-    }
+    // for ( int i = 0; i < MAXWALLSCOLLISIONTRACK; i++ )
+    // {
+    //     std::string wtx = amrex::Concatenate( "wall_tOverlap_X_", i, 2 );
+    //     std::string wty = amrex::Concatenate( "wall_tOverlap_Y_", i, 2 );
+    //     std::string wtz = amrex::Concatenate( "wall_tOverlap_Z_", i, 2 );
+    //     real_data_names.push_back( wtx );
+    //     real_data_names.push_back( wtx );
+    //     real_data_names.push_back( wtx );
+    // }
 
     writeflags_int[intData::phase]                 = 1;
     writeflags_real[realData::radius]              = 1;

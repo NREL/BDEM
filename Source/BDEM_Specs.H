@@ -54,8 +54,8 @@ struct realData
         yangvel_prvs,
         zangvel_prvs,
         vel_error,
-        wall_toverlap,
-        count = wall_toverlap + MAXWALLSCOLLISIONTRACK * 3
+        //wall_toverlap,
+        count //= wall_toverlap + MAXWALLSCOLLISIONTRACK * 3
     };
 };
 
@@ -106,6 +106,7 @@ extern AMREX_GPU_DEVICE_MANAGED amrex::Real G_bond;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real beta_bond;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real nu_bond;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real bond_radius_factor;
+extern AMREX_GPU_DEVICE_MANAGED amrex::Real max_stress_bond;
 
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real k_c;
 extern AMREX_GPU_DEVICE_MANAGED amrex::Real sigma_max;
@@ -757,6 +758,7 @@ class DEMspecs
             pp.query( "bond_damping_factor", DEM::beta_bond );
             pp.query( "bond_radius_factor", DEM::bond_radius_factor );
             DEM::G_bond = DEM::E_bond / ( 2.0 * ( 1.0 + DEM::nu_bond ) );
+            pp.query( "max_stress_bond", DEM::max_stress_bond );
 
             pp.query( "cantilever_beam_test", cantilever_beam_test );
             if ( cantilever_beam_test )

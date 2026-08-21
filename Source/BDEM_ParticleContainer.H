@@ -44,8 +44,8 @@ class BDEMParticleContainer
         setRealCommComp( 3 + realData::nu, true );
         setRealCommComp( 3 + realData::temperature, true );
 
-        for ( int i = 0; i < MAXWALLSCOLLISIONTRACK * 3; i++ )
-            setRealCommComp( 3 + realData::wall_toverlap + i, true );
+        // for ( int i = 0; i < MAXWALLSCOLLISIONTRACK * 3; i++ )
+        //     setRealCommComp( 3 + realData::wall_toverlap + i, true );
 
         setRealCommComp( 3 + realData::fraction_of_fibrils, true );
 

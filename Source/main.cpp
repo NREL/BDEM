@@ -30,6 +30,7 @@ AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::wall_gamma         = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::E_bond             = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::G_bond             = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::beta_bond          = zero;
+AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::max_stress_bond    = -1.;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::global_damping     = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::force_damping      = zero;
 AMREX_GPU_DEVICE_MANAGED amrex::Real DEM::angv_damping       = zero;

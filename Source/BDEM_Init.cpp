@@ -144,8 +144,8 @@ void BDEMParticleContainer::InitParticles(
             p.rdata( realData::tauz )    = zero;
             p.rdata( realData::theta_x ) = zero;
 
-            for ( int i = 0; i < MAXWALLSCOLLISIONTRACK * 3; i++ )
-                p.rdata( realData::wall_toverlap + i) = zero;
+            // for ( int i = 0; i < MAXWALLSCOLLISIONTRACK * 3; i++ )
+            //     p.rdata( realData::wall_toverlap + i) = zero;
 
             // Set bond components to zero
             for ( int b = 0; b < MAXBONDS * 9; b++ )

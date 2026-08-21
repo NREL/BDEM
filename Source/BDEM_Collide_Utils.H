@@ -641,17 +641,17 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
     overlap_t[1] = dt * vrel_t[1];
     overlap_t[2] = dt * vrel_t[2];
 
-    if (wall_tangential_history_id != -1 )
-    {
-        int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
-        overlap_t[0] += p.rdata(ptwallid    );
-        overlap_t[1] += p.rdata(ptwallid + 1);
-        overlap_t[2] += p.rdata(ptwallid + 2);
+    // if (wall_tangential_history_id != -1 )
+    // {
+    //     int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
+    //     overlap_t[0] += p.rdata(ptwallid    );
+    //     overlap_t[1] += p.rdata(ptwallid + 1);
+    //     overlap_t[2] += p.rdata(ptwallid + 2);
 
-        p.rdata(ptwallid    ) = overlap_t[0];
-        p.rdata(ptwallid + 1) = overlap_t[1];
-        p.rdata(ptwallid + 2) = overlap_t[2];
-    }
+    //     p.rdata(ptwallid    ) = overlap_t[0];
+    //     p.rdata(ptwallid + 1) = overlap_t[1];
+    //     p.rdata(ptwallid + 2) = overlap_t[2];
+    // }
 
     mag_overlap_t = sqrt( dotpdt( overlap_t, overlap_t ) );
 
@@ -702,41 +702,46 @@ AMREX_GPU_HOST_DEVICE AMREX_INLINE void get_wall_forces(
         tangent[YDIR] = overlap_t[YDIR] / mag_overlap_t;
         tangent[ZDIR] = overlap_t[ZDIR] / mag_overlap_t;
         // calculate the tangential contact force
-        Real overlap_t_tan = dotpdt( overlap_t, tangent );
-        Real vrel_t_tan    = dotpdt( vrel_t, tangent );
-        // calculate the tangential contact force
-        ftsp[XDIR] =
-            -( kt_dem_w * overlap_t_tan * tangent[XDIR] + etat_dem_w * vrel_t_tan * tangent[XDIR] );
-        ftsp[YDIR] =
-            -( kt_dem_w * overlap_t_tan * tangent[YDIR] + etat_dem_w * vrel_t_tan * tangent[YDIR] );
-        ftsp[ZDIR] =
-            -( kt_dem_w * overlap_t_tan * tangent[ZDIR] + etat_dem_w * vrel_t_tan * tangent[ZDIR] );
+        // Real overlap_t_tan = dotpdt( overlap_t, tangent );
+        // Real vrel_t_tan    = dotpdt( vrel_t, tangent );
+        // // calculate the tangential contact force
+        // ftsp[XDIR] =
+        //     -( kt_dem_w * overlap_t_tan * tangent[XDIR] + etat_dem_w * vrel_t_tan * tangent[XDIR] );
+        // ftsp[YDIR] =
+        //     -( kt_dem_w * overlap_t_tan * tangent[YDIR] + etat_dem_w * vrel_t_tan * tangent[YDIR] );
+        // ftsp[ZDIR] =
+        //     -( kt_dem_w * overlap_t_tan * tangent[ZDIR] + etat_dem_w * vrel_t_tan * tangent[ZDIR] );
 
         ftn[XDIR] = -fnmd * tangent[XDIR];
         ftn[YDIR] = -fnmd * tangent[YDIR];
         ftn[ZDIR] = -fnmd * tangent[ZDIR];
-        mag_ftsp  = sqrt( dotpdt( ftsp, ftsp ) );
+        // mag_ftsp  = sqrt( dotpdt( ftsp, ftsp ) );
         mag_ftn   = sqrt( dotpdt( ftn, ftn ) );
-        if ( mag_ftsp < 0.1*mag_ftn )
-        {
-            ft[XDIR] = ftsp[XDIR];
-            ft[YDIR] = ftsp[YDIR];
-            ft[ZDIR] = ftsp[ZDIR];
-        }
-        else
-        {
-            ft[XDIR] = ftn[XDIR];
-            ft[YDIR] = ftn[YDIR];
-            ft[ZDIR] = ftn[ZDIR];
+
+        // Always assume sliding regime 
+        ft[XDIR] = ftn[XDIR];
+        ft[YDIR] = ftn[YDIR];
+        ft[ZDIR] = ftn[ZDIR];
+        // if ( mag_ftsp < mag_ftn )
+        // {
+        //     ft[XDIR] = ftsp[XDIR];
+        //     ft[YDIR] = ftsp[YDIR];
+        //     ft[ZDIR] = ftsp[ZDIR];
+        // }
+        // else
+        // {
+        //     ft[XDIR] = ftn[XDIR];
+        //     ft[YDIR] = ftn[YDIR];
+        //     ft[ZDIR] = ftn[ZDIR];
             
-            if (wall_tangential_history_id != -1 )
-            {
-                int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
-                p.rdata(ptwallid    ) = 0.;
-                p.rdata(ptwallid + 1) = 0.;
-                p.rdata(ptwallid + 2) = 0.;
-            }
-        }
+        //     if (wall_tangential_history_id != -1 )
+        //     {
+        //         int ptwallid = realData::wall_toverlap + wall_tangential_history_id * 3;
+        //         p.rdata(ptwallid    ) = 0.;
+        //         p.rdata(ptwallid + 1) = 0.;
+        //         p.rdata(ptwallid + 2) = 0.;
+        //     }
+        // }
     }
     else
     {

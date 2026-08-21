@@ -24,14 +24,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = -1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 0 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap    ) = 0.;
-        p.rdata(realData::wall_toverlap + 1) = 0.;
-        p.rdata(realData::wall_toverlap + 2) = 0.;
-    }
+
 
     if ( x_hi_bc == SOFTWALL_BC and pos[XDIR] > ( phi[XDIR] - rp ) )
     {
@@ -43,14 +38,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = 1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 1 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap + 3) = 0.;
-        p.rdata(realData::wall_toverlap + 4) = 0.;
-        p.rdata(realData::wall_toverlap + 5) = 0.;
-    }
+
     
     if ( y_lo_bc == SOFTWALL_BC and pos[YDIR] < ( plo[YDIR] + rp ) )
     {
@@ -62,14 +52,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = -1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 2 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap + 6) = 0.;
-        p.rdata(realData::wall_toverlap + 7) = 0.;
-        p.rdata(realData::wall_toverlap + 8) = 0.;
-    }
+
     
     if ( y_hi_bc == SOFTWALL_BC and pos[YDIR] > ( phi[YDIR] - rp ) )
     {
@@ -81,14 +66,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = 1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 3 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap + 9) = 0.;
-        p.rdata(realData::wall_toverlap + 10) = 0.;
-        p.rdata(realData::wall_toverlap + 11) = 0.;
-    }
+
     
     if ( z_lo_bc == SOFTWALL_BC and pos[ZDIR] < ( plo[ZDIR] + rp ) )
     {
@@ -100,14 +80,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = -1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 4 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap + 12) = 0.;
-        p.rdata(realData::wall_toverlap + 13) = 0.;
-        p.rdata(realData::wall_toverlap + 14) = 0.;
-    }
+
     
     if ( z_hi_bc == SOFTWALL_BC and pos[ZDIR] > ( phi[ZDIR] - rp ) )
     {
@@ -119,15 +94,9 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
         normal[ZDIR] = 0.0;
         normal[dir]  = 1.0;
         get_wall_forces(
-            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging, 0, NULL, 5 );
+            walldist, normal, p, dt, fn, ft, rollfriqtorq_by_d, pos, contact_law, liquid_bridging);
     }
-    else
-    {
-        p.rdata(realData::wall_toverlap + 15) = 0.;
-        p.rdata(realData::wall_toverlap + 16) = 0.;
-        p.rdata(realData::wall_toverlap + 17) = 0.;
-    }
-    
+
 
     if ( collided )
     {

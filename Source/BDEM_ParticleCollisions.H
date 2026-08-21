@@ -381,15 +381,40 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
             crosspdt( tforce_damped, normal, tor );
             Real cri = distmag * rad1 * radsuminv;
 
-            // Total bond forces and torques are added to particle quantities (check sign for
-            // crosspdt term?)
-            p1.rdata( realData::fx ) += nforce_damped[XDIR] + tforce_damped[XDIR];
-            p1.rdata( realData::fy ) += nforce_damped[YDIR] + tforce_damped[YDIR];
-            p1.rdata( realData::fz ) += nforce_damped[ZDIR] + tforce_damped[ZDIR];
+            // Now check if bond is broken by collisional forces
+            if (DEM::max_stress_bond > 0.)
+            {                
+                if (A_bond > 1e-12)
+                {
+                    Real magF = sqrt(
+                                        (nforce_damped[XDIR]+tforce_damped[XDIR])*(nforce_damped[XDIR]+tforce_damped[XDIR])
+                                      +  (nforce_damped[YDIR]+tforce_damped[YDIR])*(nforce_damped[YDIR]+tforce_damped[YDIR])
+                                      +  (nforce_damped[ZDIR]+tforce_damped[ZDIR])*(nforce_damped[ZDIR]+tforce_damped[ZDIR])
+                                    );
+                    
+                    Real stress = magF / A_bond;
+    
+                    if (stress > DEM::max_stress_bond)
+                    {
+                        bond_exists = false;
+                        p1.idata( intData::first_bond + bond_index ) = -1;
+                    }
+                    
+                }
+            }
+            
+            if (bond_exists)
+            {
+                // Total bond forces and torques are added to particle quantities (check sign for
+                // crosspdt term?)
+                p1.rdata( realData::fx ) += nforce_damped[XDIR] + tforce_damped[XDIR];
+                p1.rdata( realData::fy ) += nforce_damped[YDIR] + tforce_damped[YDIR];
+                p1.rdata( realData::fz ) += nforce_damped[ZDIR] + tforce_damped[ZDIR];
 
-            p1.rdata( realData::taux ) += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri * tor[XDIR];
-            p1.rdata( realData::tauy ) += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri * tor[YDIR];
-            p1.rdata( realData::tauz ) += ntorq_damped[ZDIR] + ttorq_damped[ZDIR] - cri * tor[ZDIR];
+                p1.rdata( realData::taux ) += ntorq_damped[XDIR] + ttorq_damped[XDIR] - cri * tor[XDIR];
+                p1.rdata( realData::tauy ) += ntorq_damped[YDIR] + ttorq_damped[YDIR] - cri * tor[YDIR];
+                p1.rdata( realData::tauz ) += ntorq_damped[ZDIR] + ttorq_damped[ZDIR] - cri * tor[ZDIR];
+            }
         }
 
         // Evaluate the contact force if p1 and p2 don't have a bond between them
@@ -522,18 +547,23 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                 ftn[ZDIR] = -fnmd * tangent[ZDIR];
                 mag_ftsp  = sqrt( dotpdt( ftsp, ftsp ) );
                 mag_ftn   = sqrt( dotpdt( ftn, ftn ) );
-                if ( mag_ftsp < mag_ftn )
-                {
-                    ft[XDIR] = ftsp[XDIR];
-                    ft[YDIR] = ftsp[YDIR];
-                    ft[ZDIR] = ftsp[ZDIR];
-                }
-                else
-                {
-                    ft[XDIR] = ftn[XDIR];
-                    ft[YDIR] = ftn[YDIR];
-                    ft[ZDIR] = ftn[ZDIR];
-                }
+
+                // Always assume sliding regime
+                ft[XDIR] = ftn[XDIR];
+                ft[YDIR] = ftn[YDIR];
+                ft[ZDIR] = ftn[ZDIR];
+                // if ( mag_ftsp < mag_ftn )
+                // {
+                //     ft[XDIR] = ftsp[XDIR];
+                //     ft[YDIR] = ftsp[YDIR];
+                //     ft[ZDIR] = ftsp[ZDIR];
+                // }
+                // else
+                // {
+                //     ft[XDIR] = ftn[XDIR];
+                //     ft[YDIR] = ftn[YDIR];
+                //     ft[ZDIR] = ftn[ZDIR];
+                // }
             }
             else
             {
@@ -541,6 +571,7 @@ amrex::ParallelFor( np, [=] AMREX_GPU_DEVICE( int i ) noexcept {
                 ft[YDIR] = zero;
                 ft[ZDIR] = zero;
             }
+
 
             // Modify normal force to account for generic cohesion model
             if ( particle_cohesion && !bond_exists )
